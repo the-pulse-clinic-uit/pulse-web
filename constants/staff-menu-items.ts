@@ -1,0 +1,32 @@
+import {
+    LayoutDashboard,
+    Clock,
+    ClipboardList,
+    CalendarClock,
+    Calendar,
+    User,
+    MessageSquare,
+    Bell,
+    Receipt,
+    Pill,
+    Stethoscope,
+    Users,
+    Star,
+    LogOut,
+} from "lucide-react";
+
+export const MENU_ITEMS = [
+    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Manage Waitlist", href: "/waitlist", icon: Clock },
+    { label: "Manage Admission", href: "/admission", icon: ClipboardList },
+    { label: "Shift & Assignment", href: "/shifts", icon: CalendarClock },
+    { label: "Manage Appointment", href: "/appointments", icon: Calendar },
+    { label: "Patient Profile", href: "/patients", icon: User },
+    { label: "Chat with patient", href: "/chat", icon: MessageSquare },
+    { label: "Send Notification", href: "/notifications", icon: Bell },
+    { label: "Invoice & Payments", href: "/invoices", icon: Receipt },
+    { label: "Drug Catalog", href: "/drugs", icon: Pill },
+    { label: "Manage Encounter", href: "/encounters", icon: Stethoscope },
+    { label: "Staff Profile", href: "/staff", icon: Users },
+    { label: "Patient Rating", href: "/ratings", icon: Star },
+];
