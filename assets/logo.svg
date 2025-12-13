@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" role="img" aria-label="The Pulse Clinic logo">
+  <!-- Minimal flat logo: circular outline, heart with ECG line, and text below -->
+  <style>
+    .stroke { stroke: #8125C7; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    .text-bold { font-family: 'Montserrat', 'Poppins', 'Helvetica Neue', Arial, sans-serif; font-weight: 700; }
+    .text-light { font-family: 'Montserrat', 'Poppins', 'Helvetica Neue', Arial, sans-serif; font-weight: 400; letter-spacing: 6px; }
+  </style>
+
+  <!-- Circle outline -->
+  <circle cx="150" cy="100" r="76" class="stroke" />
+
+  <!-- Heart outline, centered within the circle -->
+  <path class="stroke" d="M150 64
+    C132 46 106 54 104 86
+    C104 118 132 148 150 156
+    C168 148 196 118 196 86
+    C194 54 168 46 150 64
+    Z" />
+
+  <!-- ECG heartbeat line inside the heart
+       starts at left inner side, has tall peak, valley, medium peak, and baseline extends to right inner side -->
+  <path class="stroke" d="M74 100 L124 100 L136 72 L150 128 L162 96 L180 100 L226 100" />
+
+  <!-- Text labels -->
+  <text x="150" y="220" class="text-bold" font-size="34" text-anchor="middle" fill="#8125C7">
+    THE PULSE
+  </text>
+  <text x="150" y="250" class="text-light" font-size="14" text-anchor="middle" fill="#BFBFBF">
+    CLINIC
+  </text>
+</svg>
