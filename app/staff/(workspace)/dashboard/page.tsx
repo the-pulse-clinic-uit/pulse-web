@@ -1,4 +1,5 @@
 import DashboardHeader from "@/components/staff/DashboardHeader";
+import PatientStatisticChart from "@/components/staff/PatientStatisticChart";
 import StatsGrid from "@/components/staff/StatGrid";
 
 export default function DashboardPage() {
@@ -6,6 +7,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
             <DashboardHeader userName="Nguyen Huu Duy" />
             <StatsGrid />
+            <PatientStatisticChart />
         </div>
     );
 }
