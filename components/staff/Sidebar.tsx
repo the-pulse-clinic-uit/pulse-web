@@ -12,7 +12,7 @@ const Sidebar = () => {
                         <img
                             src="/images/logo.png"
                             alt="Clinic Logo"
-                            className="object-contain w-16 h-16"
+                            className="object-contain w-20 h-20"
                         />
                     </div>
                 </div>

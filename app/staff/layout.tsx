@@ -13,15 +13,11 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" data-theme="light">
-            <body>
-                <div className="flex min-h-screen bg-base-200">
-                    <Sidebar />
-                    <main className="flex-1 p-8 overflow-y-auto h-screen">
-                        {children}
-                    </main>
-                </div>
-            </body>
-        </html>
+        <div className="flex min-h-screen bg-base-200">
+            <Sidebar />
+            <main className="flex-1 p-8 overflow-y-auto h-screen">
+                {children}
+            </main>
+        </div>
     );
 }
