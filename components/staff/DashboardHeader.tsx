@@ -10,7 +10,7 @@ const DashboardHeader = ({
     avatarUrl = "/images/default-avatar.png",
 }: HeaderProps) => {
     return (
-        <header className="flex items-center justify-between bg-base-100 border-b border-base-200">
+        <header className="flex items-center justify-between">
             <div className="flex flex-col">
                 <span className="text-sm text-base-content/70">
                     Hi, {userName}!
