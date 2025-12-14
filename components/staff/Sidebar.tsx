@@ -12,13 +12,13 @@ const Sidebar = () => {
                         <img
                             src="/images/logo.png"
                             alt="Clinic Logo"
-                            className="object-contain w-20 h-20"
+                            className="object-contain w-5 h-5"
                         />
                     </div>
                 </div>
             </div>
 
-            <nav className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
+            <nav className="flex-1 overflow-y-auto py-2 px-3 custom-scrollbar">
                 <ul className="menu w-full gap-1">
                     {MENU_ITEMS.map((item, index) => (
                         <SidebarItem

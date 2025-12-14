@@ -17,7 +17,7 @@ import {
 
 export const MENU_ITEMS = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Manage Waitlist", href: "/waitlist", icon: Clock },
+    { label: "Manage Wait List", href: "/wait-list", icon: Clock },
     { label: "Manage Admission", href: "/admission", icon: ClipboardList },
     { label: "Shift & Assignment", href: "/shifts", icon: CalendarClock },
     { label: "Manage Appointment", href: "/appointments", icon: Calendar },
