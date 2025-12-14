@@ -37,7 +37,7 @@ const PatientStatisticChart = () => {
         filterType === "week" ? "Dec 11 - Dec 17, 2025" : "December 2025";
 
     return (
-        <div className="card bg-base-100 shadow-sm p-6">
+        <div className="card bg-base-100 shadow-sm p-6 h-full flex flex-col">
             <div className="flex justify-between items-start mb-6">
                 <div>
                     <h2 className="card-title text-xl font-semibold">
