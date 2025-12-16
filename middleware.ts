@@ -41,9 +41,9 @@ export async function middleware(req: NextRequest) {
     }
 
     if (currentHost === "staff") {
-        if (!session || userRole !== "STAFF") {
-            return NextResponse.redirect(new URL(hmsUrl, req.url));
-        }
+        // if (!session || userRole !== "STAFF") {
+        //     return NextResponse.redirect(new URL(hmsUrl, req.url));
+        // }
         return NextResponse.rewrite(new URL(`/staff${url.pathname}`, req.url));
     }
 
