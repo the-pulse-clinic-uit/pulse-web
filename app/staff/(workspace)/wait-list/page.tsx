@@ -5,7 +5,7 @@ import Toolbar from "@/components/staff/ToolBar";
 import Pagination from "@/components/ui/Pagination";
 import { Patient } from "@/types";
 
-type WaitlistPatient = {
+type WaitListPatient = {
     id: string;
     name: string;
     age: number;
@@ -16,7 +16,7 @@ type WaitlistPatient = {
     status: "Waiting" | "Approved";
 };
 
-const waitlistColumns: ColumnDef<WaitlistPatient>[] = [
+const waitListColumns: ColumnDef<WaitListPatient>[] = [
     { header: "ID", accessorKey: "id", className: "font-bold" },
     { header: "Name", accessorKey: "name", className: "font-medium" },
     { header: "Age", accessorKey: "age" },
@@ -148,7 +148,7 @@ export default function WaitListPage() {
                 onFilter={() => {}}
                 onAdd={() => {}}
             />
-            <DataTable columns={waitlistColumns} data={mockPatients} />
+            <DataTable columns={waitListColumns} data={mockPatients} />
             <Pagination
                 currentPage={1}
                 totalPages={10}
