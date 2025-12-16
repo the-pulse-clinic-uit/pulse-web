@@ -1,8 +1,10 @@
 "use client";
+import { useState } from "react";
 import DataTable, { ColumnDef } from "@/components/staff/DataTable";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
 import Pagination from "@/components/ui/Pagination";
+import ApproveAdmissionModal from "@/components/staff/admission/ApproveAdmissionModal";
 
 type AdmissionPatient = {
     id: string;
@@ -15,47 +17,6 @@ type AdmissionPatient = {
     admissionDate: string;
     status: "Under Treatment" | "Pending" | "Discharged";
 };
-
-const admissionColumns: ColumnDef<AdmissionPatient>[] = [
-    { header: "ID", accessorKey: "id", className: "font-bold" },
-    { header: "Name", accessorKey: "name", className: "font-medium" },
-    { header: "Age", accessorKey: "age" },
-    { header: "Chief Complaint", accessorKey: "chiefComplaint" },
-    { header: "Attending Physician", accessorKey: "attendingPhysician" },
-    { header: "Department", accessorKey: "department" },
-    { header: "Room", accessorKey: "room" },
-    { header: "Admission Date", accessorKey: "admissionDate" },
-    {
-        header: "Status",
-        cell: (row) => {
-            const statusStyles = {
-                "Under Treatment": "bg-blue-100 text-blue-700",
-                Pending: "bg-yellow-100 text-yellow-700",
-                Discharged: "bg-green-100 text-green-700",
-            };
-            return (
-                <span
-                    className={`
-          inline-flex items-center justify-center px-3 py-1.5 rounded-full 
-          text-xs font-medium whitespace-nowrap 
-          ${statusStyles[row.status] || "bg-gray-100"}
-        `}
-                >
-                    {row.status}
-                </span>
-            );
-        },
-    },
-    {
-        header: "Action",
-        cell: (row) =>
-            row.status !== "Discharged" && (
-                <button className="btn btn-xs bg-purple-100 text-purple-700 border-none hover:bg-purple-200">
-                    Discharge
-                </button>
-            ),
-    },
-];
 
 const mockAdmissionData: AdmissionPatient[] = [
     {
@@ -87,7 +48,7 @@ const mockAdmissionData: AdmissionPatient[] = [
         chiefComplaint: "Fractured arm",
         attendingPhysician: "Nguyen Van B",
         department: "Orthopedics",
-        room: "B108",
+        room: "",
         admissionDate: "27/05/2025",
         status: "Pending",
     },
@@ -116,6 +77,78 @@ const mockAdmissionData: AdmissionPatient[] = [
 ];
 
 export default function AdmissionPage() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedAdmission, setSelectedAdmission] =
+        useState<AdmissionPatient | null>(null);
+
+    const handleApprove = (admission: AdmissionPatient) => {
+        setSelectedAdmission(admission);
+        setIsModalOpen(true);
+    };
+
+    const handleSaveRoom = (room: string) => {
+        console.log(
+            "Assigning room:",
+            room,
+            "to admission:",
+            selectedAdmission?.id
+        );
+        setIsModalOpen(false);
+        setSelectedAdmission(null);
+    };
+
+    const admissionColumns: ColumnDef<AdmissionPatient>[] = [
+        { header: "ID", accessorKey: "id", className: "font-bold" },
+        { header: "Name", accessorKey: "name", className: "font-medium" },
+        { header: "Age", accessorKey: "age" },
+        { header: "Chief Complaint", accessorKey: "chiefComplaint" },
+        { header: "Attending Physician", accessorKey: "attendingPhysician" },
+        { header: "Department", accessorKey: "department" },
+        { header: "Room", accessorKey: "room" },
+        { header: "Admission Date", accessorKey: "admissionDate" },
+        {
+            header: "Status",
+            cell: (row) => {
+                const statusStyles = {
+                    "Under Treatment": "bg-blue-100 text-blue-700",
+                    Pending: "bg-yellow-100 text-yellow-700",
+                    Discharged: "bg-green-100 text-green-700",
+                };
+                return (
+                    <span
+                        className={`
+              inline-flex items-center justify-center px-3 py-1.5 rounded-full 
+              text-xs font-medium whitespace-nowrap 
+              ${statusStyles[row.status] || "bg-gray-100"}
+            `}
+                    >
+                        {row.status}
+                    </span>
+                );
+            },
+        },
+        {
+            header: "Action",
+            cell: (row) => (
+                <div className="flex gap-2">
+                    {row.status === "Pending" && (
+                        <button
+                            onClick={() => handleApprove(row)}
+                            className="btn btn-xs bg-green-100 text-green-700 border-none hover:bg-green-200"
+                        >
+                            Approve
+                        </button>
+                    )}
+                    {row.status !== "Discharged" && (
+                        <button className="btn btn-xs bg-purple-100 text-purple-700 border-none hover:bg-purple-200">
+                            Discharge
+                        </button>
+                    )}
+                </div>
+            ),
+        },
+    ];
+
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
             <Header tabName="Manage Admission" userName="Nguyen Huu Duy" />
@@ -131,6 +164,27 @@ export default function AdmissionPage() {
                 totalPages={10}
                 onPageChange={() => {}}
             />
+
+            {selectedAdmission && (
+                <ApproveAdmissionModal
+                    isOpen={isModalOpen}
+                    onClose={() => {
+                        setIsModalOpen(false);
+                        setSelectedAdmission(null);
+                    }}
+                    onSave={handleSaveRoom}
+                    admission={{
+                        id: selectedAdmission.id,
+                        name: selectedAdmission.name,
+                        age: selectedAdmission.age,
+                        chiefComplaint: selectedAdmission.chiefComplaint,
+                        attendingPhysician:
+                            selectedAdmission.attendingPhysician,
+                        department: selectedAdmission.department,
+                        admissionDate: selectedAdmission.admissionDate,
+                    }}
+                />
+            )}
         </div>
     );
 }
