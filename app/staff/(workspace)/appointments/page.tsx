@@ -4,6 +4,7 @@ import DataTable, { ColumnDef } from "@/components/staff/DataTable";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
 import Pagination from "@/components/ui/Pagination";
+import AddAppointmentModal from "@/components/staff/appointments/AddAppointmentModal";
 
 type Appointment = {
     id: string;
@@ -71,6 +72,7 @@ const mockAppointmentData: Appointment[] = [
 
 export default function AppointmentsPage() {
     const [appointments, setAppointments] = useState(mockAppointmentData);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const handleApprove = (appointment: Appointment) => {
         setAppointments((prev) =>
@@ -82,6 +84,24 @@ export default function AppointmentsPage() {
 
     const handleReschedule = (appointment: Appointment) => {
         console.log("Reschedule appointment:", appointment.id);
+    };
+
+    const handleAddAppointment = (newAppointment: {
+        name: string;
+        time: string;
+        phoneNumber: string;
+        doctor: string;
+        department: string;
+        room: string;
+    }) => {
+        const newId = `#${String(appointments.length + 1).padStart(3, "0")}`;
+        const appointment: Appointment = {
+            id: newId,
+            ...newAppointment,
+            status: "Pending",
+        };
+        setAppointments((prev) => [...prev, appointment]);
+        setIsAddModalOpen(false);
     };
 
     const appointmentColumns: ColumnDef<Appointment>[] = [
@@ -145,13 +165,19 @@ export default function AppointmentsPage() {
                 buttonName="Appointments"
                 onSearch={() => {}}
                 onFilter={() => {}}
-                onAdd={() => {}}
+                onAdd={() => setIsAddModalOpen(true)}
             />
             <DataTable columns={appointmentColumns} data={appointments} />
             <Pagination
                 currentPage={1}
                 totalPages={10}
                 onPageChange={() => {}}
+            />
+
+            <AddAppointmentModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSave={handleAddAppointment}
             />
         </div>
     );
