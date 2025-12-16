@@ -4,6 +4,9 @@ import DataTable, { ColumnDef } from "@/components/staff/DataTable";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
 import Pagination from "@/components/ui/Pagination";
+import AddPatientModal from "@/components/staff/patients/AddPatientModal";
+import ViewPatientModal from "@/components/staff/patients/ViewPatientModal";
+import EditPatientModal from "@/components/staff/patients/EditPatientModal";
 
 type Patient = {
     id: string;
@@ -14,6 +17,7 @@ type Patient = {
     email: string;
     address: string;
     healthInsurance: boolean;
+    insuranceNumber?: string;
 };
 
 const mockPatientData: Patient[] = [
@@ -56,6 +60,7 @@ const mockPatientData: Patient[] = [
         email: "pvd@gmail.com",
         address: "Binh Thanh, Ho Chi Minh city",
         healthInsurance: true,
+        insuranceNumber: "BH123456789",
     },
     {
         id: "#005",
@@ -66,15 +71,69 @@ const mockPatientData: Patient[] = [
         email: "hte@gmail.com",
         address: "District 7, Ho Chi Minh city",
         healthInsurance: true,
+        insuranceNumber: "BH987654321",
     },
 ];
 
 export default function PatientsPage() {
     const [patients, setPatients] = useState(mockPatientData);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedPatient, setSelectedPatient] = useState<Patient | null>(
+        null
+    );
 
-    const handleView = (patient: Patient) => {};
+    const handleView = (patient: Patient) => {
+        setSelectedPatient(patient);
+        setIsViewModalOpen(true);
+    };
 
-    const handleEdit = (patient: Patient) => {};
+    const handleEdit = (patient: Patient) => {
+        setSelectedPatient(patient);
+        setIsEditModalOpen(true);
+    };
+
+    const handleAddPatient = (newPatient: {
+        name: string;
+        age: number;
+        gender: "Male" | "Female" | "Other";
+        phoneNumber: string;
+        email: string;
+        address: string;
+        healthInsurance: boolean;
+        insuranceNumber?: string;
+    }) => {
+        const newId = `#${String(patients.length + 1).padStart(3, "0")}`;
+        const patient: Patient = {
+            id: newId,
+            ...newPatient,
+        };
+        setPatients((prev) => [...prev, patient]);
+        setIsAddModalOpen(false);
+    };
+
+    const handleSaveEdit = (
+        id: string,
+        updatedPatient: {
+            name: string;
+            age: number;
+            gender: "Male" | "Female" | "Other";
+            phoneNumber: string;
+            email: string;
+            address: string;
+            healthInsurance: boolean;
+            insuranceNumber?: string;
+        }
+    ) => {
+        setPatients((prev) =>
+            prev.map((patient) =>
+                patient.id === id ? { ...patient, ...updatedPatient } : patient
+            )
+        );
+        setIsEditModalOpen(false);
+        setSelectedPatient(null);
+    };
 
     const patientColumns: ColumnDef<Patient>[] = [
         { header: "ID", accessorKey: "id", className: "font-bold" },
@@ -130,13 +189,38 @@ export default function PatientsPage() {
                 buttonName="Patient"
                 onSearch={() => {}}
                 onFilter={() => {}}
-                onAdd={() => {}}
+                onAdd={() => setIsAddModalOpen(true)}
             />
             <DataTable columns={patientColumns} data={patients} />
             <Pagination
                 currentPage={1}
                 totalPages={10}
                 onPageChange={() => {}}
+            />
+
+            <AddPatientModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSave={handleAddPatient}
+            />
+
+            <ViewPatientModal
+                isOpen={isViewModalOpen}
+                onClose={() => {
+                    setIsViewModalOpen(false);
+                    setSelectedPatient(null);
+                }}
+                patient={selectedPatient}
+            />
+
+            <EditPatientModal
+                isOpen={isEditModalOpen}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedPatient(null);
+                }}
+                onSave={handleSaveEdit}
+                patient={selectedPatient}
             />
         </div>
     );
