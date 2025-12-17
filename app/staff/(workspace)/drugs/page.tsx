@@ -1,8 +1,11 @@
 "use client";
+import { useState } from "react";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
 import Pagination from "@/components/ui/Pagination";
 import DataTable, { ColumnDef } from "@/components/staff/DataTable";
+import AddDrugModal from "@/components/staff/drugs/AddDrugModal";
+import ViewDrugModal from "@/components/staff/drugs/ViewDrugModal";
 
 interface Drug {
     id: string;
@@ -15,7 +18,7 @@ interface Drug {
     status: "Running Low" | "Adequate";
 }
 
-const drugData: Drug[] = [
+const initialDrugData: Drug[] = [
     {
         id: "#001",
         name: "Paracetamol 500mg",
@@ -79,6 +82,33 @@ const drugData: Drug[] = [
 ];
 
 export default function DrugsPage() {
+    const [drugs, setDrugs] = useState<Drug[]>(initialDrugData);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [selectedDrug, setSelectedDrug] = useState<Drug | null>(null);
+
+    const handleAddDrug = (newDrug: {
+        name: string;
+        drugClassification: string;
+        unit: string;
+        stock: number;
+        price: string;
+        expirationDate: string;
+    }) => {
+        const drug: Drug = {
+            id: `#${(drugs.length + 1).toString().padStart(3, "0")}`,
+            ...newDrug,
+            status: newDrug.stock < 500 ? "Running Low" : "Adequate",
+        };
+        setDrugs([...drugs, drug]);
+        setIsAddModalOpen(false);
+    };
+
+    const handleViewDrug = (drug: Drug) => {
+        setSelectedDrug(drug);
+        setIsViewModalOpen(true);
+    };
+
     const columns: ColumnDef<Drug>[] = [
         {
             header: "ID",
@@ -124,8 +154,11 @@ export default function DrugsPage() {
         },
         {
             header: "Action",
-            cell: () => (
-                <button className="btn btn-primary btn-sm text-xs">
+            cell: (row) => (
+                <button
+                    className="btn btn-primary btn-sm text-xs"
+                    onClick={() => handleViewDrug(row)}
+                >
                     Detail
                 </button>
             ),
@@ -135,12 +168,24 @@ export default function DrugsPage() {
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
             <Header tabName="Drug Catalog" userName="Nguyen Huu Duy" />
-            <Toolbar buttonName="Add Drug" onFilter={() => {}} />
-            <DataTable data={drugData} columns={columns} />
+            <Toolbar buttonName="Drug" onAdd={() => setIsAddModalOpen(true)} />
+            <DataTable data={drugs} columns={columns} />
             <Pagination
                 currentPage={1}
                 totalPages={10}
                 onPageChange={() => {}}
+            />
+
+            <AddDrugModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSave={handleAddDrug}
+            />
+
+            <ViewDrugModal
+                isOpen={isViewModalOpen}
+                onClose={() => setIsViewModalOpen(false)}
+                drug={selectedDrug}
             />
         </div>
     );
