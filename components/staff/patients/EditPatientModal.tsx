@@ -36,34 +36,9 @@ export default function EditPatientModal({
     onSave,
     patient,
 }: EditPatientModalProps) {
-    const initialFormData = patient
-        ? {
-              name: patient.name,
-              age: patient.age.toString(),
-              gender: patient.gender,
-              phoneNumber: patient.phoneNumber,
-              email: patient.email,
-              address: patient.address,
-              healthInsurance: patient.healthInsurance,
-              insuranceNumber: patient.insuranceNumber || "",
-          }
-        : {
-              name: "",
-              age: "",
-              gender: "" as "Male" | "Female" | "Other" | "",
-              phoneNumber: "",
-              email: "",
-              address: "",
-              healthInsurance: false,
-              insuranceNumber: "",
-          };
-
-    const [formData, setFormData] = useState(initialFormData);
-
-    useEffect(() => {
+    const getInitialFormData = () => {
         if (patient && isOpen) {
-            // Update form data when patient or modal open state changes
-            const updatedFormData = {
+            return {
                 name: patient.name,
                 age: patient.age.toString(),
                 gender: patient.gender,
@@ -73,7 +48,25 @@ export default function EditPatientModal({
                 healthInsurance: patient.healthInsurance,
                 insuranceNumber: patient.insuranceNumber || "",
             };
-            setFormData(updatedFormData);
+        }
+        return {
+            name: "",
+            age: "",
+            gender: "" as "Male" | "Female" | "Other" | "",
+            phoneNumber: "",
+            email: "",
+            address: "",
+            healthInsurance: false,
+            insuranceNumber: "",
+        };
+    };
+
+    const [formData, setFormData] = useState(getInitialFormData());
+
+    // Reset form when modal opens with new patient
+    useEffect(() => {
+        if (isOpen) {
+            setFormData(getInitialFormData());
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [patient?.id, isOpen]);
