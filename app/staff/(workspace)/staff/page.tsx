@@ -3,10 +3,12 @@ import { useState } from "react";
 import StaffProfileHeader from "@/components/staff/staff/StaffProfileHeader";
 import PersonalInformationCard from "@/components/staff/staff/PersonalInformationCard";
 import ProfessionalInformationCard from "@/components/staff/staff/ProfessionalInformationCard";
+import EditPersonalInfoModal from "@/components/staff/staff/EditPersonalInfoModal";
+import EditProfessionalInfoModal from "@/components/staff/staff/EditProfessionalInfoModal";
 import Header from "@/components/staff/Header";
 
 export default function StaffProfilePage() {
-    const [staffData] = useState({
+    const [staffData, setStaffData] = useState({
         name: "Nguyen Van A",
         role: "Staff",
         avatarUrl: "/images/avatar-placeholder.jpg",
@@ -26,20 +28,42 @@ export default function StaffProfilePage() {
         },
     });
 
-    const handleEditProfile = () => {
-        console.log("Edit profile");
+    const [isEditPersonalInfoOpen, setIsEditPersonalInfoOpen] = useState(false);
+    const [isEditProfessionalInfoOpen, setIsEditProfessionalInfoOpen] =
+        useState(false);
+
+    const handleSavePersonalInfo = (data: {
+        name: string;
+        dateOfBirth: string;
+        age: number;
+        phoneNumber: string;
+        emailAddress: string;
+        address: string;
+        gender: string;
+        ethnicity: string;
+    }) => {
+        setStaffData((prev) => ({
+            ...prev,
+            name: data.name,
+            personalInfo: data,
+        }));
     };
 
-    const handleEditPersonalInfo = () => {
-        console.log("Edit personal information");
-    };
-
-    const handleEditProfessionalInfo = () => {
-        console.log("Edit professional information");
+    const handleSaveProfessionalInfo = (data: {
+        specialty: string;
+        practicingCertificate?: string;
+    }) => {
+        setStaffData((prev) => ({
+            ...prev,
+            professionalInfo: {
+                specialty: data.specialty,
+                practicingCertificate: data.practicingCertificate || "",
+            },
+        }));
     };
 
     const handleDetailUpdateCertificate = () => {
-        console.log("Detail/Update certificate");
+        setIsEditProfessionalInfoOpen(true);
     };
 
     return (
@@ -51,20 +75,33 @@ export default function StaffProfilePage() {
                     name={staffData.name}
                     role={staffData.role}
                     avatarUrl={staffData.avatarUrl}
-                    onEdit={handleEditProfile}
                 />
 
                 <PersonalInformationCard
                     data={staffData.personalInfo}
-                    onEdit={handleEditPersonalInfo}
+                    onEdit={() => setIsEditPersonalInfoOpen(true)}
                 />
 
                 <ProfessionalInformationCard
                     data={staffData.professionalInfo}
-                    onEdit={handleEditProfessionalInfo}
+                    onEdit={() => setIsEditProfessionalInfoOpen(true)}
                     onDetailUpdate={handleDetailUpdateCertificate}
                 />
             </div>
+
+            <EditPersonalInfoModal
+                isOpen={isEditPersonalInfoOpen}
+                onClose={() => setIsEditPersonalInfoOpen(false)}
+                onSave={handleSavePersonalInfo}
+                currentData={staffData.personalInfo}
+            />
+
+            <EditProfessionalInfoModal
+                isOpen={isEditProfessionalInfoOpen}
+                onClose={() => setIsEditProfessionalInfoOpen(false)}
+                onSave={handleSaveProfessionalInfo}
+                currentData={staffData.professionalInfo}
+            />
         </div>
     );
 }
