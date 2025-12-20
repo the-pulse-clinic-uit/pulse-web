@@ -3,6 +3,7 @@
 import React, { CSSProperties, useMemo } from "react";
 import Image from "next/image";
 import Button from "@/components/Button";
+import heroImage from "@/public/hero_image.png"; // import ảnh trực tiếp
 
 const HeroSection = ({ id = "home" }: { id?: string }) => {
   const stats = useMemo(
@@ -22,11 +23,14 @@ const HeroSection = ({ id = "home" }: { id?: string }) => {
       <div className="container mx-auto grid lg:grid-cols-2 gap-12 items-center py-12">
         <div className="space-y-8">
           <h1 className="text-5xl font-bold">
-            Health is the foundation of <span className="text-primary">happiness</span>
+            Health is the foundation of{" "}
+            <span className="text-primary">happiness</span>
           </h1>
 
           <div className="flex gap-4">
-            <Button variant="hero" size="xl">Book Appointment</Button>
+            <Button variant="hero" size="xl">
+              Book Appointment
+            </Button>
             <a href="#about">
               <Button variant="outline" size="xl">Learn More</Button>
             </a>
@@ -43,7 +47,7 @@ const HeroSection = ({ id = "home" }: { id?: string }) => {
         </div>
 
         <Image
-          src="/hero_image.png"
+          src={heroImage} // dùng biến import thay vì chuỗi
           alt="Hero"
           width={900}
           height={700}
