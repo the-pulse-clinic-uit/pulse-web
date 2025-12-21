@@ -22,10 +22,9 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-4 pt-20">
+      <div className="max-w-7xl mx-auto px-4 py-4">
         <WelcomeBanner userName={user.name} />
 
-        {/* Summary */}
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           <SummaryCard
             icon={<Calendar className="w-4 h-4 text-white" />}
@@ -58,7 +57,6 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-purple-900 text-lg font-semibold mb-4">
             Quick Actions
@@ -92,7 +90,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent Activity */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-purple-900 text-lg font-semibold mb-4">
             Recent Activity

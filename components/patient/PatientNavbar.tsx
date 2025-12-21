@@ -18,7 +18,6 @@ const PatientNavbar: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-    // TODO: add logout logic here (signOut, clear session, etc.)
     alert("You have been logged out!");
   };
 
@@ -35,7 +34,6 @@ const PatientNavbar: React.FC = () => {
     <header className="fixed top-0 inset-x-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 lg:h-24 items-center">
-          {/* Logo - moved more to the left */}
           <div className="flex-shrink-0 mr-8">
             <Link href="/dashboard" className="flex items-center gap-4">
               <Image
@@ -52,7 +50,6 @@ const PatientNavbar: React.FC = () => {
             </Link>
           </div>
 
-          {/* Desktop navigation - centered */}
           <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
             {nav.map((item) => (
               <Link
@@ -71,7 +68,6 @@ const PatientNavbar: React.FC = () => {
             ))}
           </nav>
 
-          {/* Desktop Logout - moved more to the right */}
           <div className="hidden md:flex items-center ml-8">
             <button
               onClick={handleLogout}
@@ -82,7 +78,6 @@ const PatientNavbar: React.FC = () => {
             </button>
           </div>
 
-          {/* Mobile menu toggle */}
           <button
             aria-label="Toggle menu"
             onClick={toggleMobile}
@@ -92,7 +87,6 @@ const PatientNavbar: React.FC = () => {
           </button>
         </div>
 
-        {/* Mobile menu */}
         {mobileOpen && (
           <div className="md:hidden pb-4">
             <div className="flex flex-col gap-2 pt-2">
