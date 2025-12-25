@@ -51,7 +51,7 @@ const HeroSection = ({ id = "home" }: { id?: string }) => {
                 </div>
 
                 <Image
-                    src={heroImage} // dùng biến import thay vì chuỗi
+                    src={heroImage}
                     alt="Hero"
                     width={900}
                     height={700}
