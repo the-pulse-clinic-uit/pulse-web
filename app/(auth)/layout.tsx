@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import "../globals.css";
 
 export const metadata: Metadata = {
-    title: "Doctor Portal",
-    description: "Doctor Dashboard",
+    title: "Authentication - The Pulse Clinic",
+    description: "Login or Register",
 };
 
-export default function DoctorLayout({
+export default function AuthLayout({
     children,
 }: {
     children: React.ReactNode;
