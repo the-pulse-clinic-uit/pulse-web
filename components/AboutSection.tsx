@@ -14,7 +14,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({
     imageSrc = teamImage,
 }) => {
     return (
-        <section id={id} className="py-20 lg:py-32 bg-background scroll-mt-24">
+        <section id={id} className="py-20 lg:py-32 bg-background">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
                     <div className="relative animate-fade-in-left">
