@@ -47,10 +47,7 @@ export async function middleware(req: NextRequest) {
         return NextResponse.rewrite(new URL(`/staff${url.pathname}`, req.url));
     }
 
-    if (!currentHost || currentHost === "www" || currentHost === ROOT_DOMAIN) {
-        return NextResponse.rewrite(new URL(`/site${url.pathname}`, req.url));
-    }
-
+    // Cho localhost:3000, không cần rewrite, để Next.js tự route
     return NextResponse.next();
 }
 
