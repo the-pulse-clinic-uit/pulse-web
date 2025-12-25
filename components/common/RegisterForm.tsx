@@ -107,7 +107,7 @@ const RegisterForm = () => {
                         <div className="text-center mt-8 text-gray-600 font-medium">
                             Already have an account ?{" "}
                             <Link
-                                href="/site/login"
+                                href="/login"
                                 className="text-purple-600 font-bold hover:underline ml-1"
                             >
                                 Log in
