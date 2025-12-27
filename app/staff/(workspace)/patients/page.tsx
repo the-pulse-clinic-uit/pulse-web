@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import DataTable, { ColumnDef } from "@/components/staff/DataTable";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
@@ -60,61 +60,58 @@ export default function PatientsPage() {
         null
     );
 
-    useEffect(() => {
+    const fetchData = useCallback(async () => {
         const token = Cookies.get("token");
         if (!token) {
             router.push("/login");
             return;
         }
 
-        const fetchData = async () => {
-            try {
-                const userRes = await fetch("/api/users/me", {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                if (userRes.ok) setUser(await userRes.json());
+        try {
+            const userRes = await fetch("/api/users/me", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (userRes.ok) setUser(await userRes.json());
 
-                const patientRes = await fetch("/api/patients", {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+            const patientRes = await fetch("/api/patients", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
-                if (patientRes.ok) {
-                    const data = await patientRes.json();
+            if (patientRes.ok) {
+                const data = await patientRes.json();
 
-                    const formattedPatients: Patient[] = data.map(
-                        (item: PatientDTO) => ({
-                            id: item.id,
-                            name: item.userDto.fullName || "N/A",
-                            birthDate: item.userDto.birthDate || "",
-                            gender: item.userDto.gender ? "Male" : "Female",
-                            phoneNumber: item.userDto.phone || "",
-                            email: item.userDto.email || "",
-                            address: item.userDto.address || "No address",
-                            healthInsurance: !!item.healthInsuranceId,
-                            insuranceNumber: item.healthInsuranceId || "",
-                            citizenId: item.userDto.citizenId,
-                            bloodType: item.bloodType,
-                            allergies: item.allergies,
-                        })
-                    );
+                const formattedPatients: Patient[] = data.map(
+                    (item: PatientDTO) => ({
+                        id: item.id,
+                        name: item.userDto.fullName || "N/A",
+                        birthDate: item.userDto.birthDate || "",
+                        gender: item.userDto.gender ? "Male" : "Female",
+                        phoneNumber: item.userDto.phone || "",
+                        email: item.userDto.email || "",
+                        address: item.userDto.address || "No address",
+                        healthInsurance: !!item.healthInsuranceId,
+                        insuranceNumber: item.healthInsuranceId || "",
+                        citizenId: item.userDto.citizenId,
+                        bloodType: item.bloodType,
+                        allergies: item.allergies,
+                    })
+                );
 
-                    setPatients(formattedPatients);
-                } else if (
-                    patientRes.status === 401 ||
-                    patientRes.status === 403
-                ) {
-                    Cookies.remove("token");
-                    router.push("/login");
-                }
-            } catch (error) {
-                console.error("Error fetching data:", error);
-            } finally {
-                setLoading(false);
+                setPatients(formattedPatients);
+            } else if (patientRes.status === 401 || patientRes.status === 403) {
+                Cookies.remove("token");
+                router.push("/login");
             }
-        };
-
-        fetchData();
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        } finally {
+            setLoading(false);
+        }
     }, [router]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     if (loading) {
         return (
@@ -134,9 +131,9 @@ export default function PatientsPage() {
         setIsEditModalOpen(true);
     };
 
-    const handleAddPatient = (newPatient: Omit<Patient, "id">) => {
-        console.log("Adding patient:", newPatient);
+    const handleAddSuccess = () => {
         setIsAddModalOpen(false);
+        fetchData();
     };
 
     const handleSaveEdit = (id: string, updatedData: Partial<Patient>) => {
@@ -210,7 +207,7 @@ export default function PatientsPage() {
             <AddPatientModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
-                onSave={handleAddPatient}
+                onSuccess={handleAddSuccess}
             />
 
             <ViewPatientModal
