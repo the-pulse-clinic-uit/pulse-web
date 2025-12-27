@@ -4,8 +4,18 @@ import SidebarItem from "./SidebarItem";
 import { MENU_ITEMS } from "@/constants/staff-menu-items";
 import logo from "../../public/images/logo.png";
 import Image from "next/image";
+import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
 const Sidebar = () => {
+    const router = useRouter();
+
+    const handleLogout = () => {
+        Cookies.remove("token");
+        localStorage.removeItem("user");
+        router.push("/login");
+    };
+
     return (
         <aside className="h-screen w-72 bg-base-100 border-r border-base-300 flex flex-col sticky top-0 overflow-hidden">
             <div className="p-6 flex items-center justify-center border-b border-base-200">
@@ -38,7 +48,10 @@ const Sidebar = () => {
             <div className="p-4 border-t border-base-200 bg-base-100">
                 <ul className="menu w-full">
                     <li>
-                        <button className="flex items-center gap-3 px-4 py-3 text-error hover:bg-error/10 hover:text-error rounded-lg font-medium">
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-3 px-4 py-3 text-error hover:bg-error/10 hover:text-error rounded-lg font-medium"
+                        >
                             <LogOut size={20} />
                             <span>Logout</span>
                         </button>
