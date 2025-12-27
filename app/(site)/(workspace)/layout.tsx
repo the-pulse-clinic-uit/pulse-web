@@ -1,5 +1,5 @@
 import PatientHeader from "@/components/patient/PatientHeader";
-import AuthGuard from "@/components/AuthGuard";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 export default function SiteLayout({
     children,
