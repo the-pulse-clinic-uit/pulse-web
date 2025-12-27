@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import "../globals.css";
+import "../../globals.css";
 import Sidebar from "@/components/staff/Sidebar";
+import StaffAuthGuard from "@/components/staff/auth/StaffAuthGuard";
 
 export const metadata: Metadata = {
     title: "Clinic Management",
@@ -13,9 +14,13 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="flex min-h-screen bg-base-200">
-            <Sidebar />
-            <main className="flex-1 overflow-y-auto h-screen">{children}</main>
-        </div>
+        <StaffAuthGuard>
+            <div className="flex min-h-screen bg-base-200">
+                <Sidebar />
+                <main className="flex-1 overflow-y-auto h-screen">
+                    {children}
+                </main>
+            </div>
+        </StaffAuthGuard>
     );
 }
