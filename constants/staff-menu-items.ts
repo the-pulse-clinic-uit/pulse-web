@@ -12,7 +12,6 @@ import {
     Stethoscope,
     Users,
     Star,
-    LogOut,
 } from "lucide-react";
 
 export const MENU_ITEMS = [
