@@ -56,12 +56,6 @@ const Header: React.FC = () => {
 
                     <div className="hidden md:flex items-center space-x-4">
                         <Link
-                            href="/register"
-                            className="px-6 py-2.5 text-primary font-semibold hover:bg-gray-50 rounded-lg transition-colors"
-                        >
-                            Register
-                        </Link>
-                        <Link
                             href="/login"
                             className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
                         >
