@@ -1,10 +1,18 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DataTable, { ColumnDef } from "@/components/staff/DataTable";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
 import Pagination from "@/components/ui/Pagination";
 import AddAppointmentModal from "@/components/staff/appointments/AddAppointmentModal";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+
+interface UserData {
+    fullName: string;
+    avatarUrl: string;
+    email: string;
+}
 
 type Appointment = {
     id: string;
@@ -71,13 +79,59 @@ const mockAppointmentData: Appointment[] = [
 ];
 
 export default function AppointmentsPage() {
+    const router = useRouter();
     const [appointments, setAppointments] = useState(mockAppointmentData);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [user, setUser] = useState<UserData | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const token = Cookies.get("token");
+
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+
+        const fetchUserData = async () => {
+            try {
+                const response = await fetch("/api/users/me", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setUser(data);
+                } else {
+                    Cookies.remove("token");
+                    router.push("/login");
+                }
+            } catch (error) {
+                console.error("Failed to fetch user:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, [router]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <span className="loading loading-spinner loading-lg text-primary"></span>
+            </div>
+        );
+    }
 
     const handleApprove = (appointment: Appointment) => {
         setAppointments((prev) =>
             prev.map((apt) =>
-                apt.id === appointment.id ? { ...apt, status: "Approved" as const } : apt
+                apt.id === appointment.id
+                    ? { ...apt, status: "Approved" as const }
+                    : apt
             )
         );
     };
@@ -160,7 +214,7 @@ export default function AppointmentsPage() {
 
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
-            <Header tabName="Manage Appointments" userName="Nguyen Huu Duy" />
+            <Header tabName="Manage Appointments" userName={user?.fullName} />
             <Toolbar
                 buttonName="Appointments"
                 onSearch={() => {}}
