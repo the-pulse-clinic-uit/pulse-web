@@ -65,7 +65,7 @@ const StaffRegisterForm = () => {
                     phone: formData.phone,
                     gender: formData.gender === "true",
                     birth_date: formData.birth_date,
-                    role: "STAFF",
+                    role: "staff",
                 }),
             });
 

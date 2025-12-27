@@ -65,7 +65,7 @@ const DoctorRegisterForm = () => {
                     phone: formData.phone,
                     gender: formData.gender === "true",
                     birth_date: formData.birth_date,
-                    role: "DOCTOR",
+                    role: "doctor",
                 }),
             });
 
