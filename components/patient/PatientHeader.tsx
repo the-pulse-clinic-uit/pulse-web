@@ -3,11 +3,13 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { LogOut, Menu, X } from "lucide-react";
 import logo from "../../public/images/logo.png";
 
 const PatientHeader: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const pathname = usePathname();
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -15,6 +17,19 @@ const PatientHeader: React.FC = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         window.location.href = "/login";
+    };
+
+    const navItems = [
+        { name: "Dashboard", href: "/dashboard" },
+        { name: "Appointments", href: "/appointments" },
+        { name: "Records", href: "/records" },
+        { name: "Invoices", href: "/invoices" },
+        { name: "Profile", href: "/profile" },
+    ];
+
+    const isActiveLink = (path: string) => {
+        if (path === "/") return pathname === "/";
+        return pathname.startsWith(path);
     };
 
     return (
@@ -40,36 +55,22 @@ const PatientHeader: React.FC = () => {
                     </Link>
 
                     <nav className="hidden md:flex items-center space-x-8">
-                        <Link
-                            href="/dashboard"
-                            className="text-foreground hover:text-primary font-medium transition-colors"
-                        >
-                            Dashboard
-                        </Link>
-                        <Link
-                            href="/appointments"
-                            className="text-foreground hover:text-primary font-medium transition-colors"
-                        >
-                            Appointments
-                        </Link>
-                        <Link
-                            href="/records"
-                            className="text-foreground hover:text-primary font-medium transition-colors"
-                        >
-                            Records
-                        </Link>
-                        <Link
-                            href="/invoices"
-                            className="text-foreground hover:text-primary font-medium transition-colors"
-                        >
-                            Invoices
-                        </Link>
-                        <Link
-                            href="/profile"
-                            className="text-foreground hover:text-primary font-medium transition-colors"
-                        >
-                            Profile
-                        </Link>
+                        {navItems.map((item) => {
+                            const active = isActiveLink(item.href);
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={`font-medium transition-colors ${
+                                        active
+                                            ? "text-primary font-bold"
+                                            : "text-foreground hover:text-primary"
+                                    }`}
+                                >
+                                    {item.name}
+                                </Link>
+                            );
+                        })}
                     </nav>
 
                     <button
@@ -94,45 +95,28 @@ const PatientHeader: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Mobile Menu */}
+                {/* MOBILE MENU */}
                 {isMenuOpen && (
                     <div className="md:hidden py-4 border-t border-gray-200">
                         <nav className="flex flex-col space-y-4">
-                            <Link
-                                href="/dashboard"
-                                onClick={toggleMenu}
-                                className="text-foreground hover:text-primary font-medium transition-colors"
-                            >
-                                Dashboard
-                            </Link>
-                            <Link
-                                href="/appointments"
-                                onClick={toggleMenu}
-                                className="text-foreground hover:text-primary font-medium transition-colors"
-                            >
-                                Appointments
-                            </Link>
-                            <Link
-                                href="/records"
-                                onClick={toggleMenu}
-                                className="text-foreground hover:text-primary font-medium transition-colors"
-                            >
-                                Records
-                            </Link>
-                            <Link
-                                href="/invoices"
-                                onClick={toggleMenu}
-                                className="text-foreground hover:text-primary font-medium transition-colors"
-                            >
-                                Invoices
-                            </Link>
-                            <Link
-                                href="/profile"
-                                onClick={toggleMenu}
-                                className="text-foreground hover:text-primary font-medium transition-colors"
-                            >
-                                Profile
-                            </Link>
+                            {navItems.map((item) => {
+                                const active = isActiveLink(item.href);
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={toggleMenu}
+                                        className={`font-medium transition-colors px-4 py-2 rounded-lg ${
+                                            active
+                                                ? "text-primary bg-primary/10 font-bold"
+                                                : "text-foreground hover:text-primary hover:bg-gray-50"
+                                        }`}
+                                    >
+                                        {item.name}
+                                    </Link>
+                                );
+                            })}
+
                             <div className="pt-4 border-t border-gray-200">
                                 <button
                                     onClick={() => {
