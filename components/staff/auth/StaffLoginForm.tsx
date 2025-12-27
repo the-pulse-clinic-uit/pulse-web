@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Users } from "lucide-react";
+import Cookies from "js-cookie";
 
 const StaffLoginForm = () => {
     const router = useRouter();
@@ -57,7 +58,10 @@ const StaffLoginForm = () => {
             }
 
             if (data.token) {
-                localStorage.setItem("token", data.token);
+                Cookies.set("token", data.token, {
+                    expires: 7,
+                    secure: window.location.protocol === "https:",
+                });
 
                 if (data.user) {
                     localStorage.setItem("user", JSON.stringify(data.user));

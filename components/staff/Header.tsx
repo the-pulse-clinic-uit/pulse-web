@@ -6,11 +6,9 @@ interface HeaderProps {
     avatarUrl?: string;
 }
 
-const Header = ({
-    tabName = "Header",
-    userName = "Nguyen Van A",
-    avatarUrl = "/images/default-avatar.png",
-}: HeaderProps) => {
+const Header = ({ tabName, userName, avatarUrl }: HeaderProps) => {
+    const displayName = userName || "Staff Member";
+    const displayAvatar = avatarUrl || "/images/default-avatar.png";
     return (
         <header className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-base-content">{tabName}</h1>
@@ -19,7 +17,7 @@ const Header = ({
                 <div className="avatar">
                     <div className="w-10 h-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
                         <Image
-                            src={avatarUrl}
+                            src={displayAvatar}
                             alt="User Avatar"
                             width={40}
                             height={40}
@@ -29,7 +27,7 @@ const Header = ({
                 </div>
 
                 <span className="font-semibold text-base-content hidden md:block">
-                    {userName}
+                    {displayName}
                 </span>
             </div>
         </header>
