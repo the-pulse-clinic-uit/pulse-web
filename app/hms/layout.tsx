@@ -6,8 +6,6 @@ export default function DoctorLayout({
     children: React.ReactNode;
 }) {
     return (
-        <main className="flex-1 overflow-y-auto p-6 scroll-smooth">
-            {children}
-        </main>
+        <main className="flex-1 overflow-y-auto scroll-smooth">{children}</main>
     );
 }
