@@ -24,7 +24,6 @@ export default function AddPatientModal({
     onClose,
     onSave,
 }: AddPatientModalProps) {
-    // 1. Khởi tạo state chuẩn
     const [formData, setFormData] = useState({
         name: "",
         birthDate: "",
