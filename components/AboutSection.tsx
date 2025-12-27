@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image, { StaticImageData } from "next/image";
-import teamImage from "../public/images/default-avatar.png";
+import teamImage from "../public/images/pulse2.jpg";
 
 type AboutSectionProps = {
     id?: string;
