@@ -13,6 +13,9 @@ type ViewPatientModalProps = {
         address: string;
         healthInsurance: boolean;
         insuranceNumber?: string;
+        citizenId?: string;
+        bloodType?: string;
+        allergies?: string;
     } | null;
 };
 
@@ -71,10 +74,34 @@ export default function ViewPatientModal({
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text text-gray-500">
+                                    Blood Type
+                                </span>
+                            </label>
+                            <p className="font-medium">
+                                {patient.bloodType || "N/A"}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text text-gray-500">
                                     Phone Number
                                 </span>
                             </label>
                             <p className="font-medium">{patient.phoneNumber}</p>
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text text-gray-500">
+                                    Citizen ID (CCCD)
+                                </span>
+                            </label>
+                            <p className="font-medium">
+                                {patient.citizenId || "N/A"}
+                            </p>
                         </div>
                     </div>
 
@@ -99,36 +126,49 @@ export default function ViewPatientModal({
                     <div className="form-control">
                         <label className="label">
                             <span className="label-text text-gray-500">
-                                Health Insurance
+                                Allergies
                             </span>
                         </label>
-                        <span
-                            className={`
-                                inline-flex items-center justify-center px-3 py-1.5 rounded-full 
-                                text-xs font-medium w-fit
-                                ${
-                                    patient.healthInsurance
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-yellow-100 text-yellow-700"
-                                }
-                            `}
+                        <p
+                            className={`font-medium ${
+                                patient.allergies ? "text-red-600" : ""
+                            }`}
                         >
-                            {patient.healthInsurance ? "Is Insured" : "No"}
-                        </span>
+                            {patient.allergies || "None"}
+                        </p>
                     </div>
 
-                    {patient.healthInsurance && patient.insuranceNumber && (
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text text-gray-500">
-                                    Insurance Number
+                                    Health Insurance
                                 </span>
                             </label>
-                            <p className="font-medium">
-                                {patient.insuranceNumber}
-                            </p>
+                            <span
+                                className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium w-fit ${
+                                    patient.healthInsurance
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-yellow-100 text-yellow-700"
+                                }`}
+                            >
+                                {patient.healthInsurance ? "Is Insured" : "No"}
+                            </span>
                         </div>
-                    )}
+
+                        {patient.healthInsurance && patient.insuranceNumber && (
+                            <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text text-gray-500">
+                                        Insurance Number
+                                    </span>
+                                </label>
+                                <p className="font-medium">
+                                    {patient.insuranceNumber}
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="modal-action">

@@ -15,7 +15,7 @@ type Patient = {
     name: string;
     birthDate: string;
     age?: number;
-    gender: "Male" | "Female";
+    gender: "Male" | "Female" | "Other";
     phoneNumber: string;
     email: string;
     address: string;
@@ -134,12 +134,12 @@ export default function PatientsPage() {
         setIsEditModalOpen(true);
     };
 
-    const handleAddPatient = (newPatient: Patient) => {
+    const handleAddPatient = (newPatient: Omit<Patient, "id">) => {
         console.log("Adding patient:", newPatient);
         setIsAddModalOpen(false);
     };
 
-    const handleSaveEdit = (id: string, updatedData: Patient) => {
+    const handleSaveEdit = (id: string, updatedData: Partial<Patient>) => {
         console.log("Saving edit for id:", id, updatedData);
         setIsEditModalOpen(false);
     };
