@@ -1,29 +1,23 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
 
 type AddPatientModalProps = {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (patient: {
-        name: string;
-        birthDate: string;
-        gender: "Male" | "Female" | "Other";
-        phoneNumber: string;
-        email: string;
-        address: string;
-        citizenId: string;
-        healthInsurance: boolean;
-        insuranceNumber?: string;
-        bloodType: string;
-        allergies: string;
-    }) => void;
+    onSuccess: () => void;
 };
 
 export default function AddPatientModal({
     isOpen,
     onClose,
-    onSave,
+    onSuccess,
 }: AddPatientModalProps) {
+    const router = useRouter();
+    const [loading, setLoading] = useState(false);
+
     const [formData, setFormData] = useState({
         name: "",
         birthDate: "",
@@ -31,9 +25,7 @@ export default function AddPatientModal({
         phoneNumber: "",
         citizenId: "",
         email: "",
-        address: "",
-        healthInsurance: false,
-        insuranceNumber: "",
+        healthInsuranceId: "",
         bloodType: "",
         allergies: "",
     });
@@ -57,13 +49,95 @@ export default function AddPatientModal({
         }
     };
 
-    const handleSave = () => {
-        if (isFormValid) {
-            onSave({
-                ...formData,
-                gender: formData.gender as "Male" | "Female" | "Other",
+    const handleSave = async () => {
+        if (!isFormValid) return;
+
+        setLoading(true);
+        try {
+            const generatedPassword =
+                Math.random().toString(36).slice(-8) + "1A@";
+
+            const registerBody = {
+                email: formData.email,
+                full_name: formData.name,
+                password: generatedPassword,
+                citizen_id: formData.citizenId,
+                phone: formData.phoneNumber,
+                gender: formData.gender === "Male",
+                birth_date: formData.birthDate,
+                roleDto: {
+                    name: "patient",
+                },
+            };
+
+            const regRes = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(registerBody),
             });
+
+            if (!regRes.ok) {
+                const err = await regRes.json();
+                throw new Error(err.message || "Registration failed");
+            }
+
+            const regData = await regRes.json();
+            const tempToken = regData.token;
+
+            const meRes = await fetch("/api/users/me", {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${tempToken}`,
+                },
+            });
+
+            if (!meRes.ok) throw new Error("Failed to fetch new user profile");
+
+            const meData = await meRes.json();
+            const newUserId = meData.id;
+
+            const patientBody = {
+                userId: newUserId,
+                healthInsuranceId: formData.healthInsuranceId,
+                bloodType: formData.bloodType,
+                allergies: formData.allergies,
+            };
+
+            console.log("Patient Body:", patientBody);
+
+            const token = Cookies.get("token");
+            if (!token) {
+                router.push("/login");
+                return;
+            }
+
+            const patientRes = await fetch("/api/patients", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(patientBody),
+            });
+
+            if (!patientRes.ok)
+                throw new Error("Failed to create patient record");
+
+            toast.success("Patient created successfully!");
+
+            console.log("Generated Password for new user:", generatedPassword);
+
+            onSuccess();
             handleClose();
+        } catch (error) {
+            console.error("Error creating patient:", error);
+            if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("Something went wrong");
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -78,8 +152,7 @@ export default function AddPatientModal({
         formData.phoneNumber &&
         formData.citizenId &&
         formData.email &&
-        formData.address &&
-        (!formData.healthInsurance || formData.insuranceNumber);
+        formData.healthInsuranceId;
 
     return (
         <div className={`modal ${isOpen ? "modal-open" : ""}`}>
@@ -195,22 +268,6 @@ export default function AddPatientModal({
                         </div>
                     </div>
 
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text">
-                                Address <span className="text-error">*</span>
-                            </span>
-                        </label>
-                        <input
-                            type="text"
-                            name="address"
-                            value={formData.address}
-                            onChange={handleChange}
-                            placeholder="123 Street, City"
-                            className="input input-bordered w-full"
-                        />
-                    </div>
-
                     <div className="grid grid-cols-2 gap-4">
                         <div className="form-control">
                             <label className="label">
@@ -223,14 +280,14 @@ export default function AddPatientModal({
                                 className="select select-bordered w-full"
                             >
                                 <option value="">Select Type</option>
-                                <option value="A+">A+</option>
-                                <option value="A-">A-</option>
-                                <option value="B+">B+</option>
-                                <option value="B-">B-</option>
-                                <option value="O+">O+</option>
-                                <option value="O-">O-</option>
-                                <option value="AB+">AB+</option>
-                                <option value="AB-">AB-</option>
+                                <option value="A">A</option>
+                                <option value="A_neg">A-</option>
+                                <option value="B">B</option>
+                                <option value="B_neg">B-</option>
+                                <option value="O">O</option>
+                                <option value="O_neg">O-</option>
+                                <option value="AB">AB</option>
+                                <option value="AB_neg">AB-</option>
                             </select>
                         </div>
 
@@ -248,57 +305,47 @@ export default function AddPatientModal({
                             />
                         </div>
                     </div>
-
                     <div className="form-control">
-                        <label className="label cursor-pointer justify-start gap-4">
-                            <input
-                                type="checkbox"
-                                name="healthInsurance"
-                                checked={formData.healthInsurance}
-                                onChange={handleChange}
-                                className="checkbox"
-                            />
+                        <label className="label">
                             <span className="label-text">
-                                Has Health Insurance
+                                Health Insurance ID{" "}
+                                <span className="text-error">*</span>
                             </span>
                         </label>
+                        <input
+                            type="text"
+                            name="healthInsuranceId"
+                            value={formData.healthInsuranceId}
+                            onChange={handleChange}
+                            placeholder="BH123456789"
+                            className="input input-bordered w-full"
+                        />
                     </div>
-
-                    {formData.healthInsurance && (
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text">
-                                    Insurance Number{" "}
-                                    <span className="text-error">*</span>
-                                </span>
-                            </label>
-                            <input
-                                type="text"
-                                name="insuranceNumber"
-                                value={formData.insuranceNumber}
-                                onChange={handleChange}
-                                placeholder="BH123456789"
-                                className="input input-bordered w-full"
-                            />
-                        </div>
-                    )}
                 </div>
 
                 <div className="modal-action">
-                    <button onClick={handleClose} className="btn">
+                    <button
+                        onClick={handleClose}
+                        className="btn"
+                        disabled={loading}
+                    >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={!isFormValid}
+                        disabled={!isFormValid || loading}
                         className="btn btn-primary"
                     >
-                        Save
+                        {loading ? (
+                            <span className="loading loading-spinner"></span>
+                        ) : (
+                            "Save"
+                        )}
                     </button>
                 </div>
             </div>
             <div className="modal-backdrop" onClick={handleClose}>
-                <button>close</button>
+                <button disabled={loading}>close</button>
             </div>
         </div>
     );
