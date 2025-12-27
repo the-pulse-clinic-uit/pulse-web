@@ -14,57 +14,106 @@ type Patient = {
     id: string;
     name: string;
     birthDate: string;
-    gender: "Male" | "Female" | "Other";
+    age?: number;
+    gender: "Male" | "Female";
     phoneNumber: string;
     email: string;
     address: string;
     healthInsurance: boolean;
     insuranceNumber?: string;
+    citizenId?: string;
+    bloodType?: string;
+    allergies?: string;
 };
+
+interface PatientDTO {
+    id: string;
+    userDto: {
+        fullName: string;
+        birthDate: string;
+        gender: boolean;
+        phone: string;
+        email: string;
+        address: string;
+        citizenId: string;
+    };
+    healthInsuranceId: string | null;
+    bloodType: string;
+    allergies: string;
+}
+
+interface UserData {
+    fullName: string;
+    avatarUrl: string;
+}
 
 export default function PatientsPage() {
     const router = useRouter();
     const [patients, setPatients] = useState<Patient[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<UserData | null>(null);
+
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<Patient | null>(
         null
     );
-    const [user, setUser] = useState<UserData | null>(null);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const token = Cookies.get("token");
-
         if (!token) {
             router.push("/login");
             return;
         }
 
-        const fetchUserData = async () => {
+        const fetchData = async () => {
             try {
-                const response = await fetch("/api/users/me", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                const userRes = await fetch("/api/users/me", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (userRes.ok) setUser(await userRes.json());
+
+                const patientRes = await fetch("/api/patients", {
+                    headers: { Authorization: `Bearer ${token}` },
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setUser(data);
-                } else {
+                if (patientRes.ok) {
+                    const data = await patientRes.json();
+
+                    const formattedPatients: Patient[] = data.map(
+                        (item: PatientDTO) => ({
+                            id: item.id,
+                            name: item.userDto.fullName || "N/A",
+                            birthDate: item.userDto.birthDate || "",
+                            gender: item.userDto.gender ? "Male" : "Female",
+                            phoneNumber: item.userDto.phone || "",
+                            email: item.userDto.email || "",
+                            address: item.userDto.address || "No address",
+                            healthInsurance: !!item.healthInsuranceId,
+                            insuranceNumber: item.healthInsuranceId || "",
+                            citizenId: item.userDto.citizenId,
+                            bloodType: item.bloodType,
+                            allergies: item.allergies,
+                        })
+                    );
+
+                    setPatients(formattedPatients);
+                } else if (
+                    patientRes.status === 401 ||
+                    patientRes.status === 403
+                ) {
                     Cookies.remove("token");
                     router.push("/login");
                 }
             } catch (error) {
-                console.error("Failed to fetch user:", error);
+                console.error("Error fetching data:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchUserData();
+        fetchData();
     }, [router]);
 
     if (loading) {
@@ -85,70 +134,33 @@ export default function PatientsPage() {
         setIsEditModalOpen(true);
     };
 
-    const handleAddPatient = (newPatient: {
-        name: string;
-        birthDate: string;
-        gender: "Male" | "Female" | "Other";
-        phoneNumber: string;
-        email: string;
-        address: string;
-        healthInsurance: boolean;
-        insuranceNumber?: string;
-    }) => {
-        const newId = `#${String(patients.length + 1).padStart(3, "0")}`;
-        const patient: Patient = {
-            id: newId,
-            ...newPatient,
-        };
-        setPatients((prev) => [...prev, patient]);
+    const handleAddPatient = (newPatient: Patient) => {
+        console.log("Adding patient:", newPatient);
         setIsAddModalOpen(false);
     };
 
-    const handleSaveEdit = (
-        id: string,
-        updatedPatient: {
-            name: string;
-            age: number;
-            gender: "Male" | "Female" | "Other";
-            phoneNumber: string;
-            email: string;
-            address: string;
-            healthInsurance: boolean;
-            insuranceNumber?: string;
-        }
-    ) => {
-        setPatients((prev) =>
-            prev.map((patient) =>
-                patient.id === id ? { ...patient, ...updatedPatient } : patient
-            )
-        );
+    const handleSaveEdit = (id: string, updatedData: Patient) => {
+        console.log("Saving edit for id:", id, updatedData);
         setIsEditModalOpen(false);
-        setSelectedPatient(null);
     };
 
     const patientColumns: ColumnDef<Patient>[] = [
-        { header: "ID", accessorKey: "id", className: "font-bold" },
         { header: "Name", accessorKey: "name", className: "font-medium" },
         { header: "Birth Date", accessorKey: "birthDate" },
         { header: "Gender", accessorKey: "gender" },
-        { header: "Phone Number", accessorKey: "phoneNumber" },
-        { header: "Email", accessorKey: "email" },
+        { header: "Phone", accessorKey: "phoneNumber" },
         { header: "Address", accessorKey: "address" },
         {
-            header: "Health Insurance",
+            header: "Insurance",
             cell: (row) => (
                 <span
-                    className={`
-            inline-flex items-center justify-center px-3 py-1.5 rounded-full 
-            text-xs font-medium whitespace-nowrap 
-            ${
-                row.healthInsurance
-                    ? "bg-green-100 text-green-700"
-                    : "bg-yellow-100 text-yellow-700"
-            }
-          `}
+                    className={`px-2 py-1 rounded text-xs font-semibold ${
+                        row.healthInsurance
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-600"
+                    }`}
                 >
-                    {row.healthInsurance ? "Is Insured" : "No"}
+                    {row.healthInsurance ? row.insuranceNumber : "No"}
                 </span>
             ),
         },
@@ -158,13 +170,13 @@ export default function PatientsPage() {
                 <div className="flex gap-2">
                     <button
                         onClick={() => handleView(row)}
-                        className="btn btn-xs bg-blue-100 text-blue-700 border-none hover:bg-blue-200"
+                        className="btn btn-xs btn-outline"
                     >
                         View
                     </button>
                     <button
                         onClick={() => handleEdit(row)}
-                        className="btn btn-xs bg-purple-100 text-purple-700 border-none hover:bg-purple-200"
+                        className="btn btn-xs btn-primary"
                     >
                         Edit
                     </button>
@@ -186,10 +198,12 @@ export default function PatientsPage() {
                 onFilter={() => {}}
                 onAdd={() => setIsAddModalOpen(true)}
             />
+
             <DataTable columns={patientColumns} data={patients} />
+
             <Pagination
                 currentPage={1}
-                totalPages={10}
+                totalPages={1}
                 onPageChange={() => {}}
             />
 
@@ -201,19 +215,13 @@ export default function PatientsPage() {
 
             <ViewPatientModal
                 isOpen={isViewModalOpen}
-                onClose={() => {
-                    setIsViewModalOpen(false);
-                    setSelectedPatient(null);
-                }}
+                onClose={() => setIsViewModalOpen(false)}
                 patient={selectedPatient}
             />
 
             <EditPatientModal
                 isOpen={isEditModalOpen}
-                onClose={() => {
-                    setIsEditModalOpen(false);
-                    setSelectedPatient(null);
-                }}
+                onClose={() => setIsEditModalOpen(false)}
                 onSave={handleSaveEdit}
                 patient={selectedPatient}
             />
