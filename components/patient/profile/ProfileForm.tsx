@@ -1,83 +1,256 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProfileSection from "./ProfileSection";
 import FormInput from "./FormInput";
 import FormSelect from "./FormSelect";
 import FormTextarea from "./FormTextArea";
+
 import SaveButton from "./SaveButton";
+import { toast } from "react-hot-toast";
 
 const ProfileForm = () => {
-  const [formData, setFormData] = useState({
-    fullName: "Sarah Johnson",
-    email: "sarah.johnson@email.com",
-    phone: "0777929292",
-    dateOfBirth: "1990-05-15",
-    gender: "Female",
-    address: "Thu Duc, Ho Chi Minh City",
-    city: "Ho Chi Minh City",
-    state: "HCM",
-    zipCode: "700000",
-    bloodType: "O+",
-    height: "170 cm",
-    weight: "65 kg",
-    insurance: "Blue Cross Blue Shield",
-    policyNumber: "BCBS-123456789",
-    emergencyContact: "John Johnson",
-    emergencyPhone: "0777989898",
-    allergies: "Penicillin, Peanuts",
-  });
+    const [loading, setLoading] = useState(true);
+    const [formData, setFormData] = useState({
+        fullName: "",
+        email: "",
+        phone: "",
+        citizenId: "",
+        dateOfBirth: "",
+        gender: "",
+        address: "",
+        city: "",
+        bloodType: "",
+        height: "",
+        weight: "",
+        policyNumber: "",
+        allergies: "",
+    });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                if (!token) {
+                    throw new Error("No authentication token found");
+                }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    alert("Profile updated successfully!");
-  };
+                const backendUrl =
+                    process.env.NEXT_PUBLIC_BACKEND_API_URL || "localhost:8080";
+                const response = await fetch(`http://${backendUrl}/users/me`, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                });
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <ProfileSection title="Personal Information">
-        <FormInput label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} />
-        <FormInput label="Email" name="email" type="email" value={formData.email} onChange={handleChange} />
-        <FormInput label="Phone" name="phone" value={formData.phone} onChange={handleChange} />
-        <FormInput label="Date of Birth" name="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={handleChange} />
-        <FormSelect label="Gender" name="gender" value={formData.gender} onChange={handleChange}
-          options={["Male", "Female", "Other", "Prefer not to say"]}
-        />
-      </ProfileSection>
+                if (!response.ok) {
+                    throw new Error("Failed to fetch user data");
+                }
 
-      <ProfileSection title="Address">
-        <FormInput label="Street Address" name="address" value={formData.address} onChange={handleChange} />
-        <FormInput label="City" name="city" value={formData.city} onChange={handleChange} />
-        <FormInput label="State" name="state" value={formData.state} onChange={handleChange} />
-        <FormInput label="ZIP Code" name="zipCode" value={formData.zipCode} onChange={handleChange} />
-      </ProfileSection>
+                const userData = await response.json();
 
-      <ProfileSection title="Medical Information">
-        <FormSelect label="Blood Type" name="bloodType" value={formData.bloodType} onChange={handleChange}
-          options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]}
-        />
-        <FormInput label="Height" name="height" value={formData.height} onChange={handleChange} />
-        <FormInput label="Weight" name="weight" value={formData.weight} onChange={handleChange} />
-        <FormTextarea label="Known Allergies" name="allergies" value={formData.allergies} onChange={handleChange} />
-      </ProfileSection>
+                localStorage.setItem("user", JSON.stringify(userData));
 
-      <ProfileSection title="Insurance Information">
-        <FormInput label="Insurance Provider" name="insurance" value={formData.insurance} onChange={handleChange} />
-        <FormInput label="Policy Number" name="policyNumber" value={formData.policyNumber} onChange={handleChange} />
-      </ProfileSection>
+                setFormData({
+                    fullName: userData.fullName || "",
+                    email: userData.email || "",
+                    phone: userData.phone || "",
+                    citizenId: userData.citizenId || "",
+                    dateOfBirth: userData.birthDate || "",
+                    gender: userData.gender ? "Male" : "Female",
+                    address: userData.address || "",
+                    city: "",
+                    bloodType: "",
+                    height: "",
+                    weight: "",
+                    policyNumber: "",
+                    allergies: "",
+                });
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+                const userStr = localStorage.getItem("user");
+                if (userStr) {
+                    try {
+                        const userData = JSON.parse(userStr);
+                        setFormData({
+                            fullName: userData.fullName || "",
+                            email: userData.email || "",
+                            phone: userData.phone || "",
+                            citizenId: userData.citizenId || "",
+                            dateOfBirth: userData.birthDate || "",
+                            gender: userData.gender ? "Male" : "Female",
+                            address: userData.address || "",
+                            city: "",
+                            bloodType: "",
+                            height: "",
+                            weight: "",
+                            policyNumber: "",
+                            allergies: "",
+                        });
+                    } catch (parseError) {
+                        console.error("Error parsing user data:", parseError);
+                    }
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
 
-      <ProfileSection title="Emergency Contact">
-        <FormInput label="Contact Name" name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} />
-        <FormInput label="Contact Phone" name="emergencyPhone" value={formData.emergencyPhone} onChange={handleChange} />
-      </ProfileSection>
+        fetchUserData();
+    }, []);
 
-      <SaveButton />
-    </form>
-  );
+    const handleChange = (
+        e: React.ChangeEvent<
+            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+        >
+    ) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("No authentication token found");
+
+            const backendUrl =
+                process.env.NEXT_PUBLIC_BACKEND_API_URL || "localhost:8080";
+            const payload = {
+                fullName: formData.fullName,
+                email: formData.email,
+                phone: formData.phone,
+                citizenId: formData.citizenId,
+                birthDate: formData.dateOfBirth,
+                gender: formData.gender === "Male",
+                address: formData.address,
+            };
+
+            const response = await fetch(`http://${backendUrl}/users/me`, {
+                method: "PATCH",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) throw new Error("Failed to update profile");
+            const updatedUser = await response.json();
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            toast.success("Profile updated successfully!");
+        } catch (error) {
+            toast.error("Failed to update profile. Please try again.");
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <ProfileSection title="Personal Information">
+                <FormInput
+                    label="Full Name"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                />
+                <FormInput
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                />
+                <FormInput
+                    label="Phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                />
+                <FormInput
+                    label="Citizen ID"
+                    name="citizenId"
+                    value={formData.citizenId}
+                    onChange={handleChange}
+                />
+                <FormInput
+                    label="Date of Birth"
+                    name="dateOfBirth"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={handleChange}
+                />
+                <FormSelect
+                    label="Gender"
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    options={["Male", "Female", "Other", "Prefer not to say"]}
+                />
+            </ProfileSection>
+
+            <ProfileSection title="Address">
+                <FormInput
+                    label="Street Address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                />
+                <FormInput
+                    label="City"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                />
+            </ProfileSection>
+
+            <ProfileSection title="Medical Information">
+                <FormSelect
+                    label="Blood Type"
+                    name="bloodType"
+                    value={formData.bloodType}
+                    onChange={handleChange}
+                    options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]}
+                />
+                <FormInput
+                    label="Height"
+                    name="height"
+                    value={formData.height}
+                    onChange={handleChange}
+                />
+                <FormInput
+                    label="Weight"
+                    name="weight"
+                    value={formData.weight}
+                    onChange={handleChange}
+                />
+                <FormTextarea
+                    label="Known Allergies"
+                    name="allergies"
+                    value={formData.allergies}
+                    onChange={handleChange}
+                />
+            </ProfileSection>
+
+            <ProfileSection title="Insurance Information">
+                <FormInput
+                    label="Policy Number"
+                    name="policyNumber"
+                    value={formData.policyNumber}
+                    onChange={handleChange}
+                />
+            </ProfileSection>
+            <SaveButton />
+        </form>
+    );
 };
 
 export default ProfileForm;
