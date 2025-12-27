@@ -1,5 +1,21 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
+
+type Gender = "Male" | "Female" | "Other";
+
+type Patient = {
+    id: string;
+    name: string;
+    birthDate: string;
+    age?: number;
+    gender: Gender;
+    phoneNumber: string;
+    email: string;
+    address: string;
+    healthInsurance: boolean;
+    insuranceNumber?: string;
+};
 
 type EditPatientModalProps = {
     isOpen: boolean;
@@ -9,7 +25,7 @@ type EditPatientModalProps = {
         patient: {
             name: string;
             age: number;
-            gender: "Male" | "Female" | "Other";
+            gender: Gender;
             phoneNumber: string;
             email: string;
             address: string;
@@ -17,18 +33,41 @@ type EditPatientModalProps = {
             insuranceNumber?: string;
         }
     ) => void;
-    patient: {
-        id: string;
-        name: string;
-        birthDate: string;
-        gender: "Male" | "Female" | "Other";
-        phoneNumber: string;
-        email: string;
-        address: string;
-        healthInsurance: boolean;
-        insuranceNumber?: string;
-    } | null;
+    patient: Patient | null;
 };
+
+type FormState = {
+    name: string;
+    age: string;
+    gender: Gender | "";
+    phoneNumber: string;
+    email: string;
+    address: string;
+    healthInsurance: boolean;
+    insuranceNumber: string;
+};
+
+const INITIAL_FORM_STATE: FormState = {
+    name: "",
+    age: "",
+    gender: "",
+    phoneNumber: "",
+    email: "",
+    address: "",
+    healthInsurance: false,
+    insuranceNumber: "",
+};
+
+const mapPatientToForm = (patient: Patient): FormState => ({
+    name: patient.name,
+    age: patient.age ? patient.age.toString() : "",
+    gender: patient.gender,
+    phoneNumber: patient.phoneNumber,
+    email: patient.email,
+    address: patient.address,
+    healthInsurance: patient.healthInsurance,
+    insuranceNumber: patient.insuranceNumber ?? "",
+});
 
 export default function EditPatientModal({
     isOpen,
@@ -36,45 +75,15 @@ export default function EditPatientModal({
     onSave,
     patient,
 }: EditPatientModalProps) {
-    const getInitialFormData = () => {
-        if (patient && isOpen) {
-            return {
-                name: patient.name,
-                birthDate: patient.birthDate,
-                gender: patient.gender,
-                phoneNumber: patient.phoneNumber,
-                email: patient.email,
-                address: patient.address,
-                healthInsurance: patient.healthInsurance,
-                insuranceNumber: patient.insuranceNumber || "",
-            };
-        }
-        return {
-            name: "",
-            age: "",
-            gender: "" as "Male" | "Female" | "Other" | "",
-            phoneNumber: "",
-            email: "",
-            address: "",
-            healthInsurance: false,
-            insuranceNumber: "",
-        };
-    };
-
-    const [formData, setFormData] = useState(getInitialFormData());
-
-    // Reset form when modal opens with new patient
-    useEffect(() => {
-        if (isOpen) {
-            setFormData(getInitialFormData());
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [patient?.id, isOpen]);
+    const [formData, setFormData] = useState<FormState>(() =>
+        patient ? mapPatientToForm(patient) : INITIAL_FORM_STATE
+    );
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
         const { name, value, type } = e.target;
+
         if (type === "checkbox") {
             setFormData((prev) => ({
                 ...prev,
@@ -89,21 +98,20 @@ export default function EditPatientModal({
     };
 
     const handleSave = () => {
-        if (
-            patient &&
-            formData.name &&
-            formData.age &&
-            formData.gender &&
-            formData.phoneNumber &&
-            formData.email &&
-            formData.address
-        ) {
-            onSave(patient.id, {
-                ...formData,
-                age: parseInt(formData.age),
-                gender: formData.gender as "Male" | "Female" | "Other",
-            });
-        }
+        if (!patient) return;
+
+        onSave(patient.id, {
+            name: formData.name,
+            age: Number(formData.age),
+            gender: formData.gender as Gender,
+            phoneNumber: formData.phoneNumber,
+            email: formData.email,
+            address: formData.address,
+            healthInsurance: formData.healthInsurance,
+            insuranceNumber: formData.healthInsurance
+                ? formData.insuranceNumber
+                : undefined,
+        });
     };
 
     const isFormValid =
@@ -145,7 +153,6 @@ export default function EditPatientModal({
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
-                                placeholder="Enter patient name"
                                 className="input input-bordered w-full"
                             />
                         </div>
@@ -161,7 +168,6 @@ export default function EditPatientModal({
                                 name="age"
                                 value={formData.age}
                                 onChange={handleChange}
-                                placeholder="Enter age"
                                 className="input input-bordered w-full"
                             />
                         </div>
@@ -199,7 +205,6 @@ export default function EditPatientModal({
                                 name="phoneNumber"
                                 value={formData.phoneNumber}
                                 onChange={handleChange}
-                                placeholder="0979010101"
                                 className="input input-bordered w-full"
                             />
                         </div>
@@ -216,7 +221,6 @@ export default function EditPatientModal({
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            placeholder="patient@gmail.com"
                             className="input input-bordered w-full"
                         />
                     </div>
@@ -232,7 +236,6 @@ export default function EditPatientModal({
                             name="address"
                             value={formData.address}
                             onChange={handleChange}
-                            placeholder="Thu Duc, Ho Chi Minh city"
                             className="input input-bordered w-full"
                         />
                     </div>
@@ -265,7 +268,6 @@ export default function EditPatientModal({
                                 name="insuranceNumber"
                                 value={formData.insuranceNumber}
                                 onChange={handleChange}
-                                placeholder="BH123456789"
                                 className="input input-bordered w-full"
                             />
                         </div>
@@ -285,6 +287,7 @@ export default function EditPatientModal({
                     </button>
                 </div>
             </div>
+
             <div className="modal-backdrop" onClick={onClose}>
                 <button>close</button>
             </div>
