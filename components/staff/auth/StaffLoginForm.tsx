@@ -120,12 +120,6 @@ const StaffLoginForm = () => {
                                     <span className="label-text text-gray-600 font-semibold">
                                         Password
                                     </span>
-                                    <Link
-                                        href="/forgot-password"
-                                        className="label-text-alt link link-hover text-primary font-semibold"
-                                    >
-                                        Forgot?
-                                    </Link>
                                 </label>
                                 <div className="relative">
                                     <input
@@ -174,16 +168,6 @@ const StaffLoginForm = () => {
                         >
                             Back to Role Selection
                         </Link>
-
-                        <div className="text-center mt-6 text-sm text-gray-600">
-                            Don&apos;t have an account?{" "}
-                            <Link
-                                href="http://staff.localhost:3000/register"
-                                className="text-primary font-bold hover:underline"
-                            >
-                                Sign Up
-                            </Link>
-                        </div>
                     </div>
                 </div>
             </div>
