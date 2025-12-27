@@ -3,7 +3,7 @@
 import React, { CSSProperties, useMemo } from "react";
 import Image from "next/image";
 import Button from "@/components/Button";
-import heroImage from "../public/images/default-avatar.png";
+import heroImage from "../public/images/pulse1.jpg";
 
 const HeroSection = ({ id = "home" }: { id?: string }) => {
     const stats = useMemo(
@@ -19,7 +19,7 @@ const HeroSection = ({ id = "home" }: { id?: string }) => {
     const delay03s: CSSProperties = { animationDelay: "0.3s" };
 
     return (
-        <section id={id} className="min-h-screen pt-12 scroll-mt-28">
+        <section id={id} className="min-h-screen pt-24 scroll-mt-28">
             <div className="container mx-auto grid lg:grid-cols-2 gap-12 items-center py-12">
                 <div className="space-y-8">
                     <h1 className="text-5xl font-bold">
@@ -53,7 +53,7 @@ const HeroSection = ({ id = "home" }: { id?: string }) => {
                 <Image
                     src={heroImage}
                     alt="Hero"
-                    width={900}
+                    width={700}
                     height={700}
                     className="rounded-3xl shadow-xl"
                     priority
