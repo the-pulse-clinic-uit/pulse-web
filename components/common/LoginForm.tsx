@@ -2,10 +2,74 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
 const LoginForm = () => {
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const [formData, setFormData] = useState({
+        email: "",
+        password: "",
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+        setError("");
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError("");
+
+        try {
+            if (!formData.email || !formData.password) {
+                setError("Please fill in all fields");
+                setLoading(false);
+                return;
+            }
+
+            const response = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.error || "Login failed");
+                setLoading(false);
+                return;
+            }
+
+            if (data.token) {
+                localStorage.setItem("token", data.token);
+
+                if (data.user) {
+                    localStorage.setItem("user", JSON.stringify(data.user));
+                }
+
+                router.push("/dashboard");
+            } else {
+                setError("No token received");
+                setLoading(false);
+            }
+        } catch (err) {
+            setError("An error occurred. Please try again.");
+            setLoading(false);
+        }
+    };
 
     return (
         <div
@@ -20,7 +84,13 @@ const LoginForm = () => {
                             Login to your account
                         </h2>
 
-                        <form onSubmit={(e) => e.preventDefault()}>
+                        <form onSubmit={handleSubmit}>
+                            {error && (
+                                <div className="alert alert-error mb-4 py-2 rounded-xl">
+                                    <span className="text-sm">{error}</span>
+                                </div>
+                            )}
+
                             <div className="form-control mb-5">
                                 <label className="label pl-0">
                                     <span className="label-text text-gray-600 font-semibold">
@@ -29,8 +99,12 @@ const LoginForm = () => {
                                 </label>
                                 <input
                                     type="email"
-                                    placeholder="balamia@gmail.com"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    placeholder="example@gmail.com"
                                     className="input input-bordered w-full bg-gray-50 border-gray-200 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 rounded-xl"
+                                    required
                                 />
                             </div>
                             <div className="form-control mb-6">
@@ -39,7 +113,7 @@ const LoginForm = () => {
                                         Password
                                     </span>
                                     <Link
-                                        href="/site/forgot-password"
+                                        href="/forgot-password"
                                         className="label-text-alt link link-hover text-purple-600 font-semibold"
                                     >
                                         Forgot ?
@@ -50,8 +124,12 @@ const LoginForm = () => {
                                         type={
                                             showPassword ? "text" : "password"
                                         }
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
                                         placeholder="Enter your password"
                                         className="input input-bordered w-full pr-12 bg-gray-50 border-gray-200 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 rounded-xl"
+                                        required
                                     />
                                     <button
                                         type="button"
@@ -69,8 +147,12 @@ const LoginForm = () => {
                                 </div>
                             </div>
                             <div className="form-control">
-                                <button className="btn border-none bg-purple-600 hover:bg-purple-700 text-white normal-case text-lg font-semibold rounded-xl h-12 shadow-md hover:shadow-lg transition-all w-full">
-                                    Login now
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="btn border-none bg-purple-600 hover:bg-purple-700 text-white normal-case text-lg font-semibold rounded-xl h-12 shadow-md hover:shadow-lg transition-all w-full disabled:bg-purple-400"
+                                >
+                                    {loading ? "Logging in..." : "Login now"}
                                 </button>
                             </div>
                         </form>
