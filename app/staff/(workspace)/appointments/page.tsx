@@ -8,12 +8,6 @@ import AddAppointmentModal from "@/components/staff/appointments/AddAppointmentM
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
-interface UserData {
-    fullName: string;
-    avatarUrl: string;
-    email: string;
-}
-
 type Appointment = {
     id: string;
     name: string;

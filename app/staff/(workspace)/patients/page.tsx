@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DataTable, { ColumnDef } from "@/components/staff/DataTable";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
@@ -7,6 +7,8 @@ import Pagination from "@/components/ui/Pagination";
 import AddPatientModal from "@/components/staff/patients/AddPatientModal";
 import ViewPatientModal from "@/components/staff/patients/ViewPatientModal";
 import EditPatientModal from "@/components/staff/patients/EditPatientModal";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 type Patient = {
     id: string;
@@ -76,6 +78,7 @@ const mockPatientData: Patient[] = [
 ];
 
 export default function PatientsPage() {
+    const router = useRouter();
     const [patients, setPatients] = useState(mockPatientData);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -83,6 +86,49 @@ export default function PatientsPage() {
     const [selectedPatient, setSelectedPatient] = useState<Patient | null>(
         null
     );
+    const [user, setUser] = useState<UserData | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const token = Cookies.get("token");
+
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+
+        const fetchUserData = async () => {
+            try {
+                const response = await fetch("/api/users/me", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setUser(data);
+                } else {
+                    Cookies.remove("token");
+                    router.push("/login");
+                }
+            } catch (error) {
+                console.error("Failed to fetch user:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, [router]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <span className="loading loading-spinner loading-lg text-primary"></span>
+            </div>
+        );
+    }
 
     const handleView = (patient: Patient) => {
         setSelectedPatient(patient);
@@ -184,7 +230,11 @@ export default function PatientsPage() {
 
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
-            <Header tabName="Manage Patients" userName="Nguyen Huu Duy" />
+            <Header
+                tabName="Manage Patients"
+                userName={user?.fullName}
+                avatarUrl={user?.avatarUrl}
+            />
             <Toolbar
                 buttonName="Patient"
                 onSearch={() => {}}
