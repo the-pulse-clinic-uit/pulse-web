@@ -5,7 +5,9 @@ import ProfileSection from "./ProfileSection";
 import FormInput from "./FormInput";
 import FormSelect from "./FormSelect";
 import FormTextarea from "./FormTextArea";
+
 import SaveButton from "./SaveButton";
+import { toast } from "react-hot-toast";
 
 const ProfileForm = () => {
     const [loading, setLoading] = useState(true);
@@ -110,9 +112,41 @@ const ProfileForm = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        alert("Profile updated successfully!");
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("No authentication token found");
+
+            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || "localhost:8080";
+            const payload = {
+                fullName: formData.fullName,
+                email: formData.email,
+                phone: formData.phone,
+                citizenId: formData.citizenId,
+                birthDate: formData.dateOfBirth,
+                gender: formData.gender === "Male",
+                address: formData.address,
+                // Add more fields if backend supports
+            };
+
+            const response = await fetch(`http://${backendUrl}/users/me`, {
+                method: "PATCH",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) throw new Error("Failed to update profile");
+            const updatedUser = await response.json();
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            toast.success("Profile updated successfully!");
+        } catch (error) {
+            toast.error("Failed to update profile. Please try again.");
+        }
     };
 
     if (loading) {
