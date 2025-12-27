@@ -75,10 +75,7 @@ const DoctorLoginForm = () => {
     };
 
     return (
-        <div
-            className="min-h-screen bg-cover bg-center flex items-center justify-center"
-            style={{ backgroundImage: "url('/images/login-bg.png')" }}
-        >
+        <div className="min-h-screen bg-cover bg-center flex items-center justify-center">
             <div className="w-full max-w-md p-6">
                 <div className="card bg-white shadow-2xl rounded-3xl">
                     <div className="card-body p-8 lg:p-10">

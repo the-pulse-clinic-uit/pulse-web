@@ -2,6 +2,8 @@
 import { LogOut } from "lucide-react";
 import SidebarItem from "./SidebarItem";
 import { MENU_ITEMS } from "@/constants/staff-menu-items";
+import logo from "../../public/images/logo.png";
+import Image from "next/image";
 
 const Sidebar = () => {
     return (
@@ -9,10 +11,12 @@ const Sidebar = () => {
             <div className="p-6 flex items-center justify-center border-b border-base-200">
                 <div className="avatar">
                     <div className="w-16 rounded">
-                        <img
-                            src="/images/logo.png"
-                            alt="Clinic Logo"
-                            className="object-contain w-5 h-5"
+                        <Image
+                            src={logo}
+                            alt="The Pulse Clinic"
+                            width={48}
+                            height={48}
+                            className="w-20 h-20"
                         />
                     </div>
                 </div>

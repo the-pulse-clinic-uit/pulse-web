@@ -89,10 +89,7 @@ const DoctorRegisterForm = () => {
         "input input-bordered w-full bg-gray-50 border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary rounded-xl";
 
     return (
-        <div
-            className="min-h-screen bg-cover bg-center flex items-center justify-center"
-            style={{ backgroundImage: "url('/images/login-bg.png')" }}
-        >
+        <div className="min-h-screen bg-cover bg-center flex items-center justify-center">
             <div className="w-full max-w-md p-6">
                 <div className="card bg-white shadow-2xl rounded-3xl max-h-[90vh] flex flex-col">
                     <div className="card-body p-8 lg:p-10 flex flex-col overflow-hidden">
