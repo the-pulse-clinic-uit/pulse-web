@@ -1,18 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type AddPatientModalProps = {
     isOpen: boolean;
     onClose: () => void;
     onSave: (patient: {
         name: string;
-        age: number;
+        birthDate: string;
         gender: "Male" | "Female" | "Other";
         phoneNumber: string;
         email: string;
         address: string;
+        citizenId: string;
         healthInsurance: boolean;
         insuranceNumber?: string;
+        bloodType: string;
+        allergies: string;
     }) => void;
 };
 
@@ -21,25 +24,31 @@ export default function AddPatientModal({
     onClose,
     onSave,
 }: AddPatientModalProps) {
+    // 1. Khởi tạo state chuẩn
     const [formData, setFormData] = useState({
         name: "",
-        age: "",
+        birthDate: "",
         gender: "" as "Male" | "Female" | "Other" | "",
         phoneNumber: "",
+        citizenId: "",
         email: "",
         address: "",
         healthInsurance: false,
         insuranceNumber: "",
+        bloodType: "",
+        allergies: "",
     });
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
         const { name, value, type } = e.target;
+
         if (type === "checkbox") {
+            const checked = (e.target as HTMLInputElement).checked;
             setFormData((prev) => ({
                 ...prev,
-                [name]: (e.target as HTMLInputElement).checked,
+                [name]: checked,
             }));
         } else {
             setFormData((prev) => ({
@@ -50,17 +59,9 @@ export default function AddPatientModal({
     };
 
     const handleSave = () => {
-        if (
-            formData.name &&
-            formData.age &&
-            formData.gender &&
-            formData.phoneNumber &&
-            formData.email &&
-            formData.address
-        ) {
+        if (isFormValid) {
             onSave({
                 ...formData,
-                age: parseInt(formData.age),
                 gender: formData.gender as "Male" | "Female" | "Other",
             });
             handleClose();
@@ -68,24 +69,15 @@ export default function AddPatientModal({
     };
 
     const handleClose = () => {
-        setFormData({
-            name: "",
-            age: "",
-            gender: "",
-            phoneNumber: "",
-            email: "",
-            address: "",
-            healthInsurance: false,
-            insuranceNumber: "",
-        });
         onClose();
     };
 
     const isFormValid =
         formData.name &&
-        formData.age &&
+        formData.birthDate &&
         formData.gender &&
         formData.phoneNumber &&
+        formData.citizenId &&
         formData.email &&
         formData.address &&
         (!formData.healthInsurance || formData.insuranceNumber);
@@ -117,15 +109,15 @@ export default function AddPatientModal({
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text">
-                                    Age <span className="text-error">*</span>
+                                    Birth Date{" "}
+                                    <span className="text-error">*</span>
                                 </span>
                             </label>
                             <input
-                                type="number"
-                                name="age"
-                                value={formData.age}
+                                type="date"
+                                name="birthDate"
+                                value={formData.birthDate}
                                 onChange={handleChange}
-                                placeholder="Enter age"
                                 className="input input-bordered w-full"
                             />
                         </div>
@@ -169,20 +161,39 @@ export default function AddPatientModal({
                         </div>
                     </div>
 
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text">
-                                Email <span className="text-error">*</span>
-                            </span>
-                        </label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            placeholder="patient@gmail.com"
-                            className="input input-bordered w-full"
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">
+                                    Citizen ID{" "}
+                                    <span className="text-error">*</span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                name="citizenId"
+                                value={formData.citizenId}
+                                onChange={handleChange}
+                                placeholder="00123456789"
+                                className="input input-bordered w-full"
+                            />
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">
+                                    Email <span className="text-error">*</span>
+                                </span>
+                            </label>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="patient@gmail.com"
+                                className="input input-bordered w-full"
+                            />
+                        </div>
                     </div>
 
                     <div className="form-control">
@@ -196,9 +207,47 @@ export default function AddPatientModal({
                             name="address"
                             value={formData.address}
                             onChange={handleChange}
-                            placeholder="Thu Duc, Ho Chi Minh city"
+                            placeholder="123 Street, City"
                             className="input input-bordered w-full"
                         />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Blood Type</span>
+                            </label>
+                            <select
+                                name="bloodType"
+                                value={formData.bloodType}
+                                onChange={handleChange}
+                                className="select select-bordered w-full"
+                            >
+                                <option value="">Select Type</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                            </select>
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Allergies</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="allergies"
+                                value={formData.allergies}
+                                onChange={handleChange}
+                                placeholder="Peanuts, Penicillin..."
+                                className="input input-bordered w-full"
+                            />
+                        </div>
                     </div>
 
                     <div className="form-control">

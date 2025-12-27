@@ -13,7 +13,7 @@ import Cookies from "js-cookie";
 type Patient = {
     id: string;
     name: string;
-    age: number;
+    birthDate: string;
     gender: "Male" | "Female" | "Other";
     phoneNumber: string;
     email: string;
@@ -22,64 +22,9 @@ type Patient = {
     insuranceNumber?: string;
 };
 
-const mockPatientData: Patient[] = [
-    {
-        id: "#001",
-        name: "Nguyen Van Anh",
-        age: 45,
-        gender: "Female",
-        phoneNumber: "0979010101",
-        email: "nvana@gmail.com",
-        address: "Thu Duc, Ho Chi Minh city",
-        healthInsurance: false,
-    },
-    {
-        id: "#002",
-        name: "Tran Thi B",
-        age: 32,
-        gender: "Female",
-        phoneNumber: "0978020202",
-        email: "ttb@gmail.com",
-        address: "District 1, Ho Chi Minh city",
-        healthInsurance: false,
-    },
-    {
-        id: "#003",
-        name: "Le Van C",
-        age: 28,
-        gender: "Male",
-        phoneNumber: "0977030303",
-        email: "lvc@gmail.com",
-        address: "District 3, Ho Chi Minh city",
-        healthInsurance: false,
-    },
-    {
-        id: "#004",
-        name: "Pham Van D",
-        age: 55,
-        gender: "Male",
-        phoneNumber: "0976040404",
-        email: "pvd@gmail.com",
-        address: "Binh Thanh, Ho Chi Minh city",
-        healthInsurance: true,
-        insuranceNumber: "BH123456789",
-    },
-    {
-        id: "#005",
-        name: "Hoang Thi E",
-        age: 45,
-        gender: "Female",
-        phoneNumber: "0975050505",
-        email: "hte@gmail.com",
-        address: "District 7, Ho Chi Minh city",
-        healthInsurance: true,
-        insuranceNumber: "BH987654321",
-    },
-];
-
 export default function PatientsPage() {
     const router = useRouter();
-    const [patients, setPatients] = useState(mockPatientData);
+    const [patients, setPatients] = useState<Patient[]>([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -142,7 +87,7 @@ export default function PatientsPage() {
 
     const handleAddPatient = (newPatient: {
         name: string;
-        age: number;
+        birthDate: string;
         gender: "Male" | "Female" | "Other";
         phoneNumber: string;
         email: string;
@@ -184,7 +129,7 @@ export default function PatientsPage() {
     const patientColumns: ColumnDef<Patient>[] = [
         { header: "ID", accessorKey: "id", className: "font-bold" },
         { header: "Name", accessorKey: "name", className: "font-medium" },
-        { header: "Age", accessorKey: "age" },
+        { header: "Birth Date", accessorKey: "birthDate" },
         { header: "Gender", accessorKey: "gender" },
         { header: "Phone Number", accessorKey: "phoneNumber" },
         { header: "Email", accessorKey: "email" },

@@ -20,7 +20,7 @@ type EditPatientModalProps = {
     patient: {
         id: string;
         name: string;
-        age: number;
+        birthDate: string;
         gender: "Male" | "Female" | "Other";
         phoneNumber: string;
         email: string;
@@ -40,7 +40,7 @@ export default function EditPatientModal({
         if (patient && isOpen) {
             return {
                 name: patient.name,
-                age: patient.age.toString(),
+                birthDate: patient.birthDate,
                 gender: patient.gender,
                 phoneNumber: patient.phoneNumber,
                 email: patient.email,

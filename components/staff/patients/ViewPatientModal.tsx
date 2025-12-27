@@ -6,7 +6,7 @@ type ViewPatientModalProps = {
     patient: {
         id: string;
         name: string;
-        age: number;
+        birthDate: string;
         gender: string;
         phoneNumber: string;
         email: string;
@@ -51,10 +51,10 @@ export default function ViewPatientModal({
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text text-gray-500">
-                                    Age
+                                    Birth Date
                                 </span>
                             </label>
-                            <p className="font-medium">{patient.age}</p>
+                            <p className="font-medium">{patient.birthDate}</p>
                         </div>
                     </div>
 
