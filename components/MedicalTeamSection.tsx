@@ -3,7 +3,10 @@
 import React, { CSSProperties } from "react";
 import Image, { StaticImageData } from "next/image";
 
-import doctor1 from "../public/images/default-avatar.png";
+import doctor1 from "../public/images/doctor1.jpg";
+import doctor2 from "../public/images/doctor2.jpg";
+import doctor3 from "../public/images/doctor3.jpg";
+import doctor4 from "../public/images/doctor4.jpg";
 
 type Doctor = {
     name: string;
@@ -20,17 +23,17 @@ const doctors: Doctor[] = [
     {
         name: "Dr. Olivia Sterling",
         specialty: "Cardiology Specialist",
-        image: doctor1,
+        image: doctor2,
     },
     {
         name: "Dr. Robert Anderson",
         specialty: "Senior Physician",
-        image: doctor1,
+        image: doctor3,
     },
     {
         name: "Dr. James Sullivan",
         specialty: "Internal Medicine",
-        image: doctor1,
+        image: doctor4,
     },
 ];
 

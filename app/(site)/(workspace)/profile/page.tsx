@@ -1,9 +1,7 @@
-
 import ProfileHeader from "@/components/patient/profile/ProfileHeader";
 import ProfileForm from "@/components/patient/profile/ProfileForm";
 import AvatarSection from "@/components/patient/profile/AvatarSection";
 import ToastProvider from "@/components/common/ToastProvider";
-
 
 const ProfilePage = () => {
     return (

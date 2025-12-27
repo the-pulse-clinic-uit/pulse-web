@@ -51,10 +51,8 @@ const ProfileForm = () => {
 
                 const userData = await response.json();
 
-                // Update localStorage with fresh data
                 localStorage.setItem("user", JSON.stringify(userData));
 
-                // Map API data to form fields
                 setFormData({
                     fullName: userData.fullName || "",
                     email: userData.email || "",
@@ -72,7 +70,6 @@ const ProfileForm = () => {
                 });
             } catch (error) {
                 console.error("Error fetching user data:", error);
-                // Try to load from localStorage as fallback
                 const userStr = localStorage.getItem("user");
                 if (userStr) {
                     try {
@@ -112,14 +109,14 @@ const ProfileForm = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         try {
             const token = localStorage.getItem("token");
             if (!token) throw new Error("No authentication token found");
 
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || "localhost:8080";
+            const backendUrl =
+                process.env.NEXT_PUBLIC_BACKEND_API_URL || "localhost:8080";
             const payload = {
                 fullName: formData.fullName,
                 email: formData.email,
@@ -128,7 +125,6 @@ const ProfileForm = () => {
                 birthDate: formData.dateOfBirth,
                 gender: formData.gender === "Male",
                 address: formData.address,
-                // Add more fields if backend supports
             };
 
             const response = await fetch(`http://${backendUrl}/users/me`, {
