@@ -213,7 +213,6 @@ export const generatePatientCredentialsPDF = (patientData: PatientData) => {
         "2. Click on 'Login' and enter your email and password above",
         "3. For security, please change your password after first login",
         "4. You can book appointments, view medical records, and more",
-        "5. If you need assistance, contact us at: support@pulsehospital.com",
     ];
 
     instructions.forEach((instruction, index) => {
