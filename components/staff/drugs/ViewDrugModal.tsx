@@ -3,6 +3,7 @@
 type ViewDrugModalProps = {
     isOpen: boolean;
     onClose: () => void;
+    onEdit?: () => void;
     drug: {
         id: string;
         name: string;
@@ -17,6 +18,7 @@ type ViewDrugModalProps = {
 export default function ViewDrugModal({
     isOpen,
     onClose,
+    onEdit,
     drug,
 }: ViewDrugModalProps) {
     if (!drug) return null;
@@ -101,6 +103,11 @@ export default function ViewDrugModal({
                     <button className="btn btn-ghost" onClick={onClose}>
                         Close
                     </button>
+                    {onEdit && (
+                        <button className="btn btn-primary" onClick={onEdit}>
+                            Edit
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
