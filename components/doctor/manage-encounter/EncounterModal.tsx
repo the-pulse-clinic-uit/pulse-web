@@ -542,9 +542,52 @@ export default function EncounterModal({
     };
 
     const handleCompleteEncounter = async () => {
-        handleDownloadPDF();
-        toast.success("Encounter completed successfully");
-        onSuccess();
+        const token = localStorage.getItem("token");
+        if (!token) {
+            toast.error("Authentication required");
+            return;
+        }
+
+        if (!prescriptionId) {
+            toast.error("No prescription found");
+            return;
+        }
+
+        setSaving(true);
+        try {
+            // Create invoice for this encounter
+            const invoiceResponse = await fetch("/api/invoices", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    patientId: encounter.patientDto.id,
+                    encounterId: encounter.id,
+                    status: "UNPAID",
+                }),
+            });
+
+            if (!invoiceResponse.ok) {
+                throw new Error("Failed to create invoice");
+            }
+
+            // Download PDF
+            handleDownloadPDF();
+
+            toast.success("Encounter completed and invoice created successfully");
+            onSuccess();
+        } catch (error) {
+            console.error("Error completing encounter:", error);
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to complete encounter"
+            );
+        } finally {
+            setSaving(false);
+        }
     };
 
     if (!isOpen) return null;

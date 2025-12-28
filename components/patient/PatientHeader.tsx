@@ -23,7 +23,7 @@ const PatientHeader: React.FC = () => {
     const navItems = [
         { name: "Dashboard", href: "/dashboard" },
         { name: "Appointments", href: "/appointments" },
-        { name: "Records", href: "/records" },
+        { name: "Encounters", href: "/encounters" },
         { name: "Invoices", href: "/invoices" },
         { name: "Profile", href: "/profile" },
     ];
