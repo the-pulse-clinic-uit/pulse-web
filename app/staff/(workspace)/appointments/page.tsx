@@ -123,6 +123,46 @@ export default function AppointmentsPage() {
         };
     };
 
+    const fetchAllAppointments = async () => {
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        try {
+            const [pendingRes, confirmedRes, checkedInRes] = await Promise.all([
+                fetch("/api/appointments/pending", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch("/api/appointments/confirmed", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch("/api/appointments/checked-in", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+            ]);
+
+            const allData: AppointmentDto[] = [];
+
+            if (pendingRes.ok) {
+                const pendingData = await pendingRes.json();
+                allData.push(...pendingData);
+            }
+
+            if (confirmedRes.ok) {
+                const confirmedData = await confirmedRes.json();
+                allData.push(...confirmedData);
+            }
+
+            if (checkedInRes.ok) {
+                const checkedInData = await checkedInRes.json();
+                allData.push(...checkedInData);
+            }
+
+            setAllAppointments(allData);
+        } catch (error) {
+            console.error("Failed to fetch appointments:", error);
+        }
+    };
+
     useEffect(() => {
         const token = Cookies.get("token");
 
@@ -133,7 +173,6 @@ export default function AppointmentsPage() {
 
         const fetchData = async () => {
             try {
-                // Fetch user data
                 const userResponse = await fetch("/api/users/me", {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -149,23 +188,7 @@ export default function AppointmentsPage() {
                     return;
                 }
 
-                const appointmentsResponse = await fetch(
-                    "/api/appointments/pending",
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-
-                if (appointmentsResponse.ok) {
-                    const appointmentsData: AppointmentDto[] =
-                        await appointmentsResponse.json();
-                    setAllAppointments(appointmentsData);
-                    const transformed =
-                        appointmentsData.map(transformAppointment);
-                    setAppointments(transformed);
-                }
+                await fetchAllAppointments();
             } catch (error) {
                 console.error("Failed to fetch data:", error);
             } finally {
@@ -177,11 +200,12 @@ export default function AppointmentsPage() {
     }, [router]);
 
     useEffect(() => {
-        const filtered = allAppointments
-            .filter((apt) => apt.status === activeTab)
-            .map(transformAppointment);
-        setAppointments(filtered);
-    }, [activeTab, allAppointments]);
+        const filtered = allAppointments.filter(
+            (apt) => apt.status === activeTab
+        );
+        const transformed = filtered.map(transformAppointment);
+        setAppointments(transformed);
+    }, [allAppointments, activeTab]);
 
     if (loading) {
         return (
@@ -191,14 +215,32 @@ export default function AppointmentsPage() {
         );
     }
 
-    const handleApprove = (appointment: Appointment) => {
-        setAppointments((prev: Appointment[]) =>
-            prev.map((apt) =>
-                apt.id === appointment.id
-                    ? { ...apt, status: "CONFIRMED" }
-                    : apt
-            )
-        );
+    const handleApprove = async (appointment: Appointment) => {
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        try {
+            const fullAppointment = allAppointments.find((apt) =>
+                apt.id.startsWith(appointment.id)
+            );
+            if (!fullAppointment) return;
+
+            const response = await fetch(
+                `/api/appointments/${fullAppointment.id}/confirm`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.ok) {
+                await fetchAllAppointments();
+            }
+        } catch (error) {
+            console.error("Failed to approve appointment:", error);
+        }
     };
 
     const handleReschedule = (appointment: Appointment) => {
@@ -298,13 +340,12 @@ export default function AppointmentsPage() {
         {
             label: "Done",
             value: "DONE",
-            count: allAppointments.filter((a) => a.status === "DONE").length,
+            count: 0, // Not implemented yet
         },
         {
             label: "Cancelled",
             value: "CANCELLED",
-            count: allAppointments.filter((a) => a.status === "CANCELLED")
-                .length,
+            count: 0, // Not implemented yet
         },
     ];
 
