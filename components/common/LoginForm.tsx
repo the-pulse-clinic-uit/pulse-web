@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import Cookies from "js-cookie";
 
 const LoginForm = () => {
     const router = useRouter();
@@ -54,10 +55,10 @@ const LoginForm = () => {
             }
 
             if (data.token) {
-                localStorage.setItem("token", data.token);
+                Cookies.set("token", data.token, { expires: 7 });
 
                 if (data.user) {
-                    localStorage.setItem("user", JSON.stringify(data.user));
+                    Cookies.set("user", JSON.stringify(data.user), { expires: 7 });
                 }
 
                 router.push("/dashboard");

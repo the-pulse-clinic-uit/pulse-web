@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import { Camera } from "lucide-react";
+import Cookies from "js-cookie";
 
 const AvatarSection = () => {
     const fileRef = useRef<HTMLInputElement>(null);
@@ -10,7 +11,7 @@ const AvatarSection = () => {
     const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
-        const userStr = localStorage.getItem("user");
+        const userStr = Cookies.get("user");
         if (userStr) {
             try {
                 const user = JSON.parse(userStr);
@@ -32,7 +33,7 @@ const AvatarSection = () => {
         setUploading(true);
 
         try {
-            const token = localStorage.getItem("token");
+            const token = Cookies.get("token");
             if (!token) throw new Error("No authentication token found");
 
             const formData = new FormData();
@@ -54,17 +55,17 @@ const AvatarSection = () => {
             if (!response.ok) throw new Error("Failed to upload avatar");
             const updatedUser = await response.json();
 
-            const userStr = localStorage.getItem("user");
+            const userStr = Cookies.get("user");
             if (userStr) {
                 const user = JSON.parse(userStr);
                 user.avatarUrl = updatedUser.avatarUrl;
-                localStorage.setItem("user", JSON.stringify(user));
+                Cookies.set("user", JSON.stringify(user), { expires: 7 });
             }
             setAvatar(updatedUser.avatarUrl);
             URL.revokeObjectURL(previewUrl);
         } catch (error) {
             alert("Failed to upload avatar. Please try again.");
-            const userStr = localStorage.getItem("user");
+            const userStr = Cookies.get("user");
             if (userStr) {
                 const user = JSON.parse(userStr);
                 setAvatar(user.avatarUrl || "/images/default-avatar.png");

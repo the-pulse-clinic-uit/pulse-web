@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { LogOut, Menu, X } from "lucide-react";
+import Cookies from "js-cookie";
 import logo from "../../public/images/logo.png";
 
 const PatientHeader: React.FC = () => {
@@ -14,8 +15,8 @@ const PatientHeader: React.FC = () => {
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
     const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        Cookies.remove("token");
+        Cookies.remove("user");
         window.location.href = "/login";
     };
 
