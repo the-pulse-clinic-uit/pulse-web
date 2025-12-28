@@ -1,6 +1,8 @@
 "use client";
 
-import { User, Clock, Phone, Activity, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { User, Clock, Phone, Activity, AlertCircle, Stethoscope } from "lucide-react";
+import EncounterModal from "./EncounterModal";
 
 interface EncounterDto {
     id: string;
@@ -54,9 +56,11 @@ interface EncounterDto {
 
 interface Props {
     encounter: EncounterDto;
+    onUpdate?: () => void;
 }
 
-export default function EncounterCard({ encounter }: Props) {
+export default function EncounterCard({ encounter, onUpdate }: Props) {
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const formatDate = (dateString: string): string => {
         const date = new Date(dateString);
         return date.toLocaleDateString("en-US", {
@@ -200,7 +204,31 @@ export default function EncounterCard({ encounter }: Props) {
                         </p>
                     </div>
                 )}
+
+                {/* Start Encounter Button */}
+                {isActive && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="btn btn-primary w-full gap-2"
+                        >
+                            <Stethoscope className="w-5 h-5" />
+                            Start Encounter
+                        </button>
+                    </div>
+                )}
             </div>
+
+            {/* Encounter Modal */}
+            <EncounterModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                encounter={encounter}
+                onSuccess={() => {
+                    setIsModalOpen(false);
+                    onUpdate?.();
+                }}
+            />
         </div>
     );
 }

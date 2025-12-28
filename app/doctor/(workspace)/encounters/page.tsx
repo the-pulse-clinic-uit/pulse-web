@@ -60,74 +60,75 @@ export default function ManageEncounterPage() {
     const [encounters, setEncounters] = useState<EncounterDto[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchEncounters = async () => {
-            const token = localStorage.getItem("token");
+    const fetchEncounters = async () => {
+        const token = localStorage.getItem("token");
 
-            if (!token) {
-                router.push("/login");
-                return;
-            }
+        if (!token) {
+            router.push("/login");
+            return;
+        }
 
-            try {
-                const doctorResponse = await fetch("/api/doctors/me", {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+        setLoading(true);
+        try {
+            const doctorResponse = await fetch("/api/doctors/me", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
-                if (!doctorResponse.ok) {
-                    if (
-                        doctorResponse.status === 401 ||
-                        doctorResponse.status === 403
-                    ) {
-                        localStorage.removeItem("token");
-                        localStorage.removeItem("user");
-                        router.push("/login");
-                    } else {
-                        toast.error("Failed to fetch doctor information");
-                    }
-                    return;
-                }
-
-                const doctorData = await doctorResponse.json();
-                const doctorId = doctorData.id;
-
-                if (!doctorId) {
-                    toast.error("Unable to identify doctor");
-                    return;
-                }
-
-                const response = await fetch(
-                    `/api/encounters/doctor/${doctorId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
-                );
-
-                if (response.ok) {
-                    const data: EncounterDto[] = await response.json();
-                    const activeEncounters = data
-                        .filter((e) => !e.endedAt)
-                        .sort(
-                            (a, b) =>
-                                new Date(b.startedAt).getTime() -
-                                new Date(a.startedAt).getTime()
-                        );
-                    setEncounters(activeEncounters);
-                } else if (response.status === 401 || response.status === 403) {
+            if (!doctorResponse.ok) {
+                if (
+                    doctorResponse.status === 401 ||
+                    doctorResponse.status === 403
+                ) {
                     localStorage.removeItem("token");
                     localStorage.removeItem("user");
                     router.push("/login");
                 } else {
-                    toast.error("Failed to load encounters");
+                    toast.error("Failed to fetch doctor information");
                 }
-            } catch (error) {
-                console.error("Error fetching encounters:", error);
-                toast.error("Error loading encounters");
-            } finally {
-                setLoading(false);
+                return;
             }
-        };
 
+            const doctorData = await doctorResponse.json();
+            const doctorId = doctorData.id;
+
+            if (!doctorId) {
+                toast.error("Unable to identify doctor");
+                return;
+            }
+
+            const response = await fetch(
+                `/api/encounters/doctor/${doctorId}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            if (response.ok) {
+                const data: EncounterDto[] = await response.json();
+                const activeEncounters = data
+                    .filter((e) => !e.endedAt)
+                    .sort(
+                        (a, b) =>
+                            new Date(b.startedAt).getTime() -
+                            new Date(a.startedAt).getTime()
+                    );
+                setEncounters(activeEncounters);
+            } else if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                router.push("/login");
+            } else {
+                toast.error("Failed to load encounters");
+            }
+        } catch (error) {
+            console.error("Error fetching encounters:", error);
+            toast.error("Error loading encounters");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchEncounters();
     }, [router]);
 
@@ -162,6 +163,7 @@ export default function ManageEncounterPage() {
                             <EncounterCard
                                 key={encounter.id}
                                 encounter={encounter}
+                                onUpdate={fetchEncounters}
                             />
                         ))
                     ) : (
