@@ -19,12 +19,12 @@ export async function middleware(req: NextRequest) {
     const hmsUrl = `http://hms.${ROOT_DOMAIN}`;
 
     if (currentHost === "hms") {
-        if (userRole === "DOCTOR") {
+        if (userRole === "doctor") {
             return NextResponse.redirect(
                 new URL(`http://doctor.${ROOT_DOMAIN}/dashboard`, req.url)
             );
         }
-        if (userRole === "STAFF") {
+        if (userRole === "staff") {
             return NextResponse.redirect(
                 new URL(`http://staff.${ROOT_DOMAIN}/dashboard`, req.url)
             );

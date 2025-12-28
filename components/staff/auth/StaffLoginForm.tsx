@@ -45,7 +45,6 @@ const StaffLoginForm = () => {
                 },
                 body: JSON.stringify({
                     ...formData,
-                    role: "STAFF",
                 }),
             });
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Cookies from "js-cookie";
 
 interface StaffAuthGuardProps {
     children: React.ReactNode;
@@ -15,7 +16,7 @@ const StaffAuthGuard = ({ children }: StaffAuthGuardProps) => {
 
     useEffect(() => {
         const checkAuth = () => {
-            const token = localStorage.getItem("token");
+            const token = Cookies.get("token");
             const userStr = localStorage.getItem("user");
 
             if (!token) {
