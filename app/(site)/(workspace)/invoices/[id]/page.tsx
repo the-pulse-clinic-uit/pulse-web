@@ -1,106 +1,272 @@
 "use client";
+import { useState, useEffect, use } from "react";
 import {
   CreditCard,
   Download,
   ArrowLeft,
   Calendar,
   User,
-  MapPin,
+  Pill,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
+import jsPDF from "jspdf";
 
 interface Props {
-  params?: { id?: string };
+  params: Promise<{ id: string }>;
 }
 
-interface Patient {
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-}
-
-interface InvoiceItem {
-  description: string;
-  quantity: number;
-  rate: number;
-  amount: number;
-}
-
-interface Invoice {
+interface PrescriptionDetail {
   id: string;
-  date: string;
-  dueDate: string;
-  status: "Paid" | "Unpaid" | "Unknown";
-  amount: number;
-  doctor: string;
-  service: string;
-  patient: Patient;
-  items: InvoiceItem[];
-  subtotal: number;
-  tax: number;
-  total: number;
+  dose: string;
+  frequency: string;
+  timing: string;
+  duration: string;
+  quantity: number;
+  instructions: string;
+  drugDto: {
+    id: string;
+    name: string;
+    dosageForm: string;
+    unit: string;
+    strength: string;
+    unitPrice: number;
+  };
 }
 
-// Mock data – trong thực tế sẽ fetch từ API
-const getInvoiceData = (id: string): Invoice => {
-  if (!id) {
-    return {
-      id: "",
-      date: "",
-      dueDate: "",
-      status: "Unknown",
-      amount: 0,
-      doctor: "",
-      service: "",
-      patient: { name: "", email: "", phone: "", address: "" },
-      items: [],
-      subtotal: 0,
-      tax: 0,
-      total: 0,
+interface InvoiceDto {
+  id: string;
+  status: string;
+  dueDate: string;
+  amountPaid: number;
+  totalAmount: number;
+  createdAt: string;
+  updatedAt: string;
+  encounterDto: {
+    id: string;
+    type: string;
+    startedAt: string;
+    endedAt: string | null;
+    diagnosis: string;
+    notes: string;
+    patientDto: {
+      id: string;
+      healthInsuranceId: string;
+      bloodType: string;
+      allergies: string;
+      userDto: {
+        id: string;
+        email: string;
+        fullName: string;
+        citizenId: string;
+        phone: string;
+        gender: boolean;
+        birthDate: string;
+      };
     };
-  }
-
-  return {
-    id,
-    date: "Dec 10, 2025",
-    dueDate: "Dec 24, 2025",
-    status: id.includes("0042") ? "Unpaid" : "Paid",
-    amount: id.includes("0042") ? 250 : 180,
-    doctor: "Dr. Emily Carter",
-    service: "Cardiology Checkup",
-    patient: {
-      name: "Sarah Johnson",
-      email: "sarah.johnson@email.com",
-      phone: "(555) 123-4567",
-      address: "123 Main Street, Apt 4B, New York, NY 10001",
-    },
-    items: [
-      { description: "Consultation Fee", quantity: 1, rate: 150, amount: 150 },
-      { description: "ECG Test", quantity: 1, rate: 75, amount: 75 },
-      { description: "Blood Pressure Check", quantity: 1, rate: 25, amount: 25 },
-    ],
-    subtotal: 250,
-    tax: 0,
-    total: 250,
+    doctorDto: {
+      id: string;
+      licenseId: string;
+      staffDto: {
+        userDto: {
+          id: string;
+          fullName: string;
+          email: string;
+          phone: string;
+        };
+      };
+      departmentDto: {
+        id: string;
+        name: string;
+        description: string;
+      } | null;
+    };
+    prescriptionDto?: {
+      id: string;
+      createdAt: string;
+      prescriptionDetails: PrescriptionDetail[];
+    };
   };
-};
+}
 
 export default function InvoiceDetailPage({ params }: Props) {
-  const id = params?.id ?? "";
-  const invoice = getInvoiceData(id);
+  const { id } = use(params);
+  const [invoice, setInvoice] = useState<InvoiceDto | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInvoiceDetail = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Please login to view invoice details");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/invoices/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch invoice details");
+        }
+
+        const data: InvoiceDto = await response.json();
+        setInvoice(data);
+      } catch (error) {
+        console.error("Error fetching invoice:", error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to load invoice details"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchInvoiceDetail();
+    }
+  }, [id]);
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
   const handlePayment = () => {
-    alert("Redirecting to payment gateway...");
+    toast.success("Payment feature coming soon!");
   };
 
   const handleDownload = () => {
-    alert("Downloading invoice PDF...");
+    if (!invoice) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPosition = 20;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("Invoice", pageWidth / 2, yPosition, { align: "center" });
+
+    yPosition += 10;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Invoice #${invoice.id.substring(0, 8)}`, pageWidth / 2, yPosition, { align: "center" });
+
+    // Patient Information
+    yPosition += 15;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Bill To:", 20, yPosition);
+
+    yPosition += 7;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(invoice.encounterDto.patientDto.userDto.fullName, 20, yPosition);
+    yPosition += 5;
+    doc.text(invoice.encounterDto.patientDto.userDto.email, 20, yPosition);
+    yPosition += 5;
+    doc.text(invoice.encounterDto.patientDto.userDto.phone, 20, yPosition);
+
+    // Invoice Details
+    yPosition += 15;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Invoice Details:", 20, yPosition);
+
+    yPosition += 7;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Date: ${formatDate(invoice.createdAt)}`, 20, yPosition);
+    yPosition += 5;
+    doc.text(`Due Date: ${formatDate(invoice.dueDate)}`, 20, yPosition);
+    yPosition += 5;
+    doc.text(`Doctor: ${invoice.encounterDto.doctorDto.staffDto.userDto.fullName}`, 20, yPosition);
+    yPosition += 5;
+    doc.text(`Service: ${invoice.encounterDto.type}`, 20, yPosition);
+
+    // Prescription Details
+    if (invoice.encounterDto.prescriptionDto?.prescriptionDetails) {
+      yPosition += 15;
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Prescribed Medications:", 20, yPosition);
+
+      yPosition += 10;
+      invoice.encounterDto.prescriptionDto.prescriptionDetails.forEach((detail, index) => {
+        if (yPosition > 250) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${index + 1}. ${detail.drugDto.name}`, 20, yPosition);
+        yPosition += 6;
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Quantity: ${detail.quantity} | Unit Price: $${detail.drugDto.unitPrice.toFixed(2)}`, 25, yPosition);
+        yPosition += 5;
+        doc.text(`Total: $${(detail.quantity * detail.drugDto.unitPrice).toFixed(2)}`, 25, yPosition);
+        yPosition += 8;
+      });
+    }
+
+    // Total
+    yPosition += 10;
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Total Amount: $${invoice.totalAmount.toFixed(2)}`, 20, yPosition);
+
+    if (invoice.amountPaid > 0) {
+      yPosition += 7;
+      doc.text(`Amount Paid: $${invoice.amountPaid.toFixed(2)}`, 20, yPosition);
+      yPosition += 7;
+      doc.text(`Balance: $${(invoice.totalAmount - invoice.amountPaid).toFixed(2)}`, 20, yPosition);
+    }
+
+    doc.save(`invoice-${invoice.id.substring(0, 8)}.pdf`);
+    toast.success("Invoice downloaded successfully");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    );
+  }
+
+  if (!invoice) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Invoice not found</h2>
+          <Link href="/invoices" className="text-purple-600 hover:underline">
+            Back to Invoices
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const isPaid = invoice.status === "PAID";
+  const remainingAmount = invoice.totalAmount - invoice.amountPaid;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-4">
+      <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <Link
             href="/invoices"
@@ -119,7 +285,7 @@ export default function InvoiceDetailPage({ params }: Props) {
               Download PDF
             </button>
 
-            {invoice.status === "Unpaid" && (
+            {!isPaid && (
               <button
                 onClick={handlePayment}
                 className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
@@ -130,19 +296,22 @@ export default function InvoiceDetailPage({ params }: Props) {
             )}
           </div>
         </div>
+
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-2xl font-bold mb-2">Invoice {invoice.id}</h1>
+                <h1 className="text-2xl font-bold mb-2">
+                  Invoice #{invoice.id.substring(0, 8)}
+                </h1>
                 <div className="flex items-center gap-4 text-purple-100">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    {invoice.date}
+                    {formatDate(invoice.createdAt)}
                   </span>
                   <span className="flex items-center gap-1">
                     <User className="w-4 h-4" />
-                    {invoice.doctor}
+                    {invoice.encounterDto.doctorDto.staffDto.userDto.fullName}
                   </span>
                 </div>
               </div>
@@ -150,19 +319,22 @@ export default function InvoiceDetailPage({ params }: Props) {
               <div className="text-right">
                 <div
                   className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
-                    invoice.status === "Paid"
+                    isPaid
                       ? "bg-green-100 text-green-800"
                       : "bg-orange-100 text-orange-800"
                   }`}
                 >
-                  {invoice.status}
+                  {isPaid ? "Paid" : "Unpaid"}
                 </div>
-                <div className="text-2xl font-bold mt-2">${invoice.total}</div>
+                <div className="text-2xl font-bold mt-2">
+                  ${invoice.totalAmount.toFixed(2)}
+                </div>
               </div>
             </div>
           </div>
 
           <div className="p-6">
+            {/* Patient and Invoice Details */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -170,13 +342,12 @@ export default function InvoiceDetailPage({ params }: Props) {
                 </h3>
                 <div className="text-gray-600 space-y-1">
                   <p className="font-medium text-gray-900">
-                    {invoice.patient.name}
+                    {invoice.encounterDto.patientDto.userDto.fullName}
                   </p>
-                  <p>{invoice.patient.email}</p>
-                  <p>{invoice.patient.phone}</p>
-                  <p className="flex items-start gap-1">
-                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    {invoice.patient.address}
+                  <p>{invoice.encounterDto.patientDto.userDto.email}</p>
+                  <p>{invoice.encounterDto.patientDto.userDto.phone}</p>
+                  <p className="text-sm">
+                    Blood Type: {invoice.encounterDto.patientDto.bloodType}
                   </p>
                 </div>
               </div>
@@ -188,78 +359,129 @@ export default function InvoiceDetailPage({ params }: Props) {
                 <div className="text-gray-600 space-y-1">
                   <div className="flex justify-between">
                     <span>Invoice Date:</span>
-                    <span className="font-medium">{invoice.date}</span>
+                    <span className="font-medium">{formatDate(invoice.createdAt)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Due Date:</span>
-                    <span className="font-medium">{invoice.dueDate}</span>
+                    <span className="font-medium">{formatDate(invoice.dueDate)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Service:</span>
-                    <span className="font-medium">{invoice.service}</span>
+                    <span>Encounter Type:</span>
+                    <span className="font-medium">{invoice.encounterDto.type}</span>
                   </div>
+                  {invoice.encounterDto.doctorDto.departmentDto && (
+                    <div className="flex justify-between">
+                      <span>Department:</span>
+                      <span className="font-medium">
+                        {invoice.encounterDto.doctorDto.departmentDto.name}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Services
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 text-gray-600 font-medium">
-                        Description
-                      </th>
-                      <th className="text-center py-3 text-gray-600 font-medium">
-                        Qty
-                      </th>
-                      <th className="text-right py-3 text-gray-600 font-medium">
-                        Rate
-                      </th>
-                      <th className="text-right py-3 text-gray-600 font-medium">
-                        Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoice.items.map((item, index) => (
-                      <tr key={index} className="border-b border-gray-100">
-                        <td className="py-3 text-gray-900">
-                          {item.description}
-                        </td>
-                        <td className="py-3 text-center text-gray-600">
-                          {item.quantity}
-                        </td>
-                        <td className="py-3 text-right text-gray-600">
-                          ${item.rate}
-                        </td>
-                        <td className="py-3 text-right font-medium text-gray-900">
-                          ${item.amount}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+            {/* Diagnosis */}
+            {invoice.encounterDto.diagnosis && (
+              <div className="mb-6 bg-blue-50 p-4 rounded-lg">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Diagnosis</h3>
+                <p className="text-gray-900">{invoice.encounterDto.diagnosis}</p>
               </div>
-            </div>
+            )}
+
+            {/* Prescription Items */}
+            {invoice.encounterDto.prescriptionDto?.prescriptionDetails && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Pill className="w-5 h-5 text-purple-600" />
+                  Prescribed Medications
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 text-gray-600 font-medium">
+                          Medication
+                        </th>
+                        <th className="text-center py-3 text-gray-600 font-medium">
+                          Qty
+                        </th>
+                        <th className="text-right py-3 text-gray-600 font-medium">
+                          Unit Price
+                        </th>
+                        <th className="text-right py-3 text-gray-600 font-medium">
+                          Amount
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoice.encounterDto.prescriptionDto.prescriptionDetails.map(
+                        (detail) => (
+                          <tr key={detail.id} className="border-b border-gray-100">
+                            <td className="py-3 text-gray-900">
+                              <div>
+                                <p className="font-medium">{detail.drugDto.name}</p>
+                                <p className="text-xs text-gray-500">
+                                  {detail.drugDto.strength} - {detail.drugDto.dosageForm}
+                                </p>
+                                {detail.instructions && (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {detail.instructions}
+                                  </p>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 text-center text-gray-600">
+                              {detail.quantity}
+                            </td>
+                            <td className="py-3 text-right text-gray-600">
+                              ${detail.drugDto.unitPrice.toFixed(2)}
+                            </td>
+                            <td className="py-3 text-right font-medium text-gray-900">
+                              ${(detail.quantity * detail.drugDto.unitPrice).toFixed(2)}
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Total */}
             <div className="border-t border-gray-200 pt-4">
               <div className="flex justify-end">
                 <div className="w-64 space-y-2">
                   <div className="flex justify-between text-gray-600">
-                    <span>Subtotal:</span>
-                    <span>${invoice.subtotal}</span>
+                    <span>Total Amount:</span>
+                    <span className="font-semibold">${invoice.totalAmount.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Tax:</span>
-                    <span>${invoice.tax}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-semibold text-gray-900 border-t pt-2">
-                    <span>Total:</span>
-                    <span>${invoice.total}</span>
-                  </div>
-                </div>    
+                  {invoice.amountPaid > 0 && (
+                    <>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Amount Paid:</span>
+                        <span className="font-semibold text-green-600">
+                          ${invoice.amountPaid.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-lg font-bold text-gray-900 border-t pt-2">
+                        <span>Balance Due:</span>
+                        <span className="text-orange-600">
+                          ${remainingAmount.toFixed(2)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  {!isPaid && invoice.amountPaid === 0 && (
+                    <div className="flex justify-between text-lg font-bold text-gray-900 border-t pt-2">
+                      <span>Amount Due:</span>
+                      <span className="text-orange-600">
+                        ${invoice.totalAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
