@@ -6,12 +6,11 @@ type ViewDrugModalProps = {
     drug: {
         id: string;
         name: string;
-        drugClassification: string;
+        dosageForm: string;
         unit: string;
-        stock: number;
-        price: string;
-        expirationDate: string;
-        status: "Running Low" | "Adequate";
+        strength: string;
+        unitPrice: number;
+        createdAt: string;
     } | null;
 };
 
@@ -50,14 +49,23 @@ export default function ViewDrugModal({
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text text-base-content/60">
-                                    Drug Classification
+                                    Strength
                                 </span>
                             </label>
-                            <p className="font-medium">
-                                {drug.drugClassification}
-                            </p>
+                            <p className="font-medium">{drug.strength}</p>
                         </div>
 
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text text-base-content/60">
+                                    Dosage Form
+                                </span>
+                            </label>
+                            <p className="font-medium">{drug.dosageForm}</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text text-base-content/60">
@@ -66,56 +74,26 @@ export default function ViewDrugModal({
                             </label>
                             <p className="font-medium">{drug.unit}</p>
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text text-base-content/60">
-                                    Stock
-                                </span>
-                            </label>
-                            <p className="font-medium">{drug.stock}</p>
-                        </div>
 
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text text-base-content/60">
-                                    Price
+                                    Unit Price
                                 </span>
                             </label>
-                            <p className="font-medium">{drug.price}</p>
+                            <p className="font-medium">${drug.unitPrice.toFixed(2)}</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text text-base-content/60">
-                                    Expiration Date
-                                </span>
-                            </label>
-                            <p className="font-medium">{drug.expirationDate}</p>
-                        </div>
-
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text text-base-content/60">
-                                    Status
-                                </span>
-                            </label>
-                            <div>
-                                <span
-                                    className={`badge ${
-                                        drug.status === "Running Low"
-                                            ? "badge-warning"
-                                            : "badge-success"
-                                    } font-medium`}
-                                >
-                                    {drug.status}
-                                </span>
-                            </div>
-                        </div>
+                    <div className="form-control">
+                        <label className="label">
+                            <span className="label-text text-base-content/60">
+                                Created At
+                            </span>
+                        </label>
+                        <p className="font-medium">
+                            {new Date(drug.createdAt).toLocaleString()}
+                        </p>
                     </div>
                 </div>
 
