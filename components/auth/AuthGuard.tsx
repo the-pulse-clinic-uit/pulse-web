@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Cookies from "js-cookie";
 
 interface AuthGuardProps {
     children: React.ReactNode;
@@ -15,7 +16,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
 
     useEffect(() => {
         const checkAuth = () => {
-            const token = localStorage.getItem("token");
+            const token = Cookies.get("token");
 
             if (!token) {
                 // No token, redirect to login

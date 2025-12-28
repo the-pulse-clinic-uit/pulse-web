@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Cookies from "js-cookie";
 import ProfileSection from "./ProfileSection";
 import FormInput from "./FormInput";
 import FormSelect from "./FormSelect";
@@ -30,7 +31,7 @@ const ProfileForm = () => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const token = localStorage.getItem("token");
+                const token = Cookies.get("token");
                 if (!token) {
                     throw new Error("No authentication token found");
                 }
@@ -51,7 +52,7 @@ const ProfileForm = () => {
 
                 const userData = await response.json();
 
-                localStorage.setItem("user", JSON.stringify(userData));
+                Cookies.set("user", JSON.stringify(userData), { expires: 7 });
 
                 setFormData({
                     fullName: userData.fullName || "",
@@ -70,7 +71,7 @@ const ProfileForm = () => {
                 });
             } catch (error) {
                 console.error("Error fetching user data:", error);
-                const userStr = localStorage.getItem("user");
+                const userStr = Cookies.get("user");
                 if (userStr) {
                     try {
                         const userData = JSON.parse(userStr);
@@ -112,7 +113,7 @@ const ProfileForm = () => {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem("token");
+            const token = Cookies.get("token");
             if (!token) throw new Error("No authentication token found");
 
             const backendUrl =
@@ -138,7 +139,7 @@ const ProfileForm = () => {
 
             if (!response.ok) throw new Error("Failed to update profile");
             const updatedUser = await response.json();
-            localStorage.setItem("user", JSON.stringify(updatedUser));
+            Cookies.set("user", JSON.stringify(updatedUser), { expires: 7 });
             toast.success("Profile updated successfully!");
         } catch (error) {
             toast.error("Failed to update profile. Please try again.");
