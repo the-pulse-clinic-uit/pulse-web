@@ -6,19 +6,23 @@ const timeSlots = [
 ];
 
 interface DateTimeStepProps {
-  date: string;                          
-  time: string;                          
-  onChangeDate: (date: string) => void; 
-  onChangeTime: (time: string) => void;  
-  onBack: () => void;                    
-  onNext: () => void;                    
+  date: string;
+  time: string;
+  description: string;
+  onChangeDate: (date: string) => void;
+  onChangeTime: (time: string) => void;
+  onChangeDescription: (description: string) => void;
+  onBack: () => void;
+  onNext: () => void;
 }
 
 export default function DateTimeStep({
   date,
   time,
+  description,
   onChangeDate,
   onChangeTime,
+  onChangeDescription,
   onBack,
   onNext,
 }: DateTimeStepProps) {
@@ -58,6 +62,20 @@ export default function DateTimeStep({
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-2xl shadow mb-8">
+        <h3 className="text-purple-900 mb-3">Description (Optional)</h3>
+        <textarea
+          value={description}
+          onChange={(e) => onChangeDescription(e.target.value)}
+          placeholder="Add any notes or special requests for your appointment..."
+          className="w-full border rounded-xl px-4 py-3 min-h-[100px] resize-none"
+          maxLength={500}
+        />
+        <p className="text-xs text-gray-500 mt-2">
+          {description.length}/500 characters
+        </p>
       </div>
 
       <div className="flex justify-center gap-4">

@@ -8,9 +8,10 @@ import ConfirmStep from "@/components/patient/book-appointment/ConfirmStep";
 
 export default function BookAppointmentPage() {
   const [step, setStep] = useState(1);
-  const [doctorId, setDoctorId] = useState<number | null>(null);
+  const [doctorId, setDoctorId] = useState<string | null>(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [description, setDescription] = useState("");
 
   return (
     <div className="max-w-7xl mx-auto px-4 pt-6 pb-12">
@@ -37,8 +38,10 @@ export default function BookAppointmentPage() {
         <DateTimeStep
           date={date}
           time={time}
+          description={description}
           onChangeDate={setDate}
           onChangeTime={setTime}
+          onChangeDescription={setDescription}
           onBack={() => setStep(1)}
           onNext={() => setStep(3)}
         />
@@ -49,6 +52,7 @@ export default function BookAppointmentPage() {
           doctorId={doctorId}
           date={date}
           time={time}
+          description={description}
           onBack={() => setStep(2)}
         />
       )}
