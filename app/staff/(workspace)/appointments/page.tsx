@@ -8,6 +8,75 @@ import AddAppointmentModal from "@/components/staff/appointments/AddAppointmentM
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
+interface UserData {
+    fullName: string;
+}
+
+interface AppointmentDto {
+    id: string;
+    startsAt: string;
+    endsAt: string;
+    status: string;
+    type: string;
+    description: string | null;
+    createdAt: string;
+    updatedAt: string;
+    patientDto: {
+        id: string;
+        healthInsuranceId: string;
+        bloodType: string;
+        allergies: string;
+        createdAt: string;
+        userDto: {
+            id: string;
+            email: string;
+            fullName: string;
+            address: string | null;
+            citizenId: string;
+            phone: string;
+            gender: boolean;
+            birthDate: string;
+            avatarUrl: string | null;
+            createdAt: string;
+            updatedAt: string;
+            isActive: boolean;
+        };
+    };
+    doctorDto: {
+        id: string;
+        licenseId: string;
+        isVerified: boolean;
+        createdAt: string;
+        staffDto: {
+            id: string;
+            position: string;
+            createdAt: string;
+            userDto: {
+                id: string;
+                email: string;
+                fullName: string;
+                address: string;
+                citizenId: string;
+                phone: string;
+                gender: boolean;
+                birthDate: string;
+                avatarUrl: string | null;
+                createdAt: string;
+                updatedAt: string;
+                isActive: boolean;
+            };
+        };
+        departmentDto: {
+            id: string;
+            name: string;
+            description: string;
+            createdAt: string;
+        } | null;
+    };
+    shiftAssignmentDto: unknown;
+    followUpPlanDto: unknown;
+}
+
 type Appointment = {
     id: string;
     name: string;
@@ -15,69 +84,44 @@ type Appointment = {
     phoneNumber: string;
     doctor: string;
     department: string;
-    room: string;
-    status: "Pending" | "Approved" | "Cancelled";
+    status: string;
+    description: string | null;
 };
 
-const mockAppointmentData: Appointment[] = [
-    {
-        id: "#001",
-        name: "Nguyen Van Anh",
-        time: "08:30",
-        phoneNumber: "0979010101",
-        doctor: "Nguyen Van B",
-        department: "Infectious Disease",
-        room: "B108",
-        status: "Pending",
-    },
-    {
-        id: "#002",
-        name: "Tran Thi B",
-        time: "09:00",
-        phoneNumber: "0978020202",
-        doctor: "Le Van C",
-        department: "Cardiology",
-        room: "A205",
-        status: "Pending",
-    },
-    {
-        id: "#003",
-        name: "Le Van C",
-        time: "09:30",
-        phoneNumber: "0977030303",
-        doctor: "Nguyen Van B",
-        department: "Orthopedics",
-        room: "B108",
-        status: "Approved",
-    },
-    {
-        id: "#004",
-        name: "Pham Van D",
-        time: "10:00",
-        phoneNumber: "0976040404",
-        doctor: "Tran Van E",
-        department: "Neurology",
-        room: "C101",
-        status: "Approved",
-    },
-    {
-        id: "#005",
-        name: "Hoang Thi E",
-        time: "10:30",
-        phoneNumber: "0975050505",
-        doctor: "Nguyen Van B",
-        department: "Infectious Disease",
-        room: "B108",
-        status: "Pending",
-    },
-];
+type TabStatus = "PENDING" | "CONFIRMED" | "CHECKED_IN" | "DONE" | "CANCELLED";
 
 export default function AppointmentsPage() {
     const router = useRouter();
-    const [appointments, setAppointments] = useState(mockAppointmentData);
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [allAppointments, setAllAppointments] = useState<AppointmentDto[]>(
+        []
+    );
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [user, setUser] = useState<UserData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<TabStatus>("PENDING");
+
+    const formatTime = (dateString: string): string => {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        });
+    };
+
+    const transformAppointment = (dto: AppointmentDto): Appointment => {
+        return {
+            id: dto.id.substring(0, 8),
+            name: dto.patientDto.userDto.fullName,
+            time: formatTime(dto.startsAt),
+            phoneNumber: dto.patientDto.userDto.phone,
+            doctor: dto.doctorDto.staffDto.userDto.fullName,
+            department: dto.doctorDto.departmentDto?.name || "General",
+            status: dto.status,
+            description: dto.description,
+        };
+    };
 
     useEffect(() => {
         const token = Cookies.get("token");
@@ -87,30 +131,57 @@ export default function AppointmentsPage() {
             return;
         }
 
-        const fetchUserData = async () => {
+        const fetchData = async () => {
             try {
-                const response = await fetch("/api/users/me", {
+                // Fetch user data
+                const userResponse = await fetch("/api/users/me", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setUser(data);
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    setUser(userData);
                 } else {
                     Cookies.remove("token");
                     router.push("/login");
+                    return;
+                }
+
+                const appointmentsResponse = await fetch(
+                    "/api/appointments/pending",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (appointmentsResponse.ok) {
+                    const appointmentsData: AppointmentDto[] =
+                        await appointmentsResponse.json();
+                    setAllAppointments(appointmentsData);
+                    const transformed =
+                        appointmentsData.map(transformAppointment);
+                    setAppointments(transformed);
                 }
             } catch (error) {
-                console.error("Failed to fetch user:", error);
+                console.error("Failed to fetch data:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchUserData();
+        fetchData();
     }, [router]);
+
+    useEffect(() => {
+        const filtered = allAppointments
+            .filter((apt) => apt.status === activeTab)
+            .map(transformAppointment);
+        setAppointments(filtered);
+    }, [activeTab, allAppointments]);
 
     if (loading) {
         return (
@@ -121,10 +192,10 @@ export default function AppointmentsPage() {
     }
 
     const handleApprove = (appointment: Appointment) => {
-        setAppointments((prev) =>
+        setAppointments((prev: Appointment[]) =>
             prev.map((apt) =>
                 apt.id === appointment.id
-                    ? { ...apt, status: "Approved" as const }
+                    ? { ...apt, status: "CONFIRMED" }
                     : apt
             )
         );
@@ -140,15 +211,14 @@ export default function AppointmentsPage() {
         phoneNumber: string;
         doctor: string;
         department: string;
-        room: string;
     }) => {
-        const newId = `#${String(appointments.length + 1).padStart(3, "0")}`;
         const appointment: Appointment = {
-            id: newId,
+            id: `#${String(appointments.length + 1).padStart(3, "0")}`,
             ...newAppointment,
-            status: "Pending",
+            status: "PENDING",
+            description: null,
         };
-        setAppointments((prev) => [...prev, appointment]);
+        setAppointments((prev: Appointment[]) => [...prev, appointment]);
         setIsAddModalOpen(false);
     };
 
@@ -159,20 +229,21 @@ export default function AppointmentsPage() {
         { header: "Phone Number", accessorKey: "phoneNumber" },
         { header: "Doctor", accessorKey: "doctor" },
         { header: "Department", accessorKey: "department" },
-        { header: "Room", accessorKey: "room" },
         {
             header: "Status",
             cell: (row) => {
-                const statusStyles = {
-                    Pending: "bg-yellow-100 text-yellow-700",
-                    Approved: "bg-green-100 text-green-700",
-                    Cancelled: "bg-red-100 text-red-700",
+                const statusStyles: Record<string, string> = {
+                    PENDING: "bg-yellow-100 text-yellow-700",
+                    CONFIRMED: "bg-blue-100 text-blue-700",
+                    CHECKED_IN: "bg-purple-100 text-purple-700",
+                    DONE: "bg-green-100 text-green-700",
+                    CANCELLED: "bg-red-100 text-red-700",
                 };
                 return (
                     <span
                         className={`
-              inline-flex items-center justify-center px-3 py-1.5 rounded-full 
-              text-xs font-medium whitespace-nowrap 
+              inline-flex items-center justify-center px-3 py-1.5 rounded-full
+              text-xs font-medium whitespace-nowrap
               ${statusStyles[row.status] || "bg-gray-100"}
             `}
                     >
@@ -185,7 +256,7 @@ export default function AppointmentsPage() {
             header: "Action",
             cell: (row) => (
                 <div className="flex gap-2">
-                    {row.status === "Pending" && (
+                    {row.status === "PENDING" && (
                         <button
                             onClick={() => handleApprove(row)}
                             className="btn btn-xs bg-green-100 text-green-700 border-none hover:bg-green-200"
@@ -193,7 +264,7 @@ export default function AppointmentsPage() {
                             Approve
                         </button>
                     )}
-                    {row.status === "Approved" && (
+                    {row.status === "CONFIRMED" && (
                         <button
                             onClick={() => handleReschedule(row)}
                             className="btn btn-xs bg-purple-100 text-purple-700 border-none hover:bg-purple-200"
@@ -206,6 +277,37 @@ export default function AppointmentsPage() {
         },
     ];
 
+    const tabs: { label: string; value: TabStatus; count: number }[] = [
+        {
+            label: "Pending",
+            value: "PENDING",
+            count: allAppointments.filter((a) => a.status === "PENDING").length,
+        },
+        {
+            label: "Confirmed",
+            value: "CONFIRMED",
+            count: allAppointments.filter((a) => a.status === "CONFIRMED")
+                .length,
+        },
+        {
+            label: "Checked In",
+            value: "CHECKED_IN",
+            count: allAppointments.filter((a) => a.status === "CHECKED_IN")
+                .length,
+        },
+        {
+            label: "Done",
+            value: "DONE",
+            count: allAppointments.filter((a) => a.status === "DONE").length,
+        },
+        {
+            label: "Cancelled",
+            value: "CANCELLED",
+            count: allAppointments.filter((a) => a.status === "CANCELLED")
+                .length,
+        },
+    ];
+
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
             <Header tabName="Manage Appointments" userName={user?.fullName} />
@@ -215,6 +317,32 @@ export default function AppointmentsPage() {
                 onFilter={() => {}}
                 onAdd={() => setIsAddModalOpen(true)}
             />
+
+            <div className="flex gap-2 border-b">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.value}
+                        onClick={() => setActiveTab(tab.value)}
+                        className={`px-4 py-2 font-medium transition-colors relative ${
+                            activeTab === tab.value
+                                ? "text-purple-600 border-b-2 border-purple-600"
+                                : "text-gray-600 hover:text-gray-900"
+                        }`}
+                    >
+                        {tab.label}
+                        <span
+                            className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                                activeTab === tab.value
+                                    ? "bg-purple-100 text-purple-600"
+                                    : "bg-gray-100 text-gray-600"
+                            }`}
+                        >
+                            {tab.count}
+                        </span>
+                    </button>
+                ))}
+            </div>
+
             <DataTable columns={appointmentColumns} data={appointments} />
             <Pagination
                 currentPage={1}
