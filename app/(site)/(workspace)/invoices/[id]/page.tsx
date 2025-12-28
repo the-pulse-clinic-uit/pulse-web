@@ -142,8 +142,47 @@ export default function InvoiceDetailPage({ params }: Props) {
     });
   };
 
-  const handlePayment = () => {
-    toast.success("Payment feature coming soon!");
+  const handlePayment = async () => {
+    if (!invoice) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Please login to make payment");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}/pay`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to process payment");
+      }
+
+      toast.success("Payment processed successfully!");
+
+      // Refresh invoice data
+      const updatedResponse = await fetch(`/api/invoices/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (updatedResponse.ok) {
+        const updatedData: InvoiceDto = await updatedResponse.json();
+        setInvoice(updatedData);
+      }
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to process payment"
+      );
+    }
   };
 
   const handleDownload = () => {
@@ -452,7 +491,7 @@ export default function InvoiceDetailPage({ params }: Props) {
             {/* Total */}
             <div className="border-t border-gray-200 pt-4">
               <div className="flex justify-end">
-                <div className="w-64 space-y-2">
+                <div className="w-full md:w-96 space-y-2">
                   <div className="flex justify-between text-gray-600">
                     <span>Total Amount:</span>
                     <span className="font-semibold">${invoice.totalAmount.toFixed(2)}</span>
@@ -479,6 +518,31 @@ export default function InvoiceDetailPage({ params }: Props) {
                       <span className="text-orange-600">
                         ${invoice.totalAmount.toFixed(2)}
                       </span>
+                    </div>
+                  )}
+
+                  {/* Pay Button */}
+                  {!isPaid && (
+                    <div className="pt-4">
+                      <button
+                        onClick={handlePayment}
+                        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold text-lg shadow-lg"
+                      >
+                        <CreditCard className="w-5 h-5" />
+                        Pay ${remainingAmount > 0 ? remainingAmount.toFixed(2) : invoice.totalAmount.toFixed(2)}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Paid Status */}
+                  {isPaid && (
+                    <div className="pt-4">
+                      <div className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-100 text-green-800 rounded-lg font-semibold border-2 border-green-300">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Paid in Full
+                      </div>
                     </div>
                   )}
                 </div>
