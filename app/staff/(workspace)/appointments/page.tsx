@@ -243,8 +243,32 @@ export default function AppointmentsPage() {
         }
     };
 
-    const handleReschedule = (appointment: Appointment) => {
-        console.log("Reschedule appointment:", appointment.id);
+    const handleEncounter = async (appointment: Appointment) => {
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        try {
+            const fullAppointment = allAppointments.find((apt) =>
+                apt.id.startsWith(appointment.id)
+            );
+            if (!fullAppointment) return;
+
+            const response = await fetch(
+                `/api/appointments/${fullAppointment.id}/encounter`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.ok) {
+                await fetchAllAppointments();
+            }
+        } catch (error) {
+            console.error("Failed to create encounter:", error);
+        }
     };
 
     const handleAddAppointment = (newAppointment: {
@@ -308,10 +332,10 @@ export default function AppointmentsPage() {
                     )}
                     {row.status === "CONFIRMED" && (
                         <button
-                            onClick={() => handleReschedule(row)}
-                            className="btn btn-xs bg-purple-100 text-purple-700 border-none hover:bg-purple-200"
+                            onClick={() => handleEncounter(row)}
+                            className="btn btn-xs bg-blue-100 text-blue-700 border-none hover:bg-blue-200"
                         >
-                            Reschedule
+                            Encounter
                         </button>
                     )}
                 </div>
