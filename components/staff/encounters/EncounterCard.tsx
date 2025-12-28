@@ -173,7 +173,6 @@ export default function EncounterCard({
         );
     }
 
-    // Compact card for completed encounters
     return (
         <div className="card bg-white shadow hover:shadow-md transition-shadow">
             <div className="card-body p-4">
