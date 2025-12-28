@@ -7,6 +7,7 @@ import Pagination from "@/components/ui/Pagination";
 import DataTable, { ColumnDef } from "@/components/staff/DataTable";
 import AddDrugModal from "@/components/staff/drugs/AddDrugModal";
 import ViewDrugModal from "@/components/staff/drugs/ViewDrugModal";
+import UpdateDrugModal from "@/components/staff/drugs/UpdateDrugModal";
 
 interface ApiDrugResponse {
     id: string;
@@ -33,6 +34,7 @@ export default function DrugsPage() {
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [selectedDrug, setSelectedDrug] = useState<Drug | null>(null);
 
     const fetchDrugs = async () => {
@@ -69,9 +71,18 @@ export default function DrugsPage() {
         fetchDrugs();
     };
 
+    const handleDrugUpdatedSuccess = () => {
+        fetchDrugs();
+    };
+
     const handleViewDrug = (drug: Drug) => {
         setSelectedDrug(drug);
         setIsViewModalOpen(true);
+    };
+
+    const handleEditDrug = (drug: Drug) => {
+        setSelectedDrug(drug);
+        setIsUpdateModalOpen(true);
     };
 
     const columns: ColumnDef<Drug>[] = [
@@ -111,12 +122,20 @@ export default function DrugsPage() {
         {
             header: "Action",
             cell: (row) => (
-                <button
-                    className="btn btn-primary btn-sm text-xs"
-                    onClick={() => handleViewDrug(row)}
-                >
-                    Detail
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        className="btn btn-primary btn-sm text-xs"
+                        onClick={() => handleViewDrug(row)}
+                    >
+                        Detail
+                    </button>
+                    <button
+                        className="btn btn-secondary btn-sm text-xs"
+                        onClick={() => handleEditDrug(row)}
+                    >
+                        Edit
+                    </button>
+                </div>
             ),
         },
     ];
@@ -153,6 +172,17 @@ export default function DrugsPage() {
             <ViewDrugModal
                 isOpen={isViewModalOpen}
                 onClose={() => setIsViewModalOpen(false)}
+                onEdit={() => {
+                    setIsViewModalOpen(false);
+                    setIsUpdateModalOpen(true);
+                }}
+                drug={selectedDrug}
+            />
+
+            <UpdateDrugModal
+                isOpen={isUpdateModalOpen}
+                onClose={() => setIsUpdateModalOpen(false)}
+                onUpdate={handleDrugUpdatedSuccess}
                 drug={selectedDrug}
             />
         </div>
