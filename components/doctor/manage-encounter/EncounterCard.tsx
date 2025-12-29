@@ -84,7 +84,6 @@ export default function EncounterCard({ encounter, onUpdate }: Props) {
     return (
         <div className="bg-white border rounded-xl shadow-sm hover:shadow-md transition-shadow">
             <div className="p-6">
-                {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -103,11 +102,10 @@ export default function EncounterCard({ encounter, onUpdate }: Props) {
                         <span className="badge badge-success">In Progress</span>
                     )}
                     {!isActive && (
-                        <span className="badge badge-ghost">Completed</span>
+                        <span className="badge badge-warning">Completed</span>
                     )}
                 </div>
 
-                {/* Patient Info Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                     <div className="flex items-center gap-2">
                         <Phone className="w-4 h-4 text-gray-400" />
@@ -142,7 +140,6 @@ export default function EncounterCard({ encounter, onUpdate }: Props) {
                     </div>
                 </div>
 
-                {/* Allergies Warning */}
                 {encounter.patientDto.allergies && (
                     <div className="alert alert-warning mb-4 py-2">
                         <AlertCircle className="w-4 h-4" />
@@ -155,7 +152,6 @@ export default function EncounterCard({ encounter, onUpdate }: Props) {
                     </div>
                 )}
 
-                {/* Encounter Details */}
                 <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Clock className="w-4 h-4" />
@@ -195,7 +191,6 @@ export default function EncounterCard({ encounter, onUpdate }: Props) {
                     )}
                 </div>
 
-                {/* Footer */}
                 {encounter.endedAt && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                         <p className="text-xs text-gray-500">
@@ -205,7 +200,6 @@ export default function EncounterCard({ encounter, onUpdate }: Props) {
                     </div>
                 )}
 
-                {/* Start Encounter Button */}
                 {isActive && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                         <button
@@ -219,7 +213,6 @@ export default function EncounterCard({ encounter, onUpdate }: Props) {
                 )}
             </div>
 
-            {/* Encounter Modal */}
             <EncounterModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}

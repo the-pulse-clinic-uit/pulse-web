@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import InvoiceItem from './InvoiceItem';
+import Cookies from "js-cookie";
 
 interface InvoiceDto {
   id: string;
@@ -36,7 +37,7 @@ export default function InvoiceList() {
 
   useEffect(() => {
     const fetchInvoices = async () => {
-      const token = localStorage.getItem("token");
+      const token = Cookies.get("token");
       if (!token) {
         toast.error("Please login to view invoices");
         setLoading(false);

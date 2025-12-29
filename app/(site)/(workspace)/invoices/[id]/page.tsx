@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import jsPDF from "jspdf";
+import Cookies from "js-cookie";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -96,7 +97,7 @@ export default function InvoiceDetailPage({ params }: Props) {
 
   useEffect(() => {
     const fetchInvoiceDetail = async () => {
-      const token = localStorage.getItem("token");
+      const token = Cookies.get("token");
       if (!token) {
         toast.error("Please login to view invoice details");
         setLoading(false);
@@ -145,42 +146,42 @@ export default function InvoiceDetailPage({ params }: Props) {
   const handlePayment = async () => {
     if (!invoice) return;
 
-    const token = localStorage.getItem("token");
+    const token = Cookies.get("token");
     if (!token) {
       toast.error("Please login to make payment");
       return;
     }
 
     try {
-      const response = await fetch(`/api/invoices/${invoice.id}/pay`, {
-        method: "PUT",
+      // Call the create-payment endpoint to get VNPay redirect URL
+      const response = await fetch(`/api/invoices/${invoice.id}/create-payment`, {
+        method: "GET",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error("Failed to process payment");
+        throw new Error("Failed to create payment");
       }
 
-      toast.success("Payment processed successfully!");
+      // Parse the JSON response
+      const responseText = await response.text();
+      const paymentData = JSON.parse(responseText);
 
-      // Refresh invoice data
-      const updatedResponse = await fetch(`/api/invoices/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Extract the payment URL from the nested JSON structure
+      const vnpayUrl = paymentData.data.paymentUrl;
 
-      if (updatedResponse.ok) {
-        const updatedData: InvoiceDto = await updatedResponse.json();
-        setInvoice(updatedData);
+      if (!vnpayUrl) {
+        throw new Error("Payment URL not found in response");
       }
+
+      // Redirect to VNPay payment gateway
+      window.location.href = vnpayUrl;
     } catch (error) {
-      console.error("Error processing payment:", error);
+      console.error("Error creating payment:", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to process payment"
+        error instanceof Error ? error.message : "Failed to create payment"
       );
     }
   };
@@ -373,7 +374,7 @@ export default function InvoiceDetailPage({ params }: Props) {
           </div>
 
           <div className="p-6">
-            {/* Patient and Invoice Details */}
+            
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -420,7 +421,7 @@ export default function InvoiceDetailPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Diagnosis */}
+            
             {invoice.encounterDto.diagnosis && (
               <div className="mb-6 bg-blue-50 p-4 rounded-lg">
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">Diagnosis</h3>
@@ -428,7 +429,7 @@ export default function InvoiceDetailPage({ params }: Props) {
               </div>
             )}
 
-            {/* Prescription Items */}
+            
             {invoice.encounterDto.prescriptionDto?.prescriptionDetails && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -488,7 +489,7 @@ export default function InvoiceDetailPage({ params }: Props) {
               </div>
             )}
 
-            {/* Total */}
+            
             <div className="border-t border-gray-200 pt-4">
               <div className="flex justify-end">
                 <div className="w-full md:w-96 space-y-2">
@@ -521,7 +522,7 @@ export default function InvoiceDetailPage({ params }: Props) {
                     </div>
                   )}
 
-                  {/* Pay Button */}
+                  
                   {!isPaid && (
                     <div className="pt-4">
                       <button
@@ -534,7 +535,7 @@ export default function InvoiceDetailPage({ params }: Props) {
                     </div>
                   )}
 
-                  {/* Paid Status */}
+                  
                   {isPaid && (
                     <div className="pt-4">
                       <div className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-100 text-green-800 rounded-lg font-semibold border-2 border-green-300">

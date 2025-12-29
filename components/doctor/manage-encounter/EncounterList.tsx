@@ -155,7 +155,6 @@ export default function EncounterList() {
 
     return (
         <div className="space-y-4">
-            {/* Tabs */}
             <div className="flex gap-2 border-b border-gray-200">
                 <button
                     onClick={() => setActiveTab("active")}
@@ -176,20 +175,19 @@ export default function EncounterList() {
                     onClick={() => setActiveTab("completed")}
                     className={`px-4 py-2 font-medium transition-colors ${
                         activeTab === "completed"
-                            ? "text-primary border-b-2 border-primary"
+                            ? "text-amber-500 border-b-2 border-amber-500"
                             : "text-gray-500 hover:text-gray-700"
                     }`}
                 >
                     Completed
                     {completedEncounters.length > 0 && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-gray-400 text-white rounded-full">
+                        <span className="ml-2 px-2 py-1 text-xs bg-amber-500 text-white rounded-full">
                             {completedEncounters.length}
                         </span>
                     )}
                 </button>
             </div>
 
-            {/* Encounter Cards */}
             <div className="space-y-4">
                 {displayedEncounters.length > 0 ? (
                     displayedEncounters.map((encounter) => (
