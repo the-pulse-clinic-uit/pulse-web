@@ -80,7 +80,7 @@ export default function EncounterCard({
     isActive = false,
 }: EncounterCardProps) {
     const statusBadge = encounter.endedAt
-        ? "badge badge-ghost"
+        ? "badge badge-primary"
         : "badge badge-success";
     const statusLabel = encounter.endedAt ? "Completed" : "In Progress";
 

@@ -555,7 +555,22 @@ export default function EncounterModal({
 
         setSaving(true);
         try {
-            // Create invoice for this encounter
+            // First, end the encounter
+            const endEncounterResponse = await fetch(
+                `/api/encounters/${encounter.id}/end`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!endEncounterResponse.ok) {
+                throw new Error("Failed to end encounter");
+            }
+
+            // Then create invoice for this encounter
             const invoiceResponse = await fetch("/api/invoices", {
                 method: "POST",
                 headers: {
@@ -612,7 +627,6 @@ export default function EncounterModal({
                     </button>
                 </div>
 
-                {/* Step indicator */}
                 <div className="steps steps-horizontal w-full mb-6">
                     <div className={`step ${step >= 1 ? "step-primary" : ""}`}>
                         Diagnosis
@@ -719,10 +733,10 @@ export default function EncounterModal({
                                             </button>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="form-control col-span-2">
+                                        <div className="space-y-4">
+                                            <div className="form-control">
                                                 <label className="label">
-                                                    <span className="label-text">
+                                                    <span className="label-text font-medium">
                                                         Drug{" "}
                                                         <span className="text-error">
                                                             *
@@ -765,92 +779,96 @@ export default function EncounterModal({
                                                 </select>
                                             </div>
 
-                                            <div className="form-control">
-                                                <label className="label">
-                                                    <span className="label-text">
-                                                        Dose
-                                                    </span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={medication.dose}
-                                                    onChange={(e) =>
-                                                        updateMedication(
-                                                            medication.id,
-                                                            "dose",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    placeholder="e.g., 500mg"
-                                                    className="input input-bordered"
-                                                    disabled={saving}
-                                                />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="form-control">
+                                                    <label className="label">
+                                                        <span className="label-text">
+                                                            Dose
+                                                        </span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={medication.dose}
+                                                        onChange={(e) =>
+                                                            updateMedication(
+                                                                medication.id,
+                                                                "dose",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="e.g., 500mg"
+                                                        className="input input-bordered w-full"
+                                                        disabled={saving}
+                                                    />
+                                                </div>
+
+                                                <div className="form-control">
+                                                    <label className="label">
+                                                        <span className="label-text">
+                                                            Frequency
+                                                        </span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={medication.frequency}
+                                                        onChange={(e) =>
+                                                            updateMedication(
+                                                                medication.id,
+                                                                "frequency",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="e.g., Twice daily"
+                                                        className="input input-bordered w-full"
+                                                        disabled={saving}
+                                                    />
+                                                </div>
                                             </div>
 
-                                            <div className="form-control">
-                                                <label className="label">
-                                                    <span className="label-text">
-                                                        Frequency
-                                                    </span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={medication.frequency}
-                                                    onChange={(e) =>
-                                                        updateMedication(
-                                                            medication.id,
-                                                            "frequency",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    placeholder="e.g., Twice daily"
-                                                    className="input input-bordered"
-                                                    disabled={saving}
-                                                />
-                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="form-control">
+                                                    <label className="label">
+                                                        <span className="label-text">
+                                                            Timing
+                                                        </span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={medication.timing}
+                                                        onChange={(e) =>
+                                                            updateMedication(
+                                                                medication.id,
+                                                                "timing",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="e.g., After meals"
+                                                        className="input input-bordered w-full"
+                                                        disabled={saving}
+                                                    />
+                                                </div>
 
-                                            <div className="form-control">
-                                                <label className="label">
-                                                    <span className="label-text">
-                                                        Timing
-                                                    </span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={medication.timing}
-                                                    onChange={(e) =>
-                                                        updateMedication(
-                                                            medication.id,
-                                                            "timing",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    placeholder="e.g., After meals"
-                                                    className="input input-bordered"
-                                                    disabled={saving}
-                                                />
-                                            </div>
-
-                                            <div className="form-control">
-                                                <label className="label">
-                                                    <span className="label-text">
-                                                        Duration
-                                                    </span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={medication.duration}
-                                                    onChange={(e) =>
-                                                        updateMedication(
-                                                            medication.id,
-                                                            "duration",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    placeholder="e.g., 7 days"
-                                                    className="input input-bordered"
-                                                    disabled={saving}
-                                                />
+                                                <div className="form-control">
+                                                    <label className="label">
+                                                        <span className="label-text">
+                                                            Duration
+                                                        </span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={medication.duration}
+                                                        onChange={(e) =>
+                                                            updateMedication(
+                                                                medication.id,
+                                                                "duration",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="e.g., 7 days"
+                                                        className="input input-bordered w-full"
+                                                        disabled={saving}
+                                                    />
+                                                </div>
                                             </div>
 
                                             <div className="form-control">
@@ -869,13 +887,13 @@ export default function EncounterModal({
                                                             e.target.value
                                                         )
                                                     }
-                                                    placeholder="e.g., 14"
-                                                    className="input input-bordered"
+                                                    placeholder="0"
+                                                    className="input input-bordered w-full"
                                                     disabled={saving}
                                                 />
                                             </div>
 
-                                            <div className="form-control col-span-2">
+                                            <div className="form-control">
                                                 <label className="label">
                                                     <span className="label-text">
                                                         Instructions
@@ -893,7 +911,7 @@ export default function EncounterModal({
                                                         )
                                                     }
                                                     placeholder="e.g., Take it twice a day, after meals"
-                                                    className="textarea textarea-bordered"
+                                                    className="textarea textarea-bordered h-20"
                                                     disabled={saving}
                                                 />
                                             </div>
@@ -972,7 +990,6 @@ export default function EncounterModal({
                                 </div>
                             </div>
 
-                            {/* PDF Action Buttons */}
                             <div className="flex gap-2 mt-4">
                                 <button
                                     onClick={handleDownloadPDF}

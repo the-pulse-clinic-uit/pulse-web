@@ -63,7 +63,8 @@ const DoctorLoginForm = () => {
                     localStorage.setItem("user", JSON.stringify(data.user));
                 }
 
-                window.location.href = "http://doctor.localhost:3000/dashboard";
+                // Use router.push for proper navigation
+                router.push("/dashboard");
             } else {
                 setError("No token received");
                 setLoading(false);

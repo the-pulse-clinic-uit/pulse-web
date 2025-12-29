@@ -19,7 +19,7 @@ const DoctorAuthGuard = ({ children }: DoctorAuthGuardProps) => {
             const userStr = localStorage.getItem("user");
 
             if (!token) {
-                window.location.href = "http://doctor.localhost:3000/login";
+                router.push("/login");
                 return;
             }
 
@@ -34,7 +34,7 @@ const DoctorAuthGuard = ({ children }: DoctorAuthGuardProps) => {
                     }
                 } catch (error) {
                     console.error("Error parsing user data:", error);
-                    window.location.href = "http://doctor.localhost:3000/login";
+                    router.push("/login");
                     return;
                 }
             }
