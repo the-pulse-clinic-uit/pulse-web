@@ -1,6 +1,13 @@
 "use client";
 
-import { Clock, User, FileText, Calendar, AlertCircle, Building2 } from "lucide-react";
+import {
+    Clock,
+    User,
+    FileText,
+    Calendar,
+    AlertCircle,
+    Building2,
+} from "lucide-react";
 
 interface EncounterDto {
     id: string;
@@ -78,9 +85,8 @@ export default function EncounterCard({ encounter }: Props) {
     const isActive = !encounter.endedAt;
 
     return (
-        <div className="bg-white border rounded-xl shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
             <div className="p-6">
-                {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
@@ -103,7 +109,6 @@ export default function EncounterCard({ encounter }: Props) {
                     )}
                 </div>
 
-                {/* Doctor and Department Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-400" />
@@ -119,7 +124,9 @@ export default function EncounterCard({ encounter }: Props) {
                         <div className="flex items-center gap-2">
                             <Building2 className="w-4 h-4 text-gray-400" />
                             <div>
-                                <p className="text-xs text-gray-500">Department</p>
+                                <p className="text-xs text-gray-500">
+                                    Department
+                                </p>
                                 <p className="text-sm font-medium">
                                     {encounter.doctorDto.departmentDto.name}
                                 </p>
@@ -149,12 +156,13 @@ export default function EncounterCard({ encounter }: Props) {
                     </div>
                 </div>
 
-                {/* Allergies Warning */}
                 {encounter.patientDto.allergies && (
                     <div className="alert alert-warning mb-4 py-2">
                         <AlertCircle className="w-4 h-4" />
                         <div>
-                            <p className="text-xs font-semibold">Your Allergies</p>
+                            <p className="text-xs font-semibold">
+                                Your Allergies
+                            </p>
                             <p className="text-sm">
                                 {encounter.patientDto.allergies}
                             </p>
@@ -162,7 +170,6 @@ export default function EncounterCard({ encounter }: Props) {
                     </div>
                 )}
 
-                {/* Encounter Details */}
                 <div className="space-y-3">
                     {encounter.appointmentDto.description && (
                         <div className="bg-base-200 p-3 rounded-lg">
@@ -197,7 +204,6 @@ export default function EncounterCard({ encounter }: Props) {
                     )}
                 </div>
 
-                {/* Completion Footer */}
                 {encounter.endedAt && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                         <p className="text-xs text-gray-500">
