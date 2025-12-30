@@ -98,7 +98,7 @@ const PatientHeader: React.FC = () => {
 
                 {/* MOBILE MENU */}
                 {isMenuOpen && (
-                    <div className="md:hidden py-4 border-t border-gray-200">
+                    <div className="lg:hidden py-4 border-t border-gray-200">
                         <nav className="flex flex-col space-y-4">
                             {navItems.map((item) => {
                                 const active = isActiveLink(item.href);
