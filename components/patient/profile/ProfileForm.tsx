@@ -12,6 +12,7 @@ import { toast } from "react-hot-toast";
 
 const ProfileForm = () => {
     const [loading, setLoading] = useState(true);
+    const [patientId, setPatientId] = useState<string>("");
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
@@ -24,7 +25,7 @@ const ProfileForm = () => {
         bloodType: "",
         height: "",
         weight: "",
-        policyNumber: "",
+        healthInsuranceId: "",
         allergies: "",
     });
 
@@ -36,9 +37,7 @@ const ProfileForm = () => {
                     throw new Error("No authentication token found");
                 }
 
-                const backendUrl =
-                    process.env.NEXT_PUBLIC_BACKEND_API_URL || "localhost:8080";
-                const response = await fetch(`http://${backendUrl}/users/me`, {
+                const response = await fetch("api/patients/me", {
                     method: "GET",
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -50,45 +49,80 @@ const ProfileForm = () => {
                     throw new Error("Failed to fetch user data");
                 }
 
-                const userData = await response.json();
+                const patientData = await response.json();
 
-                Cookies.set("user", JSON.stringify(userData), { expires: 7 });
+                Cookies.set("user", JSON.stringify(patientData), {
+                    expires: 7,
+                });
+
+                // Store patient ID for updates
+                setPatientId(patientData.id);
+
+                const bloodTypeMap: { [key: string]: string } = {
+                    A: "A+",
+                    A_neg: "A-",
+                    B: "B+",
+                    B_neg: "B-",
+                    AB: "AB+",
+                    AB_neg: "AB-",
+                    O: "O+",
+                    O_neg: "O-",
+                };
 
                 setFormData({
-                    fullName: userData.fullName || "",
-                    email: userData.email || "",
-                    phone: userData.phone || "",
-                    citizenId: userData.citizenId || "",
-                    dateOfBirth: userData.birthDate || "",
-                    gender: userData.gender ? "Male" : "Female",
-                    address: userData.address || "",
+                    fullName: patientData.userDto.fullName || "",
+                    email: patientData.userDto.email || "",
+                    phone: patientData.userDto.phone || "",
+                    citizenId: patientData.userDto.citizenId || "",
+                    dateOfBirth: patientData.userDto.birthDate || "",
+                    gender: patientData.userDto.gender ? "Male" : "Female",
+                    address: patientData.userDto.address || "",
                     city: "",
-                    bloodType: "",
+                    bloodType: bloodTypeMap[patientData.bloodType] || "",
                     height: "",
                     weight: "",
-                    policyNumber: "",
-                    allergies: "",
+                    healthInsuranceId: patientData.healthInsuranceId || "",
+                    allergies: patientData.allergies || "",
                 });
             } catch (error) {
                 console.error("Error fetching user data:", error);
                 const userStr = Cookies.get("user");
                 if (userStr) {
                     try {
-                        const userData = JSON.parse(userStr);
+                        const patientData = JSON.parse(userStr);
+
+                        // Store patient ID for updates
+                        setPatientId(patientData.id);
+
+                        const bloodTypeMap: { [key: string]: string } = {
+                            A: "A+",
+                            A_neg: "A-",
+                            B: "B+",
+                            B_neg: "B-",
+                            AB: "AB+",
+                            AB_neg: "AB-",
+                            O: "O+",
+                            O_neg: "O-",
+                        };
+
                         setFormData({
-                            fullName: userData.fullName || "",
-                            email: userData.email || "",
-                            phone: userData.phone || "",
-                            citizenId: userData.citizenId || "",
-                            dateOfBirth: userData.birthDate || "",
-                            gender: userData.gender ? "Male" : "Female",
-                            address: userData.address || "",
+                            fullName: patientData.userDto?.fullName || "",
+                            email: patientData.userDto?.email || "",
+                            phone: patientData.userDto?.phone || "",
+                            citizenId: patientData.userDto?.citizenId || "",
+                            dateOfBirth: patientData.userDto?.birthDate || "",
+                            gender: patientData.userDto?.gender
+                                ? "Male"
+                                : "Female",
+                            address: patientData.userDto?.address || "",
                             city: "",
-                            bloodType: "",
+                            bloodType:
+                                bloodTypeMap[patientData.bloodType] || "",
                             height: "",
                             weight: "",
-                            policyNumber: "",
-                            allergies: "",
+                            healthInsuranceId:
+                                patientData.healthInsuranceId || "",
+                            allergies: patientData.allergies || "",
                         });
                     } catch (parseError) {
                         console.error("Error parsing user data:", parseError);
@@ -116,9 +150,24 @@ const ProfileForm = () => {
             const token = Cookies.get("token");
             if (!token) throw new Error("No authentication token found");
 
-            const backendUrl =
-                process.env.NEXT_PUBLIC_BACKEND_API_URL || "localhost:8080";
-            const payload = {
+            // Validate patient ID is present
+            if (!patientId) {
+                toast.error("Patient information not loaded. Please refresh the page.");
+                return;
+            }
+
+            const bloodTypeReverseMap: { [key: string]: string } = {
+                "A+": "A",
+                "A-": "A_neg",
+                "B+": "B",
+                "B-": "B_neg",
+                "AB+": "AB",
+                "AB-": "AB_neg",
+                "O+": "O",
+                "O-": "O_neg",
+            };
+
+            const userPayload = {
                 fullName: formData.fullName,
                 email: formData.email,
                 phone: formData.phone,
@@ -128,18 +177,43 @@ const ProfileForm = () => {
                 address: formData.address,
             };
 
-            const response = await fetch(`http://${backendUrl}/users/me`, {
+            const patientPayload = {
+                id: patientId,
+                healthInsuranceId: formData.healthInsuranceId,
+                bloodType:
+                    bloodTypeReverseMap[formData.bloodType] ||
+                    formData.bloodType,
+                allergies: formData.allergies,
+            };
+
+            // Update user information
+            const userResponse = await fetch("api/users/me", {
                 method: "PATCH",
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(payload),
+                body: JSON.stringify(userPayload),
             });
 
-            if (!response.ok) throw new Error("Failed to update profile");
-            const updatedUser = await response.json();
-            Cookies.set("user", JSON.stringify(updatedUser), { expires: 7 });
+            if (!userResponse.ok)
+                throw new Error("Failed to update user profile");
+
+            // Update patient information
+            const patientResponse = await fetch("api/patients/me", {
+                method: "PATCH",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(patientPayload),
+            });
+
+            if (!patientResponse.ok)
+                throw new Error("Failed to update patient profile");
+
+            const updatedPatient = await patientResponse.json();
+            Cookies.set("user", JSON.stringify(updatedPatient), { expires: 7 });
             toast.success("Profile updated successfully!");
         } catch (error) {
             toast.error("Failed to update profile. Please try again.");
@@ -194,21 +268,15 @@ const ProfileForm = () => {
                     name="gender"
                     value={formData.gender}
                     onChange={handleChange}
-                    options={["Male", "Female", "Other", "Prefer not to say"]}
+                    options={["Male", "Female", "Other"]}
                 />
             </ProfileSection>
 
             <ProfileSection title="Address">
                 <FormInput
-                    label="Street Address"
+                    label="Address"
                     name="address"
                     value={formData.address}
-                    onChange={handleChange}
-                />
-                <FormInput
-                    label="City"
-                    name="city"
-                    value={formData.city}
                     onChange={handleChange}
                 />
             </ProfileSection>
@@ -221,18 +289,6 @@ const ProfileForm = () => {
                     onChange={handleChange}
                     options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]}
                 />
-                <FormInput
-                    label="Height"
-                    name="height"
-                    value={formData.height}
-                    onChange={handleChange}
-                />
-                <FormInput
-                    label="Weight"
-                    name="weight"
-                    value={formData.weight}
-                    onChange={handleChange}
-                />
                 <FormTextarea
                     label="Known Allergies"
                     name="allergies"
@@ -243,9 +299,9 @@ const ProfileForm = () => {
 
             <ProfileSection title="Insurance Information">
                 <FormInput
-                    label="Policy Number"
-                    name="policyNumber"
-                    value={formData.policyNumber}
+                    label="Insurance ID"
+                    name="healthInsuranceId"
+                    value={formData.healthInsuranceId}
                     onChange={handleChange}
                 />
             </ProfileSection>

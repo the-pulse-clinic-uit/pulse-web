@@ -14,9 +14,9 @@ const AvatarSection = () => {
         const userStr = Cookies.get("user");
         if (userStr) {
             try {
-                const user = JSON.parse(userStr);
-                if (user.avatarUrl) {
-                    setAvatar(user.avatarUrl);
+                const patientData = JSON.parse(userStr);
+                if (patientData.userDto?.avatarUrl) {
+                    setAvatar(patientData.userDto.avatarUrl);
                 }
             } catch (error) {}
         }
@@ -39,27 +39,27 @@ const AvatarSection = () => {
             const formData = new FormData();
             formData.append("file", file);
 
-            const backendUrl =
-                process.env.NEXT_PUBLIC_BACKEND_API_URL || "localhost:8080";
-            const response = await fetch(
-                `http://${backendUrl}/users/me/avatar`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: formData,
-                }
-            );
+            const response = await fetch("api/users/me/avatar", {
+                method: "PATCH",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                body: formData,
+            });
 
             if (!response.ok) throw new Error("Failed to upload avatar");
             const updatedUser = await response.json();
 
+            // Update the patient data in cookies with new avatar
             const userStr = Cookies.get("user");
             if (userStr) {
-                const user = JSON.parse(userStr);
-                user.avatarUrl = updatedUser.avatarUrl;
-                Cookies.set("user", JSON.stringify(user), { expires: 7 });
+                const patientData = JSON.parse(userStr);
+                if (patientData.userDto) {
+                    patientData.userDto.avatarUrl = updatedUser.avatarUrl;
+                    Cookies.set("user", JSON.stringify(patientData), {
+                        expires: 7,
+                    });
+                }
             }
             setAvatar(updatedUser.avatarUrl);
             URL.revokeObjectURL(previewUrl);
@@ -67,8 +67,11 @@ const AvatarSection = () => {
             alert("Failed to upload avatar. Please try again.");
             const userStr = Cookies.get("user");
             if (userStr) {
-                const user = JSON.parse(userStr);
-                setAvatar(user.avatarUrl || "/images/default-avatar.png");
+                const patientData = JSON.parse(userStr);
+                setAvatar(
+                    patientData.userDto?.avatarUrl ||
+                        "/images/default-avatar.png"
+                );
             }
         } finally {
             setUploading(false);
