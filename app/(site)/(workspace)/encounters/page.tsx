@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import EncounterCard from "@/components/patient/encounter/EncounterCard";
+import Cookies from "js-cookie";
 
 interface EncounterDto {
     id: string;
@@ -77,7 +78,7 @@ export default function EncountersPage() {
 
     useEffect(() => {
         const fetchPatientAndEncounters = async () => {
-            const token = localStorage.getItem("token");
+            const token = Cookies.get("token");
             if (!token) {
                 toast.error("Please login to view encounters");
                 setLoading(false);
@@ -85,7 +86,7 @@ export default function EncountersPage() {
             }
 
             try {
-                // First, fetch patient information
+                //get patient id
                 const patientResponse = await fetch("/api/patients/me", {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -98,8 +99,7 @@ export default function EncountersPage() {
 
                 const patientData: PatientDto = await patientResponse.json();
                 setPatient(patientData);
-
-                // Then, fetch encounters for this patient
+                //get encounters
                 const encountersResponse = await fetch(
                     `/api/encounters/patient/${patientData.id}`,
                     {
@@ -113,7 +113,8 @@ export default function EncountersPage() {
                     throw new Error("Failed to fetch encounters");
                 }
 
-                const encountersData: EncounterDto[] = await encountersResponse.json();
+                const encountersData: EncounterDto[] =
+                    await encountersResponse.json();
                 setEncounters(encountersData);
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -158,7 +159,10 @@ export default function EncountersPage() {
                 ) : (
                     <div className="grid gap-6">
                         {encounters.map((encounter) => (
-                            <EncounterCard key={encounter.id} encounter={encounter} />
+                            <EncounterCard
+                                key={encounter.id}
+                                encounter={encounter}
+                            />
                         ))}
                     </div>
                 )}
