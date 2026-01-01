@@ -1,10 +1,12 @@
 export type Patient = {
     id: string;
     name: string;
+    ticketNo: string;
     age: number;
     gender: string;
-    chiefComplaint: string;
+    departmentId: string;
+    // chiefComplaint: string;
     department: string;
-    arrivalTime: string;
+    // arrivalTime: string;
     status: "Waiting" | "Approved";
 };
