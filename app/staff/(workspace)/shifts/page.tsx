@@ -4,220 +4,181 @@ import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
 import Pagination from "@/components/ui/Pagination";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // ==================== TYPES ====================
 
-type Shift = {
+interface UserData {
+    fullName: string;
+    avatarUrl: string;
+    email: string;
+}
+
+interface StaffData {
+    id: string;
+    departmentDto: {
+        id: string;
+        name: string;
+    };
+}
+
+interface DepartmentDto {
     id: string;
     name: string;
-    startTime: string; // HH:mm format
-    endTime: string; // HH:mm format
+    description: string;
+    createdAt: string;
+}
+
+interface RoomDto {
+    id: string;
+    roomNumber: string;
+    bedAmount: number;
+    isAvailable: boolean;
+    createdAt: string;
+    departmentDto: DepartmentDto;
+}
+
+interface ShiftDto {
+    id: string;
+    name: string;
+    kind: "ER" | "CLINIC";
+    startTime: string; // ISO DateTime
+    endTime: string; // ISO DateTime
     slotMinutes: number;
     capacityPerSlot: number;
-    totalSlots: number;
-    departmentId: string;
-    departmentName: string;
-    status: "ACTIVE" | "INACTIVE";
     createdAt: string;
-};
+    departmentDto?: DepartmentDto;
+    defaultRoomDto?: RoomDto;
+}
 
-type ShiftAssignment = {
+interface DoctorDto {
     id: string;
+    licenseId: string;
+    isVerified: boolean;
+    createdAt: string;
+    staffDto: {
+        id: string;
+        position: string;
+        userDto: {
+            fullName: string;
+            email: string;
+        };
+        departmentDto: {
+            id: string;
+            name: string;
+        } | null;
+    };
+}
+
+interface ShiftAssignmentDto {
+    id: string;
+    dutyDate: string; // ISO Date (yyyy-MM-dd)
+    roleInShift: "ON_CALL" | "PRIMARY";
+    status: "ACTIVE" | "CANCELLED";
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
+    doctorDto: DoctorDto;
+    shiftDto: ShiftDto;
+    roomDto: RoomDto | null;
+}
+
+interface ShiftFormData {
+    name: string;
+    kind: "ER" | "CLINIC";
+    startTime: string; // ISO DateTime
+    endTime: string; // ISO DateTime
+    slotMinutes: number;
+    capacityPerSlot: number;
+    departmentId: string;
+    defaultRoomId: string;
+}
+
+interface AssignmentFormData {
     shiftId: string;
-    shiftName: string;
     doctorId: string;
-    doctorName: string;
-    roomNumber: string;
-    assignedDate: string;
-    status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-};
+    roomId: string;
+    dutyDate: string; // ISO Date
+    roleInShift: "ON_CALL" | "PRIMARY";
+    status: "ACTIVE" | "CANCELLED";
+    notes: string;
+}
 
-type Doctor = {
-    id: string;
-    fullName: string;
-    specialization: string;
-};
-
-type Department = {
+// Display types for table
+type ShiftDisplay = {
     id: string;
     name: string;
-};
-
-type ShiftFormData = {
-    name: string;
+    kind: string;
     startTime: string;
     endTime: string;
     slotMinutes: number;
     capacityPerSlot: number;
-    departmentId: string;
-    status: "ACTIVE" | "INACTIVE";
-};
-
-type AssignmentFormData = {
-    shiftId: string;
-    doctorId: string;
+    totalSlots: number;
+    departmentName: string;
     roomNumber: string;
-    assignedDate: string;
 };
 
-// ==================== MOCK DATA ====================
-
-const MOCK_DEPARTMENTS: Department[] = [
-    { id: "dept-1", name: "General Medicine" },
-    { id: "dept-2", name: "Cardiology" },
-    { id: "dept-3", name: "Pediatrics" },
-    { id: "dept-4", name: "Orthopedics" },
-    { id: "dept-5", name: "Dermatology" },
-];
-
-const MOCK_DOCTORS: Doctor[] = [
-    { id: "doc-1", fullName: "Dr. Nguyen Van A", specialization: "General Medicine" },
-    { id: "doc-2", fullName: "Dr. Tran Thi B", specialization: "Cardiology" },
-    { id: "doc-3", fullName: "Dr. Le Van C", specialization: "Pediatrics" },
-    { id: "doc-4", fullName: "Dr. Pham Thi D", specialization: "Orthopedics" },
-    { id: "doc-5", fullName: "Dr. Hoang Van E", specialization: "Dermatology" },
-];
-
-const MOCK_SHIFTS: Shift[] = [
-    {
-        id: "shift-1",
-        name: "Morning Shift",
-        startTime: "07:00",
-        endTime: "12:00",
-        slotMinutes: 30,
-        capacityPerSlot: 2,
-        totalSlots: 10,
-        departmentId: "dept-1",
-        departmentName: "General Medicine",
-        status: "ACTIVE",
-        createdAt: "2026-01-01",
-    },
-    {
-        id: "shift-2",
-        name: "Afternoon Shift",
-        startTime: "13:00",
-        endTime: "17:00",
-        slotMinutes: 30,
-        capacityPerSlot: 2,
-        totalSlots: 8,
-        departmentId: "dept-1",
-        departmentName: "General Medicine",
-        status: "ACTIVE",
-        createdAt: "2026-01-01",
-    },
-    {
-        id: "shift-3",
-        name: "Evening Shift",
-        startTime: "17:00",
-        endTime: "21:00",
-        slotMinutes: 30,
-        capacityPerSlot: 1,
-        totalSlots: 8,
-        departmentId: "dept-2",
-        departmentName: "Cardiology",
-        status: "ACTIVE",
-        createdAt: "2026-01-01",
-    },
-    {
-        id: "shift-4",
-        name: "Night Shift",
-        startTime: "21:00",
-        endTime: "07:00",
-        slotMinutes: 60,
-        capacityPerSlot: 1,
-        totalSlots: 10,
-        departmentId: "dept-3",
-        departmentName: "Pediatrics",
-        status: "INACTIVE",
-        createdAt: "2025-12-15",
-    },
-];
-
-const MOCK_ASSIGNMENTS: ShiftAssignment[] = [
-    {
-        id: "assign-1",
-        shiftId: "shift-1",
-        shiftName: "Morning Shift",
-        doctorId: "doc-1",
-        doctorName: "Dr. Nguyen Van A",
-        roomNumber: "101",
-        assignedDate: "2026-01-02",
-        status: "SCHEDULED",
-    },
-    {
-        id: "assign-2",
-        shiftId: "shift-1",
-        shiftName: "Morning Shift",
-        doctorId: "doc-2",
-        doctorName: "Dr. Tran Thi B",
-        roomNumber: "102",
-        assignedDate: "2026-01-02",
-        status: "SCHEDULED",
-    },
-    {
-        id: "assign-3",
-        shiftId: "shift-2",
-        shiftName: "Afternoon Shift",
-        doctorId: "doc-3",
-        doctorName: "Dr. Le Van C",
-        roomNumber: "103",
-        assignedDate: "2026-01-02",
-        status: "IN_PROGRESS",
-    },
-    {
-        id: "assign-4",
-        shiftId: "shift-3",
-        shiftName: "Evening Shift",
-        doctorId: "doc-4",
-        doctorName: "Dr. Pham Thi D",
-        roomNumber: "201",
-        assignedDate: "2026-01-01",
-        status: "COMPLETED",
-    },
-];
+type AssignmentDisplay = {
+    id: string;
+    dutyDate: string;
+    shiftName: string;
+    doctorName: string;
+    roomNumber: string;
+    roleInShift: string;
+    status: string;
+};
 
 // ==================== HELPER FUNCTIONS ====================
 
+const getKindBadgeStyle = (kind: string) => {
+    return kind === "ER" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700";
+};
+
 const getStatusBadgeStyle = (status: string) => {
-    switch (status) {
-        case "ACTIVE":
-        case "SCHEDULED":
-            return "bg-green-100 text-green-700";
-        case "IN_PROGRESS":
-            return "bg-blue-100 text-blue-700";
-        case "COMPLETED":
-            return "bg-gray-100 text-gray-700";
-        case "INACTIVE":
-        case "CANCELLED":
-            return "bg-red-100 text-red-700";
-        default:
-            return "bg-gray-100 text-gray-700";
-    }
+    return status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700";
+};
+
+const getRoleBadgeStyle = (role: string) => {
+    return role === "PRIMARY" ? "bg-purple-100 text-purple-700" : "bg-yellow-100 text-yellow-700";
 };
 
 const calculateTotalSlots = (startTime: string, endTime: string, slotMinutes: number): number => {
-    const [startHour, startMin] = startTime.split(":").map(Number);
-    const [endHour, endMin] = endTime.split(":").map(Number);
-
-    const startTotalMinutes = startHour * 60 + startMin;
-    let endTotalMinutes = endHour * 60 + endMin;
-
-    // Handle overnight shifts
-    if (endTotalMinutes <= startTotalMinutes) {
-        endTotalMinutes += 24 * 60;
-    }
-
-    const totalMinutes = endTotalMinutes - startTotalMinutes;
-    return Math.floor(totalMinutes / slotMinutes);
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const diffMs = end.getTime() - start.getTime();
+    const diffMinutes = diffMs / (1000 * 60);
+    return Math.floor(diffMinutes / slotMinutes);
 };
 
-const formatTime = (time: string): string => {
-    const [hour, minute] = time.split(":");
-    const hourNum = parseInt(hour);
-    const ampm = hourNum >= 12 ? "PM" : "AM";
-    const hour12 = hourNum % 12 || 12;
-    return `${hour12}:${minute} ${ampm}`;
+const formatTime = (isoString: string): string => {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
+const formatDate = (isoString: string): string => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+    });
+};
+
+// Convert local datetime input to ISO string
+const toISODateTime = (dateStr: string, timeStr: string): string => {
+    return `${dateStr}T${timeStr}:00`;
+};
+
+// Extract date and time from ISO string for input fields
+const extractDateTime = (isoString: string): { date: string; time: string } => {
+    const dt = new Date(isoString);
+    const date = dt.toISOString().split("T")[0];
+    const time = dt.toTimeString().slice(0, 5);
+    return { date, time };
 };
 
 // ==================== MAIN COMPONENT ====================
@@ -225,20 +186,25 @@ const formatTime = (time: string): string => {
 export default function ShiftsPage() {
     const router = useRouter();
 
+    // User data
+    const [user, setUser] = useState<UserData | null>(null);
+
     // Tab state
     const [activeTab, setActiveTab] = useState<"shifts" | "assignments">("shifts");
 
     // Data state
-    const [shifts, setShifts] = useState<Shift[]>(MOCK_SHIFTS);
-    const [assignments, setAssignments] = useState<ShiftAssignment[]>(MOCK_ASSIGNMENTS);
-    const [departments] = useState<Department[]>(MOCK_DEPARTMENTS);
-    const [doctors] = useState<Doctor[]>(MOCK_DOCTORS);
-    const [loading, setLoading] = useState(false);
+    const [shifts, setShifts] = useState<ShiftDto[]>([]);
+    const [assignments, setAssignments] = useState<ShiftAssignmentDto[]>([]);
+    const [departments, setDepartments] = useState<DepartmentDto[]>([]);
+    const [rooms, setRooms] = useState<RoomDto[]>([]);
+    const [doctors, setDoctors] = useState<DoctorDto[]>([]);
+    const [loading, setLoading] = useState(true);
 
     // Search and Filter state
     const [searchQuery, setSearchQuery] = useState("");
     const [filters, setFilters] = useState({
         status: "ALL" as string,
+        kind: "ALL" as string,
         department: "ALL" as string,
     });
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -249,12 +215,13 @@ export default function ShiftsPage() {
     const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
     const [shiftFormData, setShiftFormData] = useState<ShiftFormData>({
         name: "",
-        startTime: "08:00",
-        endTime: "12:00",
+        kind: "CLINIC",
+        startTime: toISODateTime(new Date().toISOString().split("T")[0], "08:00"),
+        endTime: toISODateTime(new Date().toISOString().split("T")[0], "12:00"),
         slotMinutes: 30,
         capacityPerSlot: 2,
         departmentId: "",
-        status: "ACTIVE",
+        defaultRoomId: "",
     });
 
     // Assignment Modal state
@@ -262,45 +229,198 @@ export default function ShiftsPage() {
     const [assignmentFormData, setAssignmentFormData] = useState<AssignmentFormData>({
         shiftId: "",
         doctorId: "",
-        roomNumber: "",
-        assignedDate: new Date().toISOString().split("T")[0],
+        roomId: "",
+        dutyDate: new Date().toISOString().split("T")[0],
+        roleInShift: "PRIMARY",
+        status: "ACTIVE",
+        notes: "",
     });
 
     // View Slots Modal state
     const [isViewSlotsModalOpen, setIsViewSlotsModalOpen] = useState(false);
-    const [selectedShiftForSlots, setSelectedShiftForSlots] = useState<Shift | null>(null);
+    const [selectedShiftForSlots, setSelectedShiftForSlots] = useState<ShiftDto | null>(null);
 
-    // ==================== HANDLERS ====================
+    // ==================== FETCH DATA ====================
 
-    // Shift handlers
-    const handleOpenShiftModal = (shift?: Shift) => {
+    const fetchUserData = useCallback(async () => {
+        const token = Cookies.get("token");
+        if (!token) {
+            router.push("/staff/login");
+            return;
+        }
+
+        try {
+            const userRes = await fetch("/api/users/me", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (userRes.ok) {
+                const userData = await userRes.json();
+                setUser(userData);
+            }
+
+            // Staff data fetch removed - not currently used
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+        }
+    }, [router]);
+
+    const fetchShifts = useCallback(async () => {
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        try {
+            const res = await fetch("/api/shifts", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.ok) {
+                const data: ShiftDto[] = await res.json();
+                setShifts(data);
+            }
+        } catch (error) {
+            console.error("Error fetching shifts:", error);
+        }
+    }, []);
+
+    const fetchAssignments = useCallback(async () => {
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        try {
+            // Fetch assignments for current date range
+            // Note: API requires per-shift or per-doctor queries
+            // For demo, we'll fetch for today across all shifts
+            const allAssignments: ShiftAssignmentDto[] = [];
+            
+            for (const shift of shifts) {
+                const today = new Date().toISOString().split("T")[0];
+                const res = await fetch(`/api/shifts/${shift.id}/assignments?date=${today}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (res.ok) {
+                    const data: ShiftAssignmentDto[] = await res.json();
+                    allAssignments.push(...data);
+                }
+            }
+
+            setAssignments(allAssignments);
+        } catch (error) {
+            console.error("Error fetching assignments:", error);
+        }
+    }, [shifts]);
+
+    const fetchDepartments = useCallback(async () => {
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        try {
+            const res = await fetch("/api/departments", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.ok) {
+                const data: DepartmentDto[] = await res.json();
+                setDepartments(data);
+            }
+        } catch (error) {
+            console.error("Error fetching departments:", error);
+        }
+    }, []);
+
+    const fetchRooms = useCallback(async () => {
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        try {
+            const res = await fetch("/api/rooms", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.ok) {
+                const data: RoomDto[] = await res.json();
+                setRooms(data);
+            }
+        } catch (error) {
+            console.error("Error fetching rooms:", error);
+        }
+    }, []);
+
+    const fetchDoctors = useCallback(async () => {
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        try {
+            const res = await fetch("/api/doctors", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.ok) {
+                const data: DoctorDto[] = await res.json();
+                setDoctors(data);
+            }
+        } catch (error) {
+            console.error("Error fetching doctors:", error);
+        }
+    }, []);
+
+    const fetchAllData = useCallback(async () => {
+        setLoading(true);
+        await Promise.all([
+            fetchUserData(),
+            fetchShifts(),
+            fetchDepartments(),
+            fetchRooms(),
+            fetchDoctors(),
+        ]);
+        setLoading(false);
+    }, [fetchUserData, fetchShifts, fetchDepartments, fetchRooms, fetchDoctors]);
+
+    useEffect(() => {
+        void fetchAllData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (shifts.length > 0) {
+            void fetchAssignments();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [shifts]);
+
+    // ==================== SHIFT HANDLERS ====================
+
+    const handleOpenShiftModal = useCallback((shift?: ShiftDto) => {
         if (shift) {
             setIsEditingShift(true);
             setEditingShiftId(shift.id);
             setShiftFormData({
                 name: shift.name,
+                kind: shift.kind,
                 startTime: shift.startTime,
                 endTime: shift.endTime,
                 slotMinutes: shift.slotMinutes,
                 capacityPerSlot: shift.capacityPerSlot,
-                departmentId: shift.departmentId,
-                status: shift.status,
+                departmentId: shift.departmentDto?.id || "",
+                defaultRoomId: shift.defaultRoomDto?.id || "",
             });
         } else {
             setIsEditingShift(false);
             setEditingShiftId(null);
+            const today = new Date().toISOString().split("T")[0];
             setShiftFormData({
                 name: "",
-                startTime: "08:00",
-                endTime: "12:00",
+                kind: "CLINIC",
+                startTime: toISODateTime(today, "08:00"),
+                endTime: toISODateTime(today, "12:00"),
                 slotMinutes: 30,
                 capacityPerSlot: 2,
                 departmentId: "",
-                status: "ACTIVE",
+                defaultRoomId: "",
             });
         }
         setIsShiftModalOpen(true);
-    };
+    }, []);
 
     const handleCloseShiftModal = () => {
         setIsShiftModalOpen(false);
@@ -312,69 +432,131 @@ export default function ShiftsPage() {
         setShiftFormData((prev) => ({ ...prev, [field]: value }));
     };
 
-    const handleSubmitShift = (e: React.FormEvent) => {
+    const handleShiftDateTimeChange = (field: "start" | "end", type: "date" | "time", value: string) => {
+        const currentDateTime = field === "start" ? shiftFormData.startTime : shiftFormData.endTime;
+        const { date: currentDate, time: currentTime } = extractDateTime(currentDateTime);
+
+        const newDate = type === "date" ? value : currentDate;
+        const newTime = type === "time" ? value : currentTime;
+        const newDateTime = toISODateTime(newDate, newTime);
+
+        if (field === "start") {
+            setShiftFormData((prev) => ({ ...prev, startTime: newDateTime }));
+        } else {
+            setShiftFormData((prev) => ({ ...prev, endTime: newDateTime }));
+        }
+    };
+
+    const handleSubmitShift = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const department = departments.find((d) => d.id === shiftFormData.departmentId);
-        const totalSlots = calculateTotalSlots(
-            shiftFormData.startTime,
-            shiftFormData.endTime,
-            shiftFormData.slotMinutes
-        );
+        const token = Cookies.get("token");
+        if (!token) {
+            router.push("/staff/login");
+            return;
+        }
 
-        if (isEditingShift && editingShiftId) {
-            // Update existing shift
-            setShifts((prev) =>
-                prev.map((shift) =>
-                    shift.id === editingShiftId
-                        ? {
-                              ...shift,
-                              ...shiftFormData,
-                              departmentName: department?.name || "",
-                              totalSlots,
-                          }
-                        : shift
-                )
-            );
-            alert("Shift updated successfully!");
-        } else {
-            // Create new shift
-            const newShift: Shift = {
-                id: `shift-${Date.now()}`,
-                ...shiftFormData,
-                departmentName: department?.name || "",
-                totalSlots,
-                createdAt: new Date().toISOString().split("T")[0],
+        try {
+            const requestBody = {
+                name: shiftFormData.name,
+                kind: shiftFormData.kind,
+                startTime: shiftFormData.startTime,
+                endTime: shiftFormData.endTime,
+                slotMinutes: shiftFormData.slotMinutes,
+                capacityPerSlot: shiftFormData.capacityPerSlot,
+                departmentId: shiftFormData.departmentId || null,
+                defaultRoomId: shiftFormData.defaultRoomId || null,
             };
-            setShifts((prev) => [...prev, newShift]);
-            alert("Shift created successfully!");
-        }
 
-        handleCloseShiftModal();
+            if (isEditingShift && editingShiftId) {
+                // Update
+                const res = await fetch(`/api/shifts/${editingShiftId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+
+                if (res.ok) {
+                    alert("Shift updated successfully!");
+                    handleCloseShiftModal();
+                    await fetchShifts();
+                } else {
+                    const errorData = await res.json();
+                    alert(`Failed to update shift: ${errorData.message || "Unknown error"}`);
+                }
+            } else {
+                // Create
+                const res = await fetch("/api/shifts", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+
+                if (res.ok) {
+                    alert("Shift created successfully!");
+                    handleCloseShiftModal();
+                    await fetchShifts();
+                } else {
+                    const errorData = await res.json();
+                    alert(`Failed to create shift: ${errorData.message || "Unknown error"}`);
+                }
+            }
+        } catch (error) {
+            console.error("Submit shift error:", error);
+            alert("An error occurred while saving the shift");
+        }
     };
 
-    const handleDeleteShift = (shiftId: string) => {
+    const handleDeleteShift = useCallback(async (shiftId: string) => {
         const confirmed = window.confirm("Are you sure you want to delete this shift?");
-        if (confirmed) {
-            setShifts((prev) => prev.filter((s) => s.id !== shiftId));
-            // Also remove related assignments
-            setAssignments((prev) => prev.filter((a) => a.shiftId !== shiftId));
-            alert("Shift deleted successfully!");
-        }
-    };
+        if (!confirmed) return;
 
-    const handleViewSlots = (shift: Shift) => {
+        const token = Cookies.get("token");
+        if (!token) {
+            router.push("/staff/login");
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/shifts/${shiftId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.ok || res.status === 204) {
+                alert("Shift deleted successfully!");
+                await fetchShifts();
+            } else {
+                alert("Failed to delete shift");
+            }
+        } catch (error) {
+            console.error("Delete shift error:", error);
+            alert("An error occurred while deleting the shift");
+        }
+    }, [router, fetchShifts]);
+
+    const handleViewSlots = (shift: ShiftDto) => {
         setSelectedShiftForSlots(shift);
         setIsViewSlotsModalOpen(true);
     };
 
-    // Assignment handlers
+    // ==================== ASSIGNMENT HANDLERS ====================
+
     const handleOpenAssignmentModal = () => {
         setAssignmentFormData({
             shiftId: "",
             doctorId: "",
-            roomNumber: "",
-            assignedDate: new Date().toISOString().split("T")[0],
+            roomId: "",
+            dutyDate: new Date().toISOString().split("T")[0],
+            roleInShift: "PRIMARY",
+            status: "ACTIVE",
+            notes: "",
         });
         setIsAssignmentModalOpen(true);
     };
@@ -387,39 +569,79 @@ export default function ShiftsPage() {
         setAssignmentFormData((prev) => ({ ...prev, [field]: value }));
     };
 
-    const handleSubmitAssignment = (e: React.FormEvent) => {
+    const handleSubmitAssignment = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const shift = shifts.find((s) => s.id === assignmentFormData.shiftId);
-        const doctor = doctors.find((d) => d.id === assignmentFormData.doctorId);
+        const token = Cookies.get("token");
+        if (!token) {
+            router.push("/staff/login");
+            return;
+        }
 
-        const newAssignment: ShiftAssignment = {
-            id: `assign-${Date.now()}`,
-            shiftId: assignmentFormData.shiftId,
-            shiftName: shift?.name || "",
-            doctorId: assignmentFormData.doctorId,
-            doctorName: doctor?.fullName || "",
-            roomNumber: assignmentFormData.roomNumber,
-            assignedDate: assignmentFormData.assignedDate,
-            status: "SCHEDULED",
-        };
+        try {
+            const requestBody = {
+                dutyDate: assignmentFormData.dutyDate,
+                roleInShift: assignmentFormData.roleInShift,
+                status: assignmentFormData.status,
+                notes: assignmentFormData.notes || null,
+                doctorId: assignmentFormData.doctorId,
+                shiftId: assignmentFormData.shiftId,
+                roomId: assignmentFormData.roomId || null,
+            };
 
-        setAssignments((prev) => [...prev, newAssignment]);
-        alert("Doctor assigned to shift successfully!");
-        handleCloseAssignmentModal();
-    };
+            const res = await fetch("/api/shifts/assignments", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(requestBody),
+            });
 
-    const handleCancelAssignment = (assignmentId: string) => {
-        const confirmed = window.confirm("Are you sure you want to cancel this assignment?");
-        if (confirmed) {
-            setAssignments((prev) =>
-                prev.map((a) => (a.id === assignmentId ? { ...a, status: "CANCELLED" } : a))
-            );
-            alert("Assignment cancelled successfully!");
+            if (res.ok) {
+                alert("Doctor assigned to shift successfully!");
+                handleCloseAssignmentModal();
+                await fetchAssignments();
+            } else {
+                const errorData = await res.json();
+                alert(`Failed to assign doctor: ${errorData.message || "Unknown error"}`);
+            }
+        } catch (error) {
+            console.error("Submit assignment error:", error);
+            alert("An error occurred while assigning doctor");
         }
     };
 
-    // Filter and search handlers
+    const handleCancelAssignment = useCallback(async (assignmentId: string) => {
+        const confirmed = window.confirm("Are you sure you want to cancel this assignment?");
+        if (!confirmed) return;
+
+        const token = Cookies.get("token");
+        if (!token) {
+            router.push("/staff/login");
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/shifts/assignments/${assignmentId}/status?status=CANCELLED`, {
+                method: "PUT",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.ok) {
+                alert("Assignment cancelled successfully!");
+                await fetchAssignments();
+            } else {
+                alert("Failed to cancel assignment");
+            }
+        } catch (error) {
+            console.error("Cancel assignment error:", error);
+            alert("An error occurred while cancelling the assignment");
+        }
+    }, [router, fetchAssignments]);
+
+    // ==================== FILTER AND SEARCH HANDLERS ====================
+
     const handleSearch = (query: string) => {
         setSearchQuery(query);
     };
@@ -433,7 +655,7 @@ export default function ShiftsPage() {
     };
 
     const handleResetFilters = () => {
-        setFilters({ status: "ALL", department: "ALL" });
+        setFilters({ status: "ALL", kind: "ALL", department: "ALL" });
     };
 
     const handleApplyFilters = () => {
@@ -442,8 +664,35 @@ export default function ShiftsPage() {
 
     // ==================== FILTERED DATA ====================
 
+    const shiftsDisplay = useMemo<ShiftDisplay[]>(() => {
+        return shifts.map((shift) => ({
+            id: shift.id,
+            name: shift.name,
+            kind: shift.kind,
+            startTime: shift.startTime,
+            endTime: shift.endTime,
+            slotMinutes: shift.slotMinutes,
+            capacityPerSlot: shift.capacityPerSlot,
+            totalSlots: calculateTotalSlots(shift.startTime, shift.endTime, shift.slotMinutes),
+            departmentName: shift.departmentDto?.name || "N/A",
+            roomNumber: shift.defaultRoomDto?.roomNumber || "N/A",
+        }));
+    }, [shifts]);
+
+    const assignmentsDisplay = useMemo<AssignmentDisplay[]>(() => {
+        return assignments.map((assignment) => ({
+            id: assignment.id,
+            dutyDate: assignment.dutyDate,
+            shiftName: assignment.shiftDto.name,
+            doctorName: assignment.doctorDto.staffDto.userDto.fullName,
+            roomNumber: assignment.roomDto?.roomNumber || "N/A",
+            roleInShift: assignment.roleInShift,
+            status: assignment.status,
+        }));
+    }, [assignments]);
+
     const filteredShifts = useMemo(() => {
-        let result = [...shifts];
+        let result = [...shiftsDisplay];
 
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
@@ -454,19 +703,22 @@ export default function ShiftsPage() {
             );
         }
 
-        if (filters.status !== "ALL") {
-            result = result.filter((shift) => shift.status === filters.status);
+        if (filters.kind !== "ALL") {
+            result = result.filter((shift) => shift.kind === filters.kind);
         }
 
         if (filters.department !== "ALL") {
-            result = result.filter((shift) => shift.departmentId === filters.department);
+            result = result.filter((shift) => {
+                const originalShift = shifts.find((s) => s.id === shift.id);
+                return originalShift?.departmentDto?.id === filters.department;
+            });
         }
 
         return result;
-    }, [shifts, searchQuery, filters]);
+    }, [shiftsDisplay, shifts, searchQuery, filters]);
 
     const filteredAssignments = useMemo(() => {
-        let result = [...assignments];
+        let result = [...assignmentsDisplay];
 
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
@@ -483,13 +735,19 @@ export default function ShiftsPage() {
         }
 
         return result;
-    }, [assignments, searchQuery, filters]);
+    }, [assignmentsDisplay, searchQuery, filters]);
 
     // ==================== COLUMN DEFINITIONS ====================
 
-    const shiftColumns = useMemo<ColumnDef<Shift>[]>(
+    const shiftColumns = useMemo<ColumnDef<ShiftDisplay>[]>(
         () => [
             { header: "Shift Name", accessorKey: "name", className: "font-medium" },
+            {
+                header: "Type",
+                cell: (row) => (
+                    <span className={`badge border-none ${getKindBadgeStyle(row.kind)}`}>{row.kind}</span>
+                ),
+            },
             {
                 header: "Time",
                 cell: (row) => (
@@ -512,27 +770,26 @@ export default function ShiftsPage() {
                 className: "font-semibold",
             },
             { header: "Department", accessorKey: "departmentName" },
-            {
-                header: "Status",
-                cell: (row) => (
-                    <span className={`badge border-none ${getStatusBadgeStyle(row.status)}`}>
-                        {row.status}
-                    </span>
-                ),
-            },
+            { header: "Room", accessorKey: "roomNumber" },
             {
                 header: "Actions",
                 cell: (row) => (
                     <div className="flex flex-row gap-2">
                         <button
                             className="btn btn-xs bg-blue-100 text-blue-700 border-none hover:bg-blue-200"
-                            onClick={() => handleViewSlots(row)}
+                            onClick={() => {
+                                const shift = shifts.find((s) => s.id === row.id);
+                                if (shift) handleViewSlots(shift);
+                            }}
                         >
                             View Slots
                         </button>
                         <button
                             className="btn btn-xs bg-yellow-100 text-yellow-700 border-none hover:bg-yellow-200"
-                            onClick={() => handleOpenShiftModal(row)}
+                            onClick={() => {
+                                const shift = shifts.find((s) => s.id === row.id);
+                                if (shift) handleOpenShiftModal(shift);
+                            }}
                         >
                             Edit
                         </button>
@@ -546,28 +803,38 @@ export default function ShiftsPage() {
                 ),
             },
         ],
-        []
+        [shifts, handleOpenShiftModal, handleDeleteShift]
     );
 
-    const assignmentColumns = useMemo<ColumnDef<ShiftAssignment>[]>(
+    const assignmentColumns = useMemo<ColumnDef<AssignmentDisplay>[]>(
         () => [
-            { header: "Date", accessorKey: "assignedDate", className: "font-medium" },
+            {
+                header: "Date",
+                cell: (row) => <span>{formatDate(row.dutyDate)}</span>,
+                className: "font-medium",
+            },
             { header: "Shift", accessorKey: "shiftName" },
             { header: "Doctor", accessorKey: "doctorName", className: "font-medium" },
             { header: "Room", accessorKey: "roomNumber" },
             {
+                header: "Role",
+                cell: (row) => (
+                    <span className={`badge border-none ${getRoleBadgeStyle(row.roleInShift)}`}>
+                        {row.roleInShift}
+                    </span>
+                ),
+            },
+            {
                 header: "Status",
                 cell: (row) => (
-                    <span className={`badge border-none ${getStatusBadgeStyle(row.status)}`}>
-                        {row.status}
-                    </span>
+                    <span className={`badge border-none ${getStatusBadgeStyle(row.status)}`}>{row.status}</span>
                 ),
             },
             {
                 header: "Actions",
                 cell: (row) => (
                     <div className="flex flex-row gap-2">
-                        {row.status === "SCHEDULED" && (
+                        {row.status === "ACTIVE" && (
                             <button
                                 className="btn btn-xs bg-red-100 text-red-700 border-none hover:bg-red-200"
                                 onClick={() => handleCancelAssignment(row.id)}
@@ -579,31 +846,26 @@ export default function ShiftsPage() {
                 ),
             },
         ],
-        []
+        [handleCancelAssignment]
     );
 
     // ==================== GENERATE SLOTS FOR PREVIEW ====================
 
-    const generateSlots = (shift: Shift) => {
+    const generateSlots = (shift: ShiftDto) => {
         const slots = [];
-        const [startHour, startMin] = shift.startTime.split(":").map(Number);
-        let currentMinutes = startHour * 60 + startMin;
+        const totalSlots = calculateTotalSlots(shift.startTime, shift.endTime, shift.slotMinutes);
+        const startDate = new Date(shift.startTime);
 
-        for (let i = 0; i < shift.totalSlots; i++) {
-            const slotStartHour = Math.floor(currentMinutes / 60) % 24;
-            const slotStartMin = currentMinutes % 60;
-            const slotEndMinutes = currentMinutes + shift.slotMinutes;
-            const slotEndHour = Math.floor(slotEndMinutes / 60) % 24;
-            const slotEndMin = slotEndMinutes % 60;
+        for (let i = 0; i < totalSlots; i++) {
+            const slotStart = new Date(startDate.getTime() + i * shift.slotMinutes * 60000);
+            const slotEnd = new Date(slotStart.getTime() + shift.slotMinutes * 60000);
 
             slots.push({
                 slotNumber: i + 1,
-                startTime: `${String(slotStartHour).padStart(2, "0")}:${String(slotStartMin).padStart(2, "0")}`,
-                endTime: `${String(slotEndHour).padStart(2, "0")}:${String(slotEndMin).padStart(2, "0")}`,
+                startTime: slotStart.toISOString(),
+                endTime: slotEnd.toISOString(),
                 capacity: shift.capacityPerSlot,
             });
-
-            currentMinutes += shift.slotMinutes;
         }
 
         return slots;
@@ -621,7 +883,7 @@ export default function ShiftsPage() {
 
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
-            <Header tabName="Shift Management" userName="Staff Member" />
+            <Header tabName="Shift Management" userName={user?.fullName} />
 
             {/* Tabs */}
             <div className="tabs tabs-boxed bg-base-200 w-fit">
@@ -647,12 +909,15 @@ export default function ShiftsPage() {
             />
 
             {/* Active filters display */}
-            {(filters.status !== "ALL" || filters.department !== "ALL" || searchQuery) && (
+            {(filters.status !== "ALL" ||
+                filters.kind !== "ALL" ||
+                filters.department !== "ALL" ||
+                searchQuery) && (
                 <div className="flex flex-wrap items-center gap-2 px-4">
                     <span className="text-sm font-semibold text-gray-600">Active Filters:</span>
                     {searchQuery && (
                         <div className="badge badge-lg gap-2">
-                            Search: &quot;{searchQuery}&quot;
+                            Search: &apos;{searchQuery}&apos;
                             <button onClick={() => setSearchQuery("")} className="text-xs hover:text-error">
                                 ✕
                             </button>
@@ -663,6 +928,17 @@ export default function ShiftsPage() {
                             Status: {filters.status}
                             <button
                                 onClick={() => setFilters({ ...filters, status: "ALL" })}
+                                className="text-xs hover:text-error"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    )}
+                    {filters.kind !== "ALL" && activeTab === "shifts" && (
+                        <div className="badge badge-lg gap-2">
+                            Type: {filters.kind}
+                            <button
+                                onClick={() => setFilters({ ...filters, kind: "ALL" })}
                                 className="text-xs hover:text-error"
                             >
                                 ✕
@@ -688,8 +964,7 @@ export default function ShiftsPage() {
 
             <div className="px-4">
                 <p className="text-sm text-gray-600">
-                    Showing{" "}
-                    {activeTab === "shifts" ? filteredShifts.length : filteredAssignments.length} of{" "}
+                    Showing {activeTab === "shifts" ? filteredShifts.length : filteredAssignments.length} of{" "}
                     {activeTab === "shifts" ? shifts.length : assignments.length}{" "}
                     {activeTab === "shifts" ? "shifts" : "assignments"}
                 </p>
@@ -730,8 +1005,53 @@ export default function ShiftsPage() {
                                 />
                             </div>
 
+                            {/* Shift Kind */}
+                            <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text font-semibold">Shift Type *</span>
+                                </label>
+                                <div className="flex gap-4">
+                                    <label className="label cursor-pointer gap-2">
+                                        <input
+                                            type="radio"
+                                            name="kind"
+                                            className="radio radio-primary"
+                                            value="CLINIC"
+                                            checked={shiftFormData.kind === "CLINIC"}
+                                            onChange={(e) => handleShiftFormChange("kind", e.target.value)}
+                                        />
+                                        <span className="label-text">Clinic</span>
+                                    </label>
+                                    <label className="label cursor-pointer gap-2">
+                                        <input
+                                            type="radio"
+                                            name="kind"
+                                            className="radio radio-error"
+                                            value="ER"
+                                            checked={shiftFormData.kind === "ER"}
+                                            onChange={(e) => handleShiftFormChange("kind", e.target.value)}
+                                        />
+                                        <span className="label-text">Emergency (ER)</span>
+                                    </label>
+                                </div>
+                            </div>
+
                             {/* Time Range */}
+                            <div className="divider">Schedule</div>
+
                             <div className="grid grid-cols-2 gap-4">
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text font-semibold">Start Date *</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        className="input input-bordered w-full"
+                                        value={extractDateTime(shiftFormData.startTime).date}
+                                        onChange={(e) => handleShiftDateTimeChange("start", "date", e.target.value)}
+                                        required
+                                    />
+                                </div>
                                 <div className="form-control">
                                     <label className="label">
                                         <span className="label-text font-semibold">Start Time *</span>
@@ -739,8 +1059,23 @@ export default function ShiftsPage() {
                                     <input
                                         type="time"
                                         className="input input-bordered w-full"
-                                        value={shiftFormData.startTime}
-                                        onChange={(e) => handleShiftFormChange("startTime", e.target.value)}
+                                        value={extractDateTime(shiftFormData.startTime).time}
+                                        onChange={(e) => handleShiftDateTimeChange("start", "time", e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text font-semibold">End Date *</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        className="input input-bordered w-full"
+                                        value={extractDateTime(shiftFormData.endTime).date}
+                                        onChange={(e) => handleShiftDateTimeChange("end", "date", e.target.value)}
                                         required
                                     />
                                 </div>
@@ -751,8 +1086,8 @@ export default function ShiftsPage() {
                                     <input
                                         type="time"
                                         className="input input-bordered w-full"
-                                        value={shiftFormData.endTime}
-                                        onChange={(e) => handleShiftFormChange("endTime", e.target.value)}
+                                        value={extractDateTime(shiftFormData.endTime).time}
+                                        onChange={(e) => handleShiftDateTimeChange("end", "time", e.target.value)}
                                         required
                                     />
                                 </div>
@@ -819,54 +1154,43 @@ export default function ShiftsPage() {
                                 </p>
                             </div>
 
-                            {/* Department */}
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text font-semibold">Department *</span>
-                                </label>
-                                <select
-                                    className="select select-bordered w-full"
-                                    value={shiftFormData.departmentId}
-                                    onChange={(e) => handleShiftFormChange("departmentId", e.target.value)}
-                                    required
-                                >
-                                    <option value="">Select a department</option>
-                                    {departments.map((dept) => (
-                                        <option key={dept.id} value={dept.id}>
-                                            {dept.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                            {/* Department & Room */}
+                            <div className="divider">Location</div>
 
-                            {/* Status */}
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text font-semibold">Status</span>
-                                </label>
-                                <div className="flex gap-4">
-                                    <label className="label cursor-pointer gap-2">
-                                        <input
-                                            type="radio"
-                                            name="status"
-                                            className="radio radio-primary"
-                                            value="ACTIVE"
-                                            checked={shiftFormData.status === "ACTIVE"}
-                                            onChange={(e) => handleShiftFormChange("status", e.target.value)}
-                                        />
-                                        <span className="label-text">Active</span>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text font-semibold">Department</span>
                                     </label>
-                                    <label className="label cursor-pointer gap-2">
-                                        <input
-                                            type="radio"
-                                            name="status"
-                                            className="radio radio-error"
-                                            value="INACTIVE"
-                                            checked={shiftFormData.status === "INACTIVE"}
-                                            onChange={(e) => handleShiftFormChange("status", e.target.value)}
-                                        />
-                                        <span className="label-text">Inactive</span>
+                                    <select
+                                        className="select select-bordered w-full"
+                                        value={shiftFormData.departmentId}
+                                        onChange={(e) => handleShiftFormChange("departmentId", e.target.value)}
+                                    >
+                                        <option value="">Select a department</option>
+                                        {departments.map((dept) => (
+                                            <option key={dept.id} value={dept.id}>
+                                                {dept.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text font-semibold">Default Room</span>
                                     </label>
+                                    <select
+                                        className="select select-bordered w-full"
+                                        value={shiftFormData.defaultRoomId}
+                                        onChange={(e) => handleShiftFormChange("defaultRoomId", e.target.value)}
+                                    >
+                                        <option value="">Select a room</option>
+                                        {rooms.map((room) => (
+                                            <option key={room.id} value={room.id}>
+                                                {room.roomNumber} - {room.departmentDto.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
@@ -894,13 +1218,13 @@ export default function ShiftsPage() {
                             {/* Date */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Date *</span>
+                                    <span className="label-text font-semibold">Duty Date *</span>
                                 </label>
                                 <input
                                     type="date"
                                     className="input input-bordered w-full"
-                                    value={assignmentFormData.assignedDate}
-                                    onChange={(e) => handleAssignmentFormChange("assignedDate", e.target.value)}
+                                    value={assignmentFormData.dutyDate}
+                                    onChange={(e) => handleAssignmentFormChange("dutyDate", e.target.value)}
                                     required
                                 />
                             </div>
@@ -917,14 +1241,12 @@ export default function ShiftsPage() {
                                     required
                                 >
                                     <option value="">Select a shift</option>
-                                    {shifts
-                                        .filter((s) => s.status === "ACTIVE")
-                                        .map((shift) => (
-                                            <option key={shift.id} value={shift.id}>
-                                                {shift.name} ({formatTime(shift.startTime)} -{" "}
-                                                {formatTime(shift.endTime)}) - {shift.departmentName}
-                                            </option>
-                                        ))}
+                                    {shifts.map((shift) => (
+                                        <option key={shift.id} value={shift.id}>
+                                            {shift.name} ({formatTime(shift.startTime)} -{" "}
+                                            {formatTime(shift.endTime)}) - {shift.kind}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -942,24 +1264,75 @@ export default function ShiftsPage() {
                                     <option value="">Select a doctor</option>
                                     {doctors.map((doctor) => (
                                         <option key={doctor.id} value={doctor.id}>
-                                            {doctor.fullName} - {doctor.specialization}
+                                            {doctor.staffDto.userDto.fullName} -{" "}
+                                            {doctor.staffDto.departmentDto?.name || "No Dept"}
                                         </option>
                                     ))}
                                 </select>
                             </div>
 
-                            {/* Room Number */}
+                            {/* Room */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Room Number *</span>
+                                    <span className="label-text font-semibold">Room</span>
                                 </label>
-                                <input
-                                    type="text"
-                                    className="input input-bordered w-full"
-                                    placeholder="e.g., 101, A-201"
-                                    value={assignmentFormData.roomNumber}
-                                    onChange={(e) => handleAssignmentFormChange("roomNumber", e.target.value)}
-                                    required
+                                <select
+                                    className="select select-bordered w-full"
+                                    value={assignmentFormData.roomId}
+                                    onChange={(e) => handleAssignmentFormChange("roomId", e.target.value)}
+                                >
+                                    <option value="">Select a room (optional)</option>
+                                    {rooms.map((room) => (
+                                        <option key={room.id} value={room.id}>
+                                            {room.roomNumber} - {room.departmentDto.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="divider">Assignment Details</div>
+
+                            {/* Role */}
+                            <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text font-semibold">Role in Shift *</span>
+                                </label>
+                                <div className="flex gap-4">
+                                    <label className="label cursor-pointer gap-2">
+                                        <input
+                                            type="radio"
+                                            name="roleInShift"
+                                            className="radio radio-primary"
+                                            value="PRIMARY"
+                                            checked={assignmentFormData.roleInShift === "PRIMARY"}
+                                            onChange={(e) => handleAssignmentFormChange("roleInShift", e.target.value)}
+                                        />
+                                        <span className="label-text">Primary</span>
+                                    </label>
+                                    <label className="label cursor-pointer gap-2">
+                                        <input
+                                            type="radio"
+                                            name="roleInShift"
+                                            className="radio radio-warning"
+                                            value="ON_CALL"
+                                            checked={assignmentFormData.roleInShift === "ON_CALL"}
+                                            onChange={(e) => handleAssignmentFormChange("roleInShift", e.target.value)}
+                                        />
+                                        <span className="label-text">On Call</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Notes */}
+                            <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text font-semibold">Notes</span>
+                                </label>
+                                <textarea
+                                    className="textarea textarea-bordered h-20"
+                                    placeholder="Additional notes..."
+                                    value={assignmentFormData.notes}
+                                    onChange={(e) => handleAssignmentFormChange("notes", e.target.value)}
                                 />
                             </div>
 
@@ -992,7 +1365,11 @@ export default function ShiftsPage() {
                                 <div>
                                     <p className="text-sm text-gray-500">Total Slots</p>
                                     <p className="text-2xl font-bold text-primary">
-                                        {selectedShiftForSlots.totalSlots}
+                                        {calculateTotalSlots(
+                                            selectedShiftForSlots.startTime,
+                                            selectedShiftForSlots.endTime,
+                                            selectedShiftForSlots.slotMinutes
+                                        )}
                                     </p>
                                 </div>
                                 <div>
@@ -1015,12 +1392,8 @@ export default function ShiftsPage() {
                                     className="bg-base-100 border border-base-300 rounded-lg p-3 hover:shadow-md transition-shadow"
                                 >
                                     <div className="flex justify-between items-center mb-2">
-                                        <span className="badge badge-primary badge-sm">
-                                            Slot #{slot.slotNumber}
-                                        </span>
-                                        <span className="text-xs text-gray-500">
-                                            Cap: {slot.capacity}
-                                        </span>
+                                        <span className="badge badge-primary badge-sm">Slot #{slot.slotNumber}</span>
+                                        <span className="text-xs text-gray-500">Cap: {slot.capacity}</span>
                                     </div>
                                     <p className="text-sm font-semibold">
                                         {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
@@ -1051,34 +1424,43 @@ export default function ShiftsPage() {
                         </h3>
 
                         <div className="space-y-5">
-                            {/* Status Filter */}
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text font-semibold">Status</span>
-                                </label>
-                                <select
-                                    className="select select-bordered w-full"
-                                    value={filters.status}
-                                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                                >
-                                    <option value="ALL">All Status</option>
-                                    {activeTab === "shifts" ? (
-                                        <>
-                                            <option value="ACTIVE">Active</option>
-                                            <option value="INACTIVE">Inactive</option>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <option value="SCHEDULED">Scheduled</option>
-                                            <option value="IN_PROGRESS">In Progress</option>
-                                            <option value="COMPLETED">Completed</option>
-                                            <option value="CANCELLED">Cancelled</option>
-                                        </>
-                                    )}
-                                </select>
-                            </div>
+                            {/* Status Filter (for assignments) */}
+                            {activeTab === "assignments" && (
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text font-semibold">Status</span>
+                                    </label>
+                                    <select
+                                        className="select select-bordered w-full"
+                                        value={filters.status}
+                                        onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                                    >
+                                        <option value="ALL">All Status</option>
+                                        <option value="ACTIVE">Active</option>
+                                        <option value="CANCELLED">Cancelled</option>
+                                    </select>
+                                </div>
+                            )}
 
-                            {/* Department Filter (only for shifts) */}
+                            {/* Kind Filter (for shifts) */}
+                            {activeTab === "shifts" && (
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text font-semibold">Type</span>
+                                    </label>
+                                    <select
+                                        className="select select-bordered w-full"
+                                        value={filters.kind}
+                                        onChange={(e) => setFilters({ ...filters, kind: e.target.value })}
+                                    >
+                                        <option value="ALL">All Types</option>
+                                        <option value="CLINIC">Clinic</option>
+                                        <option value="ER">Emergency (ER)</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Department Filter (for shifts) */}
                             {activeTab === "shifts" && (
                                 <div className="form-control">
                                     <label className="label">
