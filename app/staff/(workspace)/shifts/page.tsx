@@ -188,6 +188,7 @@ export default function ShiftsPage() {
 
     // User data
     const [user, setUser] = useState<UserData | null>(null);
+    const [staff, setStaff] = useState<StaffData | null>(null);
 
     // Tab state
     const [activeTab, setActiveTab] = useState<"shifts" | "assignments">("shifts");
@@ -258,7 +259,13 @@ export default function ShiftsPage() {
                 setUser(userData);
             }
 
-            // Staff data fetch removed - not currently used
+            const staffRes = await fetch("/api/staff/me", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (staffRes.ok) {
+                const staffData = await staffRes.json();
+                setStaff(staffData);
+            }
         } catch (error) {
             console.error("Error fetching user data:", error);
         }
@@ -274,8 +281,11 @@ export default function ShiftsPage() {
             });
 
             if (res.ok) {
-                const data: ShiftDto[] = await res.json();
-                setShifts(data);
+                const text = await res.text();
+                if (text) {
+                    const data: ShiftDto[] = JSON.parse(text);
+                    setShifts(data);
+                }
             }
         } catch (error) {
             console.error("Error fetching shifts:", error);
@@ -299,8 +309,11 @@ export default function ShiftsPage() {
                 });
 
                 if (res.ok) {
-                    const data: ShiftAssignmentDto[] = await res.json();
-                    allAssignments.push(...data);
+                    const text = await res.text();
+                    if (text) {
+                        const data: ShiftAssignmentDto[] = JSON.parse(text);
+                        allAssignments.push(...data);
+                    }
                 }
             }
 
@@ -320,8 +333,11 @@ export default function ShiftsPage() {
             });
 
             if (res.ok) {
-                const data: DepartmentDto[] = await res.json();
-                setDepartments(data);
+                const text = await res.text();
+                if (text) {
+                    const data: DepartmentDto[] = JSON.parse(text);
+                    setDepartments(data);
+                }
             }
         } catch (error) {
             console.error("Error fetching departments:", error);
@@ -338,8 +354,11 @@ export default function ShiftsPage() {
             });
 
             if (res.ok) {
-                const data: RoomDto[] = await res.json();
-                setRooms(data);
+                const text = await res.text();
+                if (text) {
+                    const data: RoomDto[] = JSON.parse(text);
+                    setRooms(data);
+                }
             }
         } catch (error) {
             console.error("Error fetching rooms:", error);
@@ -356,8 +375,11 @@ export default function ShiftsPage() {
             });
 
             if (res.ok) {
-                const data: DoctorDto[] = await res.json();
-                setDoctors(data);
+                const text = await res.text();
+                if (text) {
+                    const data: DoctorDto[] = JSON.parse(text);
+                    setDoctors(data);
+                }
             }
         } catch (error) {
             console.error("Error fetching doctors:", error);
@@ -401,7 +423,7 @@ export default function ShiftsPage() {
                 endTime: shift.endTime,
                 slotMinutes: shift.slotMinutes,
                 capacityPerSlot: shift.capacityPerSlot,
-                departmentId: shift.departmentDto?.id || "",
+                departmentId: shift.departmentDto?.id || staff?.departmentDto?.id || "",
                 defaultRoomId: shift.defaultRoomDto?.id || "",
             });
         } else {
@@ -415,12 +437,12 @@ export default function ShiftsPage() {
                 endTime: toISODateTime(today, "12:00"),
                 slotMinutes: 30,
                 capacityPerSlot: 2,
-                departmentId: "",
+                departmentId: staff?.departmentDto?.id || "",
                 defaultRoomId: "",
             });
         }
         setIsShiftModalOpen(true);
-    }, []);
+    }, [staff]);
 
     const handleCloseShiftModal = () => {
         setIsShiftModalOpen(false);
@@ -484,8 +506,13 @@ export default function ShiftsPage() {
                     handleCloseShiftModal();
                     await fetchShifts();
                 } else {
-                    const errorData = await res.json();
-                    alert(`Failed to update shift: ${errorData.message || "Unknown error"}`);
+                    try {
+                        const text = await res.text();
+                        const errorData = text ? JSON.parse(text) : {};
+                        alert(`Failed to update shift: ${errorData.message || "Unknown error"}`);
+                    } catch {
+                        alert(`Failed to update shift: ${res.statusText}`);
+                    }
                 }
             } else {
                 // Create
@@ -503,8 +530,13 @@ export default function ShiftsPage() {
                     handleCloseShiftModal();
                     await fetchShifts();
                 } else {
-                    const errorData = await res.json();
-                    alert(`Failed to create shift: ${errorData.message || "Unknown error"}`);
+                    try {
+                        const text = await res.text();
+                        const errorData = text ? JSON.parse(text) : {};
+                        alert(`Failed to create shift: ${errorData.message || "Unknown error"}`);
+                    } catch {
+                        alert(`Failed to create shift: ${res.statusText}`);
+                    }
                 }
             }
         } catch (error) {
@@ -603,8 +635,13 @@ export default function ShiftsPage() {
                 handleCloseAssignmentModal();
                 await fetchAssignments();
             } else {
-                const errorData = await res.json();
-                alert(`Failed to assign doctor: ${errorData.message || "Unknown error"}`);
+                try {
+                    const text = await res.text();
+                    const errorData = text ? JSON.parse(text) : {};
+                    alert(`Failed to assign doctor: ${errorData.message || "Unknown error"}`);
+                } catch {
+                    alert(`Failed to assign doctor: ${res.statusText}`);
+                }
             }
         } catch (error) {
             console.error("Submit assignment error:", error);
@@ -1157,41 +1194,45 @@ export default function ShiftsPage() {
                             {/* Department & Room */}
                             <div className="divider">Location</div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="form-control">
-                                    <label className="label">
-                                        <span className="label-text font-semibold">Department</span>
-                                    </label>
-                                    <select
-                                        className="select select-bordered w-full"
-                                        value={shiftFormData.departmentId}
-                                        onChange={(e) => handleShiftFormChange("departmentId", e.target.value)}
-                                    >
-                                        <option value="">Select a department</option>
-                                        {departments.map((dept) => (
-                                            <option key={dept.id} value={dept.id}>
-                                                {dept.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                            {/* Department Display (Read-only) */}
+                            <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text font-semibold">Department</span>
+                                </label>
+                                <div className="bg-base-200 p-3 rounded-lg">
+                                    <p className="text-sm font-medium">
+                                        {staff?.departmentDto?.name || "No Department Assigned"}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Shift will be created for your department
+                                    </p>
                                 </div>
-                                <div className="form-control">
-                                    <label className="label">
-                                        <span className="label-text font-semibold">Default Room</span>
-                                    </label>
-                                    <select
-                                        className="select select-bordered w-full"
-                                        value={shiftFormData.defaultRoomId}
-                                        onChange={(e) => handleShiftFormChange("defaultRoomId", e.target.value)}
-                                    >
-                                        <option value="">Select a room</option>
-                                        {rooms.map((room) => (
+                            </div>
+
+                            {/* Room Selection (Filtered by department) */}
+                            <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text font-semibold">Default Room</span>
+                                </label>
+                                <select
+                                    className="select select-bordered w-full"
+                                    value={shiftFormData.defaultRoomId}
+                                    onChange={(e) => handleShiftFormChange("defaultRoomId", e.target.value)}
+                                >
+                                    <option value="">Select a room (optional)</option>
+                                    {rooms
+                                        .filter((room) => room.departmentDto?.id === staff?.departmentDto?.id)
+                                        .map((room) => (
                                             <option key={room.id} value={room.id}>
-                                                {room.roomNumber} - {room.departmentDto.name}
+                                                {room.roomNumber}
                                             </option>
                                         ))}
-                                    </select>
-                                </div>
+                                </select>
+                                <label className="label">
+                                    <span className="label-text-alt text-gray-500">
+                                        Only showing rooms in {staff?.departmentDto?.name || "your department"}
+                                    </span>
+                                </label>
                             </div>
 
                             {/* Actions */}
@@ -1284,7 +1325,7 @@ export default function ShiftsPage() {
                                     <option value="">Select a room (optional)</option>
                                     {rooms.map((room) => (
                                         <option key={room.id} value={room.id}>
-                                            {room.roomNumber} - {room.departmentDto.name}
+                                            {room.roomNumber} - {room.departmentDto?.name || "No Dept"}
                                         </option>
                                     ))}
                                 </select>
