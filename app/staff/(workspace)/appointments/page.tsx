@@ -103,11 +103,13 @@ export default function AppointmentsPage() {
 
     const formatTime = (dateString: string): string => {
         const date = new Date(dateString);
-        return date.toLocaleTimeString("en-US", {
+        const formettedDateTime = date.toLocaleTimeString("en-US", {
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,
         });
+        // return formettedDateTime.split("T")[1]
+        return formettedDateTime;
     };
 
     const transformAppointment = (dto: AppointmentDto): Appointment => {
@@ -271,21 +273,60 @@ export default function AppointmentsPage() {
         }
     };
 
-    const handleAddAppointment = (newAppointment: {
-        name: string;
-        time: string;
-        phoneNumber: string;
-        doctor: string;
-        department: string;
+    const handleAddAppointment = async (appointmentData: {
+        patientId: string;
+        doctorId: string;
+        assignmentId: string;
+        startsAt: string;
+        endsAt: string;
+        status: string;
+        type: string;
+        description?: string;
     }) => {
-        const appointment: Appointment = {
-            id: `#${String(appointments.length + 1).padStart(3, "0")}`,
-            ...newAppointment,
-            status: "PENDING",
-            description: null,
-        };
-        setAppointments((prev: Appointment[]) => [...prev, appointment]);
-        setIsAddModalOpen(false);
+        const token = Cookies.get("token");
+        if (!token) {
+            alert("Please login to continue");
+            return;
+        }
+
+        try {
+            const requestBody = {
+                startsAt: appointmentData.startsAt,
+                endsAt: appointmentData.endsAt,
+                status: appointmentData.status,
+                type: appointmentData.type,
+                description: appointmentData.description || null,
+                patientId: appointmentData.patientId,
+                doctorId: appointmentData.doctorId,
+                shiftAssignmentId: appointmentData.assignmentId,
+            };
+
+            const res = await fetch("/api/appointments", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (res.ok) {
+                alert("Appointment created successfully!");
+                setIsAddModalOpen(false);
+                // TODO: Refresh appointments list here
+            } else {
+                try {
+                    const text = await res.text();
+                    const errorData = text ? JSON.parse(text) : {};
+                    alert(`Failed to create appointment: ${errorData.message || "Unknown error"}`);
+                } catch {
+                    alert(`Failed to create appointment: ${res.statusText}`);
+                }
+            }
+        } catch (error) {
+            console.error("Create appointment error:", error);
+            alert("An error occurred while creating appointment");
+        }
     };
 
     const appointmentColumns: ColumnDef<Appointment>[] = [

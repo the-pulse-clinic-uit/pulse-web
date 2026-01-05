@@ -181,6 +181,58 @@ const extractDateTime = (isoString: string): { date: string; time: string } => {
     return { date, time };
 };
 
+// ==================== VALIDATION FUNCTIONS ====================
+
+const validateDateTime = (dateTimeStr: string, fieldName: string): string | null => {
+    const date = new Date(dateTimeStr);
+    
+    // Check if date is invalid
+    if (isNaN(date.getTime())) {
+        return `${fieldName} is invalid. Please enter a valid date and time.`;
+    }
+    
+    const year = date.getFullYear();
+    
+    // Check year range
+    if (year < 1900 || year > 3000) {
+        return `${fieldName} year must be between 1900 and 3000.`;
+    }
+    
+    return null;
+};
+
+const validateDateOnly = (dateStr: string, fieldName: string): string | null => {
+    const date = new Date(dateStr);
+    
+    // Check if date is invalid
+    if (isNaN(date.getTime())) {
+        return `${fieldName} is invalid. Please enter a valid date.`;
+    }
+    
+    const year = date.getFullYear();
+    
+    // Check year range
+    if (year < 1900 || year > 3000) {
+        return `${fieldName} year must be between 1900 and 3000.`;
+    }
+    
+    return null;
+};
+
+const validateDateTimeRange = (
+    startDateTime: string,
+    endDateTime: string
+): string | null => {
+    const start = new Date(startDateTime);
+    const end = new Date(endDateTime);
+    
+    if (end <= start) {
+        return "End time must be after start time.";
+    }
+    
+    return null;
+};
+
 // ==================== MAIN COMPONENT ====================
 
 export default function ShiftsPage() {
@@ -236,6 +288,8 @@ export default function ShiftsPage() {
         status: "ACTIVE",
         notes: "",
     });
+    const [filteredDoctorsForAssignment, setFilteredDoctorsForAssignment] = useState<DoctorDto[]>([]);
+    const [filteredRoomsForAssignment, setFilteredRoomsForAssignment] = useState<RoomDto[]>([]);
 
     // View Slots Modal state
     const [isViewSlotsModalOpen, setIsViewSlotsModalOpen] = useState(false);
@@ -410,6 +464,34 @@ export default function ShiftsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [shifts]);
 
+    // Filter doctors and rooms when shift is selected for assignment
+    useEffect(() => {
+        if (assignmentFormData.shiftId) {
+            const selectedShift = shifts.find((s) => s.id === assignmentFormData.shiftId);
+            if (selectedShift?.departmentDto?.id) {
+                const deptId = selectedShift.departmentDto.id;
+                
+                // Filter doctors by shift's department
+                const filteredDocs = doctors.filter(
+                    (doctor) => doctor.staffDto.departmentDto?.id === deptId
+                );
+                setFilteredDoctorsForAssignment(filteredDocs);
+                
+                // Filter rooms by shift's department
+                const filteredRms = rooms.filter(
+                    (room) => room.departmentDto?.id === deptId
+                );
+                setFilteredRoomsForAssignment(filteredRms);
+            } else {
+                setFilteredDoctorsForAssignment(doctors);
+                setFilteredRoomsForAssignment(rooms);
+            }
+        } else {
+            setFilteredDoctorsForAssignment([]);
+            setFilteredRoomsForAssignment([]);
+        }
+    }, [assignmentFormData.shiftId, shifts, doctors, rooms]);
+
     // ==================== SHIFT HANDLERS ====================
 
     const handleOpenShiftModal = useCallback((shift?: ShiftDto) => {
@@ -471,6 +553,25 @@ export default function ShiftsPage() {
 
     const handleSubmitShift = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate dates before submitting
+        const startTimeError = validateDateTime(shiftFormData.startTime, "Start date/time");
+        if (startTimeError) {
+            alert(startTimeError);
+            return;
+        }
+
+        const endTimeError = validateDateTime(shiftFormData.endTime, "End date/time");
+        if (endTimeError) {
+            alert(endTimeError);
+            return;
+        }
+
+        const rangeError = validateDateTimeRange(shiftFormData.startTime, shiftFormData.endTime);
+        if (rangeError) {
+            alert(rangeError);
+            return;
+        }
 
         const token = Cookies.get("token");
         if (!token) {
@@ -598,11 +699,24 @@ export default function ShiftsPage() {
     };
 
     const handleAssignmentFormChange = (field: keyof AssignmentFormData, value: string) => {
-        setAssignmentFormData((prev) => ({ ...prev, [field]: value }));
+        setAssignmentFormData((prev) => {
+            // If changing shift, reset doctor and room selections
+            if (field === "shiftId") {
+                return { ...prev, [field]: value, doctorId: "", roomId: "" };
+            }
+            return { ...prev, [field]: value };
+        });
     };
 
     const handleSubmitAssignment = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate duty date before submitting
+        const dateError = validateDateOnly(assignmentFormData.dutyDate, "Duty date");
+        if (dateError) {
+            alert(dateError);
+            return;
+        }
 
         const token = Cookies.get("token");
         if (!token) {
@@ -1086,6 +1200,7 @@ export default function ShiftsPage() {
                                         className="input input-bordered w-full"
                                         value={extractDateTime(shiftFormData.startTime).date}
                                         onChange={(e) => handleShiftDateTimeChange("start", "date", e.target.value)}
+                                        onKeyDown={(e) => e.preventDefault()}
                                         required
                                     />
                                 </div>
@@ -1098,6 +1213,7 @@ export default function ShiftsPage() {
                                         className="input input-bordered w-full"
                                         value={extractDateTime(shiftFormData.startTime).time}
                                         onChange={(e) => handleShiftDateTimeChange("start", "time", e.target.value)}
+                                        onKeyDown={(e) => e.preventDefault()}
                                         required
                                     />
                                 </div>
@@ -1113,6 +1229,7 @@ export default function ShiftsPage() {
                                         className="input input-bordered w-full"
                                         value={extractDateTime(shiftFormData.endTime).date}
                                         onChange={(e) => handleShiftDateTimeChange("end", "date", e.target.value)}
+                                        onKeyDown={(e) => e.preventDefault()}
                                         required
                                     />
                                 </div>
@@ -1125,6 +1242,7 @@ export default function ShiftsPage() {
                                         className="input input-bordered w-full"
                                         value={extractDateTime(shiftFormData.endTime).time}
                                         onChange={(e) => handleShiftDateTimeChange("end", "time", e.target.value)}
+                                        onKeyDown={(e) => e.preventDefault()}
                                         required
                                     />
                                 </div>
@@ -1266,6 +1384,7 @@ export default function ShiftsPage() {
                                     className="input input-bordered w-full"
                                     value={assignmentFormData.dutyDate}
                                     onChange={(e) => handleAssignmentFormChange("dutyDate", e.target.value)}
+                                    onKeyDown={(e) => e.preventDefault()}
                                     required
                                 />
                             </div>
@@ -1300,16 +1419,24 @@ export default function ShiftsPage() {
                                     className="select select-bordered w-full"
                                     value={assignmentFormData.doctorId}
                                     onChange={(e) => handleAssignmentFormChange("doctorId", e.target.value)}
+                                    disabled={!assignmentFormData.shiftId}
                                     required
                                 >
                                     <option value="">Select a doctor</option>
-                                    {doctors.map((doctor) => (
+                                    {filteredDoctorsForAssignment.map((doctor) => (
                                         <option key={doctor.id} value={doctor.id}>
                                             {doctor.staffDto.userDto.fullName} -{" "}
                                             {doctor.staffDto.departmentDto?.name || "No Dept"}
                                         </option>
                                     ))}
                                 </select>
+                                {!assignmentFormData.shiftId && (
+                                    <label className="label">
+                                        <span className="label-text-alt text-gray-500">
+                                            💡 Please select shift first
+                                        </span>
+                                    </label>
+                                )}
                             </div>
 
                             {/* Room */}
@@ -1321,14 +1448,22 @@ export default function ShiftsPage() {
                                     className="select select-bordered w-full"
                                     value={assignmentFormData.roomId}
                                     onChange={(e) => handleAssignmentFormChange("roomId", e.target.value)}
+                                    disabled={!assignmentFormData.shiftId}
                                 >
                                     <option value="">Select a room (optional)</option>
-                                    {rooms.map((room) => (
+                                    {filteredRoomsForAssignment.map((room) => (
                                         <option key={room.id} value={room.id}>
                                             {room.roomNumber} - {room.departmentDto?.name || "No Dept"}
                                         </option>
                                     ))}
                                 </select>
+                                {!assignmentFormData.shiftId && (
+                                    <label className="label">
+                                        <span className="label-text-alt text-gray-500">
+                                            💡 Please select shift first
+                                        </span>
+                                    </label>
+                                )}
                             </div>
 
                             <div className="divider">Assignment Details</div>
