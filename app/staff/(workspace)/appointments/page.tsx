@@ -130,14 +130,20 @@ export default function AppointmentsPage() {
         if (!token) return;
 
         try {
-            const [pendingRes, confirmedRes, checkedInRes] = await Promise.all([
-                fetch("/api/appointments/pending", {
+            const [pendingRes, confirmedRes, checkedInRes, doneRes, cancelledRes] = await Promise.all([
+                fetch("/api/appointments/status/PENDING", {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
-                fetch("/api/appointments/confirmed", {
+                fetch("/api/appointments/status/CONFIRMED", {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
-                fetch("/api/appointments/checked-in", {
+                fetch("/api/appointments/status/CHECKED_IN", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch("/api/appointments/status/DONE", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch("/api/appointments/status/CANCELLED", {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
             ]);
@@ -157,6 +163,16 @@ export default function AppointmentsPage() {
             if (checkedInRes.ok) {
                 const checkedInData = await checkedInRes.json();
                 allData.push(...checkedInData);
+            }
+
+            if (doneRes.ok) {
+                const doneData = await doneRes.json();
+                allData.push(...doneData);
+            }
+
+            if (cancelledRes.ok) {
+                const cancelledData = await cancelledRes.json();
+                allData.push(...cancelledData);
             }
 
             setAllAppointments(allData);
@@ -273,6 +289,73 @@ export default function AppointmentsPage() {
         }
     };
 
+    const handleDone = async (appointment: Appointment) => {
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        try {
+            const fullAppointment = allAppointments.find((apt) =>
+                apt.id.startsWith(appointment.id)
+            );
+            if (!fullAppointment) return;
+
+            const response = await fetch(
+                `/api/appointments/${fullAppointment.id}/done`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.ok) {
+                alert("Appointment marked as done!");
+                await fetchAllAppointments();
+            } else {
+                alert("Failed to mark appointment as done");
+            }
+        } catch (error) {
+            console.error("Failed to mark as done:", error);
+            alert("An error occurred");
+        }
+    };
+
+    const handleCancel = async (appointment: Appointment) => {
+        const reason = prompt("Enter cancellation reason (optional):");
+        
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        try {
+            const fullAppointment = allAppointments.find((apt) =>
+                apt.id.startsWith(appointment.id)
+            );
+            if (!fullAppointment) return;
+
+            const url = reason 
+                ? `/api/appointments/${fullAppointment.id}/cancel?reason=${encodeURIComponent(reason)}`
+                : `/api/appointments/${fullAppointment.id}/cancel`;
+
+            const response = await fetch(url, {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (response.ok) {
+                alert("Appointment cancelled successfully!");
+                await fetchAllAppointments();
+            } else {
+                alert("Failed to cancel appointment");
+            }
+        } catch (error) {
+            console.error("Failed to cancel appointment:", error);
+            alert("An error occurred");
+        }
+    };
+
     const handleAddAppointment = async (appointmentData: {
         patientId: string;
         doctorId: string;
@@ -290,9 +373,11 @@ export default function AppointmentsPage() {
         }
 
         try {
+            // const slotMinutes = assignmentData.slotDurationMinutes || 30;
+
             const requestBody = {
                 startsAt: appointmentData.startsAt,
-                endsAt: appointmentData.endsAt,
+                // endsAt: new Date(new Date(appointmentData.startsAt).getTime() + 30 * 60 * 1000).toLocaleTimeString(), // Default duration 30 mins
                 status: appointmentData.status,
                 type: appointmentData.type,
                 description: appointmentData.description || null,
@@ -313,7 +398,7 @@ export default function AppointmentsPage() {
             if (res.ok) {
                 alert("Appointment created successfully!");
                 setIsAddModalOpen(false);
-                // TODO: Refresh appointments list here
+                await fetchAllAppointments();
             } else {
                 try {
                     const text = await res.text();
@@ -364,19 +449,43 @@ export default function AppointmentsPage() {
             cell: (row) => (
                 <div className="flex gap-2">
                     {row.status === "PENDING" && (
-                        <button
-                            onClick={() => handleApprove(row)}
-                            className="btn btn-xs bg-green-100 text-green-700 border-none hover:bg-green-200"
-                        >
-                            Approve
-                        </button>
+                        <>
+                            <button
+                                onClick={() => handleApprove(row)}
+                                className="btn btn-xs bg-green-100 text-green-700 border-none hover:bg-green-200"
+                            >
+                                Approve
+                            </button>
+                            <button
+                                onClick={() => handleCancel(row)}
+                                className="btn btn-xs bg-red-100 text-red-700 border-none hover:bg-red-200"
+                            >
+                                Cancel
+                            </button>
+                        </>
                     )}
                     {row.status === "CONFIRMED" && (
+                        <>
+                            <button
+                                onClick={() => handleEncounter(row)}
+                                className="btn btn-xs bg-blue-100 text-blue-700 border-none hover:bg-blue-200"
+                            >
+                                Encounter
+                            </button>
+                            <button
+                                onClick={() => handleCancel(row)}
+                                className="btn btn-xs bg-red-100 text-red-700 border-none hover:bg-red-200"
+                            >
+                                Cancel
+                            </button>
+                        </>
+                    )}
+                    {row.status === "CHECKED_IN" && (
                         <button
-                            onClick={() => handleEncounter(row)}
-                            className="btn btn-xs bg-blue-100 text-blue-700 border-none hover:bg-blue-200"
+                            onClick={() => handleDone(row)}
+                            className="btn btn-xs bg-purple-100 text-purple-700 border-none hover:bg-purple-200"
                         >
-                            Encounter
+                            Done
                         </button>
                     )}
                 </div>
@@ -405,12 +514,12 @@ export default function AppointmentsPage() {
         {
             label: "Done",
             value: "DONE",
-            count: 0, // Not implemented yet
+            count: allAppointments.filter((a) => a.status === "DONE").length,
         },
         {
             label: "Cancelled",
             value: "CANCELLED",
-            count: 0, // Not implemented yet
+            count: allAppointments.filter((a) => a.status === "CANCELLED").length,
         },
     ];
 

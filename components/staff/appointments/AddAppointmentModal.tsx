@@ -349,7 +349,7 @@ export default function AddAppointmentModal({
                 const roomsList: RoomOption[] = data.map((room) => ({
                     id: room.id,
                     roomNumber: room.roomNumber,
-                    departmentId: room.departmentDto.id,
+                    departmentId: room.departmentDto?.id,
                 }));
                 setAllRooms(roomsList);
             }
