@@ -1,15 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import SendEmailForm from "@/components/staff/notifications/SendEmailForm";
 import TemplateList from "@/components/staff/notifications/TemplateList";
 import Header from "@/components/staff/Header";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import { toast } from "react-hot-toast";
 
 type Template = {
     id: string;
     title: string;
     description: string;
+};
+
+interface PatientDTO {
+    id: string;
+    userDto: {
+        id: string;
+        fullName: string;
+        birthDate: string;
+        gender: boolean;
+        phone: string;
+        email: string;
+        address: string;
+        citizenId: string;
+    };
+    healthInsuranceId: string | null;
+    bloodType: string;
+    allergies: string;
+}
+
+type PatientOption = {
+    id: string;
+    userId: string;
+    name: string;
+    email: string;
 };
 
 const mockTemplates: Template[] = [
@@ -20,48 +47,148 @@ const mockTemplates: Template[] = [
     },
     {
         id: "2",
-        title: "Diagnostic Result",
-        description: "Send an Diagnosis Result to the patient",
+        title: "Invoice Reminder",
+        description: "Send an invoice reminder to the patient",
     },
     {
         id: "3",
-        title: "Diagnostic Result",
-        description: "Send an Diagnosis Result to the patient",
+        title: "Dunning Notice",
+        description: "Send a dunning notice to the patient",
     },
     {
         id: "4",
-        title: "Diagnostic Result",
-        description: "Send an Diagnosis Result to the patient",
+        title: "General Notification",
+        description: "Send a general notification to the patient",
     },
 ];
 
 export default function NotificationsPage() {
+    const router = useRouter();
+    const [user, setUser] = useState<UserData | null>(null);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<"new" | "sent">("new");
     const [selectedMonth, setSelectedMonth] = useState("May'23");
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
         mockTemplates[0]
     );
+    const [patients, setPatients] = useState<PatientOption[]>([]);
+
+    useEffect(() => {
+        const token = Cookies.get("token");
+
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+
+        const fetchData = async () => {
+            try {
+                // Fetch user data
+                const userResponse = await fetch("/api/users/me", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    setUser(userData);
+                } else {
+                    Cookies.remove("token");
+                    router.push("/login");
+                    return;
+                }
+
+                // Fetch all patients
+                const patientsResponse = await fetch("/api/patients", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (patientsResponse.ok) {
+                    const patientsData = await patientsResponse.json();
+                    const formattedPatients: PatientOption[] = patientsData.map(
+                        (patient: PatientDTO) => ({
+                            id: patient.id,
+                            userId: patient.userDto.id,
+                            name: patient.userDto.fullName,
+                            email: patient.userDto.email,
+                        })
+                    );
+                    setPatients(formattedPatients);
+                }
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [router]);
 
     const handleCancel = () => {
         console.log("Cancel email");
     };
 
-    const handleSaveDraft = (data: {
+    const handleSend = async (data: {
         patient: string;
         template: string;
         subject: string;
         content: string;
     }) => {
-        console.log("Save draft:", data);
-    };
+        const token = Cookies.get("token");
+        if (!token) {
+            router.push("/login");
+            return;
+        }
 
-    const handleSend = (data: {
-        patient: string;
-        template: string;
-        subject: string;
-        content: string;
-    }) => {
-        console.log("Send email:", data);
+        // Find the selected patient to get their userId
+        const selectedPatient = patients.find((p) => p.id === data.patient);
+        if (!selectedPatient) {
+            toast.error("Selected patient not found");
+            return;
+        }
+
+        // Map template name to type
+        const typeMap: { [key: string]: string } = {
+            "Appointment Reminder": "APPOINTMENT",
+            "Invoice Reminder": "INVOICE",
+            "Dunning Notice": "DUNNING",
+            "General Notification": "GENERAL",
+        };
+
+        const notificationType = typeMap[data.template] || "GENERAL";
+
+        try {
+            const notificationBody = {
+                userId: selectedPatient.userId,
+                title: data.subject,
+                message: data.content,
+                type: notificationType,
+            };
+
+            const response = await fetch("/api/notifications", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(notificationBody),
+            });
+
+            if (response.ok) {
+                toast.success("Notification sent successfully!");
+                // Reset form or close modal here if needed
+            } else {
+                const error = await response.json();
+                toast.error(error.message || "Failed to send notification");
+            }
+        } catch (error) {
+            console.error("Failed to send notification:", error);
+            toast.error("Failed to send notification");
+        }
     };
 
     const handleSelectTemplate = (template: Template) => {
@@ -76,57 +203,21 @@ export default function NotificationsPage() {
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
             <Header
                 tabName="Send Notifications"
-                userName="Nguyen Huu Duy"
+                userName={user?.fullName}
+                avatarUrl={user?.avatarUrl}
             ></Header>
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setActiveTab("new")}
-                            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                                activeTab === "new"
-                                    ? "bg-gray-100 text-gray-900"
-                                    : "bg-white text-gray-600 hover:bg-gray-50"
-                            }`}
-                        >
-                            New
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("sent")}
-                            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                                activeTab === "sent"
-                                    ? "bg-gray-100 text-gray-900"
-                                    : "bg-white text-gray-600 hover:bg-gray-50"
-                            }`}
-                        >
-                            Sent
-                        </button>
-                    </div>
-
-                    <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="select select-bordered"
-                    >
-                        <option value="May'23">May&apos;23</option>
-                        <option value="Jun'23">Jun&apos;23</option>
-                        <option value="Jul'23">Jul&apos;23</option>
-                        <option value="Aug'23">Aug&apos;23</option>
-                    </select>
-                </div>
-
                 <div className="grid grid-cols-2 gap-6">
                     <SendEmailForm
                         selectedTemplate={selectedTemplate?.title}
+                        patients={patients}
                         onCancel={handleCancel}
-                        onSaveDraft={handleSaveDraft}
                         onSend={handleSend}
                     />
                     <TemplateList
                         templates={mockTemplates}
                         selectedTemplateId={selectedTemplate?.id}
                         onSelectTemplate={handleSelectTemplate}
-                        onCreateNew={handleCreateTemplate}
                     />
                 </div>
             </div>

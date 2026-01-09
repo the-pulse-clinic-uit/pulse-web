@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { LogOut, Menu, X } from "lucide-react";
 import Cookies from "js-cookie";
 import logo from "../../public/images/logo.png";
+import NotificationDropdown from "./NotificationDropdown";
 
 const PatientHeader: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -74,29 +75,32 @@ const PatientHeader: React.FC = () => {
                         })}
                     </nav>
 
-                    <button
-                        onClick={handleLogout}
-                        className="hidden md:flex items-center gap-2 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-full transition-colors shadow-sm"
-                    >
-                        <LogOut size={20} />
-                        <span>Logout</span>
-                    </button>
-
-                    {/* Mobile Menu Button */}
-                    <button
-                        onClick={toggleMenu}
-                        className="md:hidden p-2 text-foreground hover:text-primary transition-colors"
-                        aria-label="Toggle menu"
-                    >
-                        {isMenuOpen ? (
-                            <X className="w-6 h-6" />
-                        ) : (
-                            <Menu className="w-6 h-6" />
-                        )}
-                    </button>
+                    <div className="hidden md:flex items-center gap-4">
+                        <NotificationDropdown />
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-full transition-colors shadow-sm"
+                        >
+                            <LogOut size={20} />
+                            <span>Logout</span>
+                        </button>
+                    </div>
+                    <div className="md:hidden flex items-center gap-2">
+                        <NotificationDropdown />
+                        <button
+                            onClick={toggleMenu}
+                            className="p-2 text-foreground hover:text-primary transition-colors"
+                            aria-label="Toggle menu"
+                        >
+                            {isMenuOpen ? (
+                                <X className="w-6 h-6" />
+                            ) : (
+                                <Menu className="w-6 h-6" />
+                            )}
+                        </button>
+                    </div>
                 </div>
-
-                {/* MOBILE MENU */}
+                \
                 {isMenuOpen && (
                     <div className="lg:hidden py-4 border-t border-gray-200">
                         <nav className="flex flex-col space-y-4">
