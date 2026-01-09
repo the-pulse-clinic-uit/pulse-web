@@ -216,6 +216,13 @@ export default function StaffProfilePage() {
         setIsEditProfessionalInfoOpen(true);
     };
 
+    const handleAvatarUpdate = (newAvatarUrl: string) => {
+        setStaffData((prev) => ({
+            ...prev,
+            avatarUrl: newAvatarUrl,
+        }));
+    };
+
     if (loading) {
         return (
             <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
@@ -240,6 +247,7 @@ export default function StaffProfilePage() {
                     name={staffData.name}
                     role={staffData.role}
                     avatarUrl={staffData.avatarUrl}
+                    onAvatarUpdate={handleAvatarUpdate}
                 />
 
                 <PersonalInformationCard
