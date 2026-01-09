@@ -164,7 +164,8 @@ export default function EditDoctorPersonalInfoModal({
                         <div className="form-control col-span-2">
                             <label className="label">
                                 <span className="label-text">
-                                    Address <span className="text-error">*</span>
+                                    Address{" "}
+                                    <span className="text-error">*</span>
                                 </span>
                             </label>
                             <input
@@ -224,7 +225,9 @@ export default function EditDoctorPersonalInfoModal({
                     </button>
                     <button
                         onClick={handleSave}
-                        className={`btn btn-primary ${!isFormValid ? "btn-disabled" : ""}`}
+                        className={`btn btn-primary ${
+                            !isFormValid ? "btn-disabled" : ""
+                        }`}
                         disabled={!isFormValid}
                         type="button"
                     >
