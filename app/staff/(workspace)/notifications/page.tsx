@@ -7,6 +7,7 @@ import TemplateList from "@/components/staff/notifications/TemplateList";
 import Header from "@/components/staff/Header";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { toast } from "react-hot-toast";
 
 type Template = {
     id: string;
@@ -17,6 +18,7 @@ type Template = {
 interface PatientDTO {
     id: string;
     userDto: {
+        id: string;
         fullName: string;
         birthDate: string;
         gender: boolean;
@@ -32,6 +34,7 @@ interface PatientDTO {
 
 type PatientOption = {
     id: string;
+    userId: string;
     name: string;
     email: string;
 };
@@ -108,6 +111,7 @@ export default function NotificationsPage() {
                     const formattedPatients: PatientOption[] = patientsData.map(
                         (patient: PatientDTO) => ({
                             id: patient.id,
+                            userId: patient.userDto.id,
                             name: patient.userDto.fullName,
                             email: patient.userDto.email,
                         })
@@ -128,22 +132,63 @@ export default function NotificationsPage() {
         console.log("Cancel email");
     };
 
-    const handleSaveDraft = (data: {
+    const handleSend = async (data: {
         patient: string;
         template: string;
         subject: string;
         content: string;
     }) => {
-        console.log("Save draft:", data);
-    };
+        const token = Cookies.get("token");
+        if (!token) {
+            router.push("/login");
+            return;
+        }
 
-    const handleSend = (data: {
-        patient: string;
-        template: string;
-        subject: string;
-        content: string;
-    }) => {
-        console.log("Send email:", data);
+        // Find the selected patient to get their userId
+        const selectedPatient = patients.find((p) => p.id === data.patient);
+        if (!selectedPatient) {
+            toast.error("Selected patient not found");
+            return;
+        }
+
+        // Map template name to type
+        const typeMap: { [key: string]: string } = {
+            "Appointment Reminder": "APPOINTMENT",
+            "Invoice Reminder": "INVOICE",
+            "Dunning Notice": "DUNNING",
+            "General Notification": "GENERAL",
+        };
+
+        const notificationType = typeMap[data.template] || "GENERAL";
+
+        try {
+            const notificationBody = {
+                userId: selectedPatient.userId,
+                title: data.subject,
+                message: data.content,
+                type: notificationType,
+            };
+
+            const response = await fetch("/api/notifications", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(notificationBody),
+            });
+
+            if (response.ok) {
+                toast.success("Notification sent successfully!");
+                // Reset form or close modal here if needed
+            } else {
+                const error = await response.json();
+                toast.error(error.message || "Failed to send notification");
+            }
+        } catch (error) {
+            console.error("Failed to send notification:", error);
+            toast.error("Failed to send notification");
+        }
     };
 
     const handleSelectTemplate = (template: Template) => {
@@ -162,37 +207,11 @@ export default function NotificationsPage() {
                 avatarUrl={user?.avatarUrl}
             ></Header>
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setActiveTab("new")}
-                            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                                activeTab === "new"
-                                    ? "bg-gray-100 text-gray-900"
-                                    : "bg-white text-gray-600 hover:bg-gray-50"
-                            }`}
-                        >
-                            New
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("sent")}
-                            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                                activeTab === "sent"
-                                    ? "bg-gray-100 text-gray-900"
-                                    : "bg-white text-gray-600 hover:bg-gray-50"
-                            }`}
-                        >
-                            Sent
-                        </button>
-                    </div>
-                </div>
-
                 <div className="grid grid-cols-2 gap-6">
                     <SendEmailForm
                         selectedTemplate={selectedTemplate?.title}
                         patients={patients}
                         onCancel={handleCancel}
-                        onSaveDraft={handleSaveDraft}
                         onSend={handleSend}
                     />
                     <TemplateList

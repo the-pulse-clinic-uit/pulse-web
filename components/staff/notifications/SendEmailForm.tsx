@@ -4,6 +4,7 @@ import { useState } from "react";
 
 type PatientOption = {
     id: string;
+    userId: string;
     name: string;
     email: string;
 };
@@ -12,12 +13,6 @@ interface SendEmailFormProps {
     selectedTemplate?: string;
     patients: PatientOption[];
     onCancel: () => void;
-    onSaveDraft: (data: {
-        patient: string;
-        template: string;
-        subject: string;
-        content: string;
-    }) => void;
     onSend: (data: {
         patient: string;
         template: string;
@@ -30,7 +25,6 @@ export default function SendEmailForm({
     selectedTemplate,
     patients,
     onCancel,
-    onSaveDraft,
     onSend,
 }: SendEmailFormProps) {
     const [formData, setFormData] = useState({
@@ -50,10 +44,6 @@ export default function SendEmailForm({
             ...prev,
             [name]: value,
         }));
-    };
-
-    const handleSaveDraft = () => {
-        onSaveDraft(formData);
     };
 
     const handleSend = () => {
@@ -136,12 +126,6 @@ export default function SendEmailForm({
             <div className="flex justify-end gap-3 mt-6">
                 <button className="btn btn-ghost" onClick={onCancel}>
                     Cancel
-                </button>
-                <button
-                    className="btn btn-outline btn-primary"
-                    onClick={handleSaveDraft}
-                >
-                    Save Draft
                 </button>
                 <button
                     className="btn btn-primary"
