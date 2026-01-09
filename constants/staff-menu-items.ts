@@ -27,5 +27,4 @@ export const MENU_ITEMS = [
     { label: "Drug Catalog", href: "/drugs", icon: Pill },
     { label: "Manage Encounter", href: "/encounters", icon: Stethoscope },
     { label: "Staff Profile", href: "/staff", icon: Users },
-    { label: "Patient Rating", href: "/ratings", icon: Star },
 ];
