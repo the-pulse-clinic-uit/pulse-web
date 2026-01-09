@@ -100,7 +100,6 @@ const PatientHeader: React.FC = () => {
                         </button>
                     </div>
                 </div>
-                \
                 {isMenuOpen && (
                     <div className="lg:hidden py-4 border-t border-gray-200">
                         <nav className="flex flex-col space-y-4">
