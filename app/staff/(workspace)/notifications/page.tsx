@@ -14,6 +14,28 @@ type Template = {
     description: string;
 };
 
+interface PatientDTO {
+    id: string;
+    userDto: {
+        fullName: string;
+        birthDate: string;
+        gender: boolean;
+        phone: string;
+        email: string;
+        address: string;
+        citizenId: string;
+    };
+    healthInsuranceId: string | null;
+    bloodType: string;
+    allergies: string;
+}
+
+type PatientOption = {
+    id: string;
+    name: string;
+    email: string;
+};
+
 const mockTemplates: Template[] = [
     {
         id: "1",
@@ -22,18 +44,18 @@ const mockTemplates: Template[] = [
     },
     {
         id: "2",
-        title: "Diagnostic Result",
-        description: "Send an Diagnosis Result to the patient",
+        title: "Invoice Reminder",
+        description: "Send an invoice reminder to the patient",
     },
     {
         id: "3",
-        title: "Diagnostic Result",
-        description: "Send an Diagnosis Result to the patient",
+        title: "Dunning Notice",
+        description: "Send a dunning notice to the patient",
     },
     {
         id: "4",
-        title: "Diagnostic Result",
-        description: "Send an Diagnosis Result to the patient",
+        title: "General Notification",
+        description: "Send a general notification to the patient",
     },
 ];
 
@@ -46,6 +68,7 @@ export default function NotificationsPage() {
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
         mockTemplates[0]
     );
+    const [patients, setPatients] = useState<PatientOption[]>([]);
 
     useEffect(() => {
         const token = Cookies.get("token");
@@ -55,29 +78,50 @@ export default function NotificationsPage() {
             return;
         }
 
-        const fetchUserData = async () => {
+        const fetchData = async () => {
             try {
-                const response = await fetch("/api/users/me", {
+                // Fetch user data
+                const userResponse = await fetch("/api/users/me", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setUser(data);
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    setUser(userData);
                 } else {
                     Cookies.remove("token");
                     router.push("/login");
+                    return;
+                }
+
+                // Fetch all patients
+                const patientsResponse = await fetch("/api/patients", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (patientsResponse.ok) {
+                    const patientsData = await patientsResponse.json();
+                    const formattedPatients: PatientOption[] = patientsData.map(
+                        (patient: PatientDTO) => ({
+                            id: patient.id,
+                            name: patient.userDto.fullName,
+                            email: patient.userDto.email,
+                        })
+                    );
+                    setPatients(formattedPatients);
                 }
             } catch (error) {
-                console.error("Failed to fetch user:", error);
+                console.error("Failed to fetch data:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchUserData();
+        fetchData();
     }, [router]);
 
     const handleCancel = () => {
@@ -141,22 +185,12 @@ export default function NotificationsPage() {
                             Sent
                         </button>
                     </div>
-
-                    <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="select select-bordered"
-                    >
-                        <option value="May'23">May&apos;23</option>
-                        <option value="Jun'23">Jun&apos;23</option>
-                        <option value="Jul'23">Jul&apos;23</option>
-                        <option value="Aug'23">Aug&apos;23</option>
-                    </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
                     <SendEmailForm
                         selectedTemplate={selectedTemplate?.title}
+                        patients={patients}
                         onCancel={handleCancel}
                         onSaveDraft={handleSaveDraft}
                         onSend={handleSend}
@@ -165,7 +199,6 @@ export default function NotificationsPage() {
                         templates={mockTemplates}
                         selectedTemplateId={selectedTemplate?.id}
                         onSelectTemplate={handleSelectTemplate}
-                        onCreateNew={handleCreateTemplate}
                     />
                 </div>
             </div>
