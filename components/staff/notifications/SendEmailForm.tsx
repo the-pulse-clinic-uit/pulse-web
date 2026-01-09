@@ -2,8 +2,15 @@
 
 import { useState } from "react";
 
+type PatientOption = {
+    id: string;
+    name: string;
+    email: string;
+};
+
 interface SendEmailFormProps {
     selectedTemplate?: string;
+    patients: PatientOption[];
     onCancel: () => void;
     onSaveDraft: (data: {
         patient: string;
@@ -21,6 +28,7 @@ interface SendEmailFormProps {
 
 export default function SendEmailForm({
     selectedTemplate,
+    patients,
     onCancel,
     onSaveDraft,
     onSend,
@@ -33,7 +41,9 @@ export default function SendEmailForm({
     });
 
     const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        e: React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >
     ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
@@ -73,47 +83,36 @@ export default function SendEmailForm({
                 <div className="form-control">
                     <label className="label">
                         <span className="label-text text-gray-600">
-                            Chose Patient
+                            Choose Patient
                         </span>
                     </label>
-                    <input
-                        type="text"
+                    <select
                         name="patient"
                         value={formData.patient}
                         onChange={handleChange}
-                        placeholder="Select patient"
-                        className="input input-bordered w-full"
-                    />
+                        className="select select-bordered w-full"
+                    >
+                        <option value="" disabled>
+                            Select a patient
+                        </option>
+                        {patients.map((patient) => (
+                            <option key={patient.id} value={patient.id}>
+                                {patient.name} ({patient.email})
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="form-control">
                     <label className="label">
-                        <span className="label-text text-gray-600">
-                            Email template
-                        </span>
-                    </label>
-                    <input
-                        type="text"
-                        name="template"
-                        value={formData.template}
-                        onChange={handleChange}
-                        placeholder="Select template"
-                        className="input input-bordered w-full"
-                    />
-                </div>
-
-                <div className="form-control">
-                    <label className="label">
-                        <span className="label-text text-gray-600">
-                            Subject
-                        </span>
+                        <span className="label-text text-gray-600">Title</span>
                     </label>
                     <input
                         type="text"
                         name="subject"
                         value={formData.subject}
                         onChange={handleChange}
-                        placeholder="Enter subject"
+                        placeholder="Enter title"
                         className="input input-bordered w-full"
                     />
                 </div>
@@ -121,14 +120,14 @@ export default function SendEmailForm({
                 <div className="form-control">
                     <label className="label">
                         <span className="label-text text-gray-600">
-                            Content
+                            Message
                         </span>
                     </label>
                     <textarea
                         name="content"
                         value={formData.content}
                         onChange={handleChange}
-                        placeholder="Enter email content"
+                        placeholder="Enter message"
                         className="textarea textarea-bordered w-full h-32"
                     />
                 </div>
