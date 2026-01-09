@@ -3,12 +3,11 @@
 interface PersonalInformation {
     name: string;
     dateOfBirth: string;
-    age: number;
     phoneNumber: string;
     emailAddress: string;
     address: string;
     gender: string;
-    ethnicity: string;
+    citizenId: string;
 }
 
 interface PersonalInformationCardProps {
@@ -63,13 +62,6 @@ export default function PersonalInformationCard({
                 </div>
 
                 <div>
-                    <p className="text-sm text-gray-500 mb-1">Age</p>
-                    <p className="text-base font-medium text-gray-900">
-                        {data.age}
-                    </p>
-                </div>
-
-                <div>
                     <p className="text-sm text-gray-500 mb-1">Phone Number</p>
                     <p className="text-base font-medium text-gray-900">
                         {data.phoneNumber}
@@ -98,9 +90,9 @@ export default function PersonalInformationCard({
                 </div>
 
                 <div>
-                    <p className="text-sm text-gray-500 mb-1">Ethnicity</p>
+                    <p className="text-sm text-gray-500 mb-1">Citizen ID</p>
                     <p className="text-base font-medium text-gray-900">
-                        {data.ethnicity}
+                        {data.citizenId}
                     </p>
                 </div>
             </div>
