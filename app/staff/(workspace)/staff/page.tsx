@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 import StaffProfileHeader from "@/components/staff/staff/StaffProfileHeader";
 import PersonalInformationCard from "@/components/staff/staff/PersonalInformationCard";
 import ProfessionalInformationCard from "@/components/staff/staff/ProfessionalInformationCard";
@@ -7,23 +9,57 @@ import EditPersonalInfoModal from "@/components/staff/staff/EditPersonalInfoModa
 import EditProfessionalInfoModal from "@/components/staff/staff/EditProfessionalInfoModal";
 import Header from "@/components/staff/Header";
 
+interface StaffDTO {
+    id: string;
+    position: string;
+    createdAt: string;
+    userDto: {
+        id: string;
+        email: string;
+        fullName: string;
+        address: string | null;
+        citizenId: string;
+        phone: string;
+        gender: boolean;
+        birthDate: string;
+        avatarUrl: string | null;
+        createdAt: string;
+        updatedAt: string;
+        isActive: boolean;
+        roleDto: {
+            id: string;
+            name: string;
+            createdAt: string;
+        };
+    };
+    departmentDto: {
+        id: string;
+        name: string;
+        description: string;
+        createdAt: string;
+    };
+}
+
 export default function StaffProfilePage() {
+    const router = useRouter();
+    const [loading, setLoading] = useState(true);
+    const [staffApiData, setStaffApiData] = useState<StaffDTO | null>(null);
     const [staffData, setStaffData] = useState({
-        name: "Nguyen Van A",
+        name: "Loading...",
         role: "Staff",
         avatarUrl: "/images/avatar-placeholder.jpg",
         personalInfo: {
-            name: "Nguyen Van A",
-            dateOfBirth: "07/01/1997",
-            age: 26,
-            phoneNumber: "0756348223",
-            emailAddress: "nguyenvana@gmail.com",
-            address: "Thu Duc, HCM City",
+            name: "Loading...",
+            dateOfBirth: "",
+            age: 0,
+            phoneNumber: "",
+            emailAddress: "",
+            address: "",
             gender: "Male",
             ethnicity: "Kinh",
         },
         professionalInfo: {
-            specialty: "Internal Medicine",
+            specialty: "",
             practicingCertificate: "",
         },
     });
@@ -31,6 +67,77 @@ export default function StaffProfilePage() {
     const [isEditPersonalInfoOpen, setIsEditPersonalInfoOpen] = useState(false);
     const [isEditProfessionalInfoOpen, setIsEditProfessionalInfoOpen] =
         useState(false);
+
+    useEffect(() => {
+        const fetchStaffData = async () => {
+            const token = Cookies.get("token");
+            if (!token) {
+                router.push("/login");
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/staff/me", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (response.ok) {
+                    const data: StaffDTO = await response.json();
+                    setStaffApiData(data);
+
+                    const birthDate = new Date(data.userDto.birthDate);
+                    const today = new Date();
+                    let age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
+                    if (
+                        monthDiff < 0 ||
+                        (monthDiff === 0 &&
+                            today.getDate() < birthDate.getDate())
+                    ) {
+                        age--;
+                    }
+
+                    // Format date to DD/MM/YYYY
+                    const formattedDate = new Date(data.userDto.birthDate)
+                        .toLocaleDateString("en-GB")
+                        .replace(/\//g, "/");
+
+                    setStaffData({
+                        name: data.userDto.fullName,
+                        role: data.position,
+                        avatarUrl:
+                            data.userDto.avatarUrl ||
+                            "/images/avatar-placeholder.jpg",
+                        personalInfo: {
+                            name: data.userDto.fullName,
+                            dateOfBirth: formattedDate,
+                            age: age,
+                            phoneNumber: data.userDto.phone,
+                            emailAddress: data.userDto.email,
+                            address: data.userDto.address || "Not provided",
+                            gender: data.userDto.gender ? "Male" : "Female",
+                            ethnicity: "Kinh",
+                        },
+                        professionalInfo: {
+                            specialty: data.departmentDto.name,
+                            practicingCertificate: "",
+                        },
+                    });
+                } else {
+                    Cookies.remove("token");
+                    router.push("/login");
+                }
+            } catch (error) {
+                console.error("Failed to fetch staff data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStaffData();
+    }, [router]);
 
     const handleSavePersonalInfo = (data: {
         name: string;
@@ -66,9 +173,24 @@ export default function StaffProfilePage() {
         setIsEditProfessionalInfoOpen(true);
     };
 
+    if (loading) {
+        return (
+            <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
+                <Header tabName="Staff Profile" userName="Loading..." />
+                <div className="flex items-center justify-center h-96">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
-            <Header tabName="Manage Patients" userName="Nguyen Huu Duy" />
+            <Header
+                tabName="Staff Profile"
+                userName={staffData.name}
+                avatarUrl={staffData.avatarUrl}
+            />
 
             <div className="w-full space-y-6">
                 <StaffProfileHeader
