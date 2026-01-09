@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { toast } from "react-hot-toast";
 import StaffProfileHeader from "@/components/staff/staff/StaffProfileHeader";
 import PersonalInformationCard from "@/components/staff/staff/PersonalInformationCard";
 import ProfessionalInformationCard from "@/components/staff/staff/ProfessionalInformationCard";
@@ -51,12 +52,11 @@ export default function StaffProfilePage() {
         personalInfo: {
             name: "Loading...",
             dateOfBirth: "",
-            age: 0,
             phoneNumber: "",
             emailAddress: "",
             address: "",
             gender: "Male",
-            ethnicity: "Kinh",
+            citizenId: "",
         },
         professionalInfo: {
             specialty: "",
@@ -87,19 +87,6 @@ export default function StaffProfilePage() {
                     const data: StaffDTO = await response.json();
                     setStaffApiData(data);
 
-                    const birthDate = new Date(data.userDto.birthDate);
-                    const today = new Date();
-                    let age = today.getFullYear() - birthDate.getFullYear();
-                    const monthDiff = today.getMonth() - birthDate.getMonth();
-                    if (
-                        monthDiff < 0 ||
-                        (monthDiff === 0 &&
-                            today.getDate() < birthDate.getDate())
-                    ) {
-                        age--;
-                    }
-
-                    // Format date to DD/MM/YYYY
                     const formattedDate = new Date(data.userDto.birthDate)
                         .toLocaleDateString("en-GB")
                         .replace(/\//g, "/");
@@ -113,12 +100,11 @@ export default function StaffProfilePage() {
                         personalInfo: {
                             name: data.userDto.fullName,
                             dateOfBirth: formattedDate,
-                            age: age,
                             phoneNumber: data.userDto.phone,
                             emailAddress: data.userDto.email,
                             address: data.userDto.address || "Not provided",
                             gender: data.userDto.gender ? "Male" : "Female",
-                            ethnicity: "Kinh",
+                            citizenId: data.userDto.citizenId,
                         },
                         professionalInfo: {
                             specialty: data.departmentDto.name,
@@ -139,21 +125,78 @@ export default function StaffProfilePage() {
         fetchStaffData();
     }, [router]);
 
-    const handleSavePersonalInfo = (data: {
+    const handleSavePersonalInfo = async (data: {
         name: string;
         dateOfBirth: string;
-        age: number;
         phoneNumber: string;
         emailAddress: string;
         address: string;
         gender: string;
-        ethnicity: string;
+        citizenId: string;
     }) => {
-        setStaffData((prev) => ({
-            ...prev,
-            name: data.name,
-            personalInfo: data,
-        }));
+        const token = Cookies.get("token");
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+
+        try {
+            const [day, month, year] = data.dateOfBirth.split("/");
+            const isoDate = `${year}-${month}-${day}`;
+
+            const userPayload = {
+                fullName: data.name,
+                email: data.emailAddress,
+                phone: data.phoneNumber,
+                citizenId: data.citizenId,
+                birthDate: isoDate,
+                gender: data.gender === "Male",
+                address: data.address,
+            };
+
+            const response = await fetch("/api/users/me", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(userPayload),
+            });
+
+            if (response.ok) {
+                toast.success("Personal information updated successfully!");
+
+                setStaffData((prev) => ({
+                    ...prev,
+                    name: data.name,
+                    personalInfo: {
+                        ...data,
+                    },
+                }));
+
+                const staffResponse = await fetch("/api/staff/me", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (staffResponse.ok) {
+                    const updatedStaffData: StaffDTO =
+                        await staffResponse.json();
+                    setStaffApiData(updatedStaffData);
+                }
+
+                setIsEditPersonalInfoOpen(false);
+            } else {
+                const error = await response.json();
+                toast.error(
+                    error.message || "Failed to update personal information"
+                );
+            }
+        } catch (error) {
+            console.error("Failed to update personal information:", error);
+            toast.error("Failed to update personal information");
+        }
     };
 
     const handleSaveProfessionalInfo = (data: {

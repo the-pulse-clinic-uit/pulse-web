@@ -7,22 +7,20 @@ type EditPersonalInfoModalProps = {
     onSave: (data: {
         name: string;
         dateOfBirth: string;
-        age: number;
         phoneNumber: string;
         emailAddress: string;
         address: string;
         gender: string;
-        ethnicity: string;
+        citizenId: string;
     }) => void;
     currentData: {
         name: string;
         dateOfBirth: string;
-        age: number;
         phoneNumber: string;
         emailAddress: string;
         address: string;
         gender: string;
-        ethnicity: string;
+        citizenId: string;
     };
 };
 
@@ -35,12 +33,11 @@ export default function EditPersonalInfoModal({
     const getInitialFormData = () => ({
         name: currentData.name,
         dateOfBirth: currentData.dateOfBirth,
-        age: currentData.age.toString(),
         phoneNumber: currentData.phoneNumber,
         emailAddress: currentData.emailAddress,
         address: currentData.address,
         gender: currentData.gender,
-        ethnicity: currentData.ethnicity,
+        citizenId: currentData.citizenId,
     });
 
     const [formData, setFormData] = useState(getInitialFormData());
@@ -59,17 +56,13 @@ export default function EditPersonalInfoModal({
         if (
             formData.name &&
             formData.dateOfBirth &&
-            formData.age &&
             formData.phoneNumber &&
             formData.emailAddress &&
             formData.address &&
             formData.gender &&
-            formData.ethnicity
+            formData.citizenId
         ) {
-            onSave({
-                ...formData,
-                age: parseInt(formData.age),
-            });
+            onSave(formData);
             onClose();
         }
     };
@@ -83,7 +76,6 @@ export default function EditPersonalInfoModal({
         setFormData(getInitialFormData());
     };
 
-    // Reset form when modal opens
     if (isOpen && formData.name !== currentData.name) {
         setFormData(getInitialFormData());
     }
@@ -91,12 +83,11 @@ export default function EditPersonalInfoModal({
     const isFormValid =
         formData.name &&
         formData.dateOfBirth &&
-        formData.age &&
         formData.phoneNumber &&
         formData.emailAddress &&
         formData.address &&
         formData.gender &&
-        formData.ethnicity;
+        formData.citizenId;
 
     return (
         <div className={`modal ${isOpen ? "modal-open" : ""}`}>
@@ -136,22 +127,6 @@ export default function EditPersonalInfoModal({
                                 value={formData.dateOfBirth}
                                 onChange={handleChange}
                                 placeholder="DD/MM/YYYY"
-                                className="input input-bordered w-full"
-                            />
-                        </div>
-
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text">
-                                    Age <span className="text-error">*</span>
-                                </span>
-                            </label>
-                            <input
-                                type="number"
-                                name="age"
-                                value={formData.age}
-                                onChange={handleChange}
-                                placeholder="Enter age"
                                 className="input input-bordered w-full"
                             />
                         </div>
@@ -229,16 +204,16 @@ export default function EditPersonalInfoModal({
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text">
-                                    Ethnicity{" "}
+                                    Citizen ID{" "}
                                     <span className="text-error">*</span>
                                 </span>
                             </label>
                             <input
                                 type="text"
-                                name="ethnicity"
-                                value={formData.ethnicity}
+                                name="citizenId"
+                                value={formData.citizenId}
                                 onChange={handleChange}
-                                placeholder="Enter ethnicity"
+                                placeholder="Enter citizen ID"
                                 className="input input-bordered w-full"
                             />
                         </div>
