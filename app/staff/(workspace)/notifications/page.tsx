@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import SendEmailForm from "@/components/staff/notifications/SendEmailForm";
 import TemplateList from "@/components/staff/notifications/TemplateList";
 import Header from "@/components/staff/Header";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 type Template = {
     id: string;
@@ -36,11 +38,47 @@ const mockTemplates: Template[] = [
 ];
 
 export default function NotificationsPage() {
+    const router = useRouter();
+    const [user, setUser] = useState<UserData | null>(null);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<"new" | "sent">("new");
     const [selectedMonth, setSelectedMonth] = useState("May'23");
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
         mockTemplates[0]
     );
+
+    useEffect(() => {
+        const token = Cookies.get("token");
+
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+
+        const fetchUserData = async () => {
+            try {
+                const response = await fetch("/api/users/me", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setUser(data);
+                } else {
+                    Cookies.remove("token");
+                    router.push("/login");
+                }
+            } catch (error) {
+                console.error("Failed to fetch user:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, [router]);
 
     const handleCancel = () => {
         console.log("Cancel email");
@@ -76,7 +114,8 @@ export default function NotificationsPage() {
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
             <Header
                 tabName="Send Notifications"
-                userName="Nguyen Huu Duy"
+                userName={user?.fullName}
+                avatarUrl={user?.avatarUrl}
             ></Header>
             <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-6">
