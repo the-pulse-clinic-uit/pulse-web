@@ -21,7 +21,7 @@ export const MENU_ITEMS = [
     { label: "Shift & Assignment", href: "/shifts", icon: CalendarClock },
     { label: "Manage Appointment", href: "/appointments", icon: Calendar },
     { label: "Patient Profile", href: "/patients", icon: User },
-    { label: "Chat with patient", href: "/chat", icon: MessageSquare },
+    { label: "Chat with patient", href: "/chat-support", icon: MessageSquare },
     { label: "Send Notification", href: "/notifications", icon: Bell },
     { label: "Invoice & Payments", href: "/invoices", icon: Receipt },
     { label: "Drug Catalog", href: "/drugs", icon: Pill },

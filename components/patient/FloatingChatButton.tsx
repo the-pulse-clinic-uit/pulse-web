@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, User, Bot, Send, Loader2 } from "lucide-react";
 import Cookies from "js-cookie";
+import StaffChatModal from "./chat/StaffChatModal";
 
 interface Message {
     role: "user" | "assistant";
@@ -12,6 +13,7 @@ interface Message {
 const FloatingChatButton: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isStaffChatOpen, setIsStaffChatOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputMessage, setInputMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +25,9 @@ const FloatingChatButton: React.FC = () => {
         if (isChatOpen) {
             setIsChatOpen(false);
         }
+        if (isStaffChatOpen) {
+            setIsStaffChatOpen(false);
+        }
     };
 
     const openAIChat = () => {
@@ -30,8 +35,17 @@ const FloatingChatButton: React.FC = () => {
         setIsChatOpen(true);
     };
 
+    const openStaffChat = () => {
+        setIsOpen(false);
+        setIsStaffChatOpen(true);
+    };
+
     const closeChat = () => {
         setIsChatOpen(false);
+    };
+
+    const closeStaffChat = () => {
+        setIsStaffChatOpen(false);
     };
 
     const scrollToBottom = () => {
@@ -251,7 +265,10 @@ const FloatingChatButton: React.FC = () => {
                         </div>
                     </div>
                     <div className="p-2 space-y-2">
-                        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-purple-50 transition-colors group">
+                        <button
+                            onClick={openStaffChat}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-purple-50 transition-colors group"
+                        >
                             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 group-hover:bg-purple-200 transition-colors">
                                 <User className="text-purple-600" size={20} />
                             </div>
@@ -284,7 +301,9 @@ const FloatingChatButton: React.FC = () => {
                 </div>
             )}
 
-            {!isChatOpen && (
+            <StaffChatModal isOpen={isStaffChatOpen} onClose={closeStaffChat} />
+
+            {!isChatOpen && !isStaffChatOpen && (
                 <button
                     onClick={toggleMenu}
                     className={`fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 rounded-full shadow-2xl transition-all duration-300 ${
