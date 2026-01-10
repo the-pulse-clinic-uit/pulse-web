@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Cookies from "js-cookie";
+import { DOSAGE_FORMS, DRUG_UNITS } from "@/constants/drug-constants";
 
 type AddDrugModalProps = {
     isOpen: boolean;
@@ -183,23 +184,11 @@ export default function AddDrugModal({
                                 onChange={handleChange}
                             >
                                 <option value="">Select Dosage Form</option>
-                                <option value="CAPSULE">Capsule</option>
-                                <option value="CREAM">Cream</option>
-                                <option value="DROPS">Drops</option>
-                                <option value="GEL">Gel</option>
-                                <option value="INHALER">Inhaler</option>
-                                <option value="INJECTION">Injection</option>
-                                <option value="LOTION">Lotion</option>
-                                <option value="MOUTHWASH">Mouthwash</option>
-                                <option value="OINTMENT">Ointment</option>
-                                <option value="PATCH">Patch</option>
-                                <option value="POWDER">Powder</option>
-                                <option value="SOLUTION">Solution</option>
-                                <option value="SPRAY">Spray</option>
-                                <option value="SUPPOSITORY">Suppository</option>
-                                <option value="SUSPENSION">Suspension</option>
-                                <option value="SYRUP">Syrup</option>
-                                <option value="TABLET">Tablet</option>
+                                {DOSAGE_FORMS.map((form) => (
+                                    <option key={form.value} value={form.value}>
+                                        {form.label}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
@@ -214,17 +203,11 @@ export default function AddDrugModal({
                                 onChange={handleChange}
                             >
                                 <option value="">Select Unit</option>
-                                <option value="AMP">Amp</option>
-                                <option value="BOTTLE">Bottle</option>
-                                <option value="BOX">Box</option>
-                                <option value="CAPSULE">Capsule</option>
-                                <option value="G">G</option>
-                                <option value="ML">ML</option>
-                                <option value="PACK">Pack</option>
-                                <option value="STRIP">Strip</option>
-                                <option value="TABLET">Tablet</option>
-                                <option value="TUBE">Tube</option>
-                                <option value="VIAL">Vial</option>
+                                {DRUG_UNITS.map((unit) => (
+                                    <option key={unit.value} value={unit.value}>
+                                        {unit.label}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     </div>
