@@ -17,6 +17,10 @@ interface ApiDrugResponse {
     strength: string;
     unitPrice: number;
     createdAt: string;
+    quantity: number | null;
+    expiryDate: string | null;
+    minStockLevel: number | null;
+    batchNumber: string | null;
 }
 
 interface Drug {
@@ -27,6 +31,10 @@ interface Drug {
     strength: string;
     unitPrice: number;
     createdAt: string;
+    quantity: number | null;
+    expiryDate: string | null;
+    minStockLevel: number | null;
+    batchNumber: string | null;
 }
 
 export default function DrugsPage() {
@@ -36,11 +44,17 @@ export default function DrugsPage() {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [selectedDrug, setSelectedDrug] = useState<Drug | null>(null);
+    const [user, setUser] = useState<UserData | null>(null);
 
     const fetchDrugs = async () => {
         setLoading(true);
         try {
             const token = Cookies.get("token");
+
+            const userRes = await fetch("/api/users/me", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (userRes.ok) setUser(await userRes.json());
 
             const res = await fetch(`/api/drugs`, {
                 method: "GET",
@@ -87,13 +101,6 @@ export default function DrugsPage() {
 
     const columns: ColumnDef<Drug>[] = [
         {
-            header: "ID",
-            accessorKey: "id",
-            cell: (row) => (
-                <span title={row.id}>{row.id.substring(0, 8)}...</span>
-            ),
-        },
-        {
             header: "Name",
             accessorKey: "name",
         },
@@ -110,12 +117,30 @@ export default function DrugsPage() {
             accessorKey: "unit",
         },
         {
-            header: "Unit Price ($)",
+            header: "Quantity",
+            accessorKey: "quantity",
+            cell: (row) => row.quantity ?? "N/A",
+        },
+        {
+            header: "Price ($)",
             accessorKey: "unitPrice",
             cell: (row) => row.unitPrice.toFixed(2),
         },
         {
-            header: "Created At",
+            header: "Batch No.",
+            accessorKey: "batchNumber",
+            cell: (row) => row.batchNumber ?? "N/A",
+        },
+        {
+            header: "Expiry",
+            accessorKey: "expiryDate",
+            cell: (row) =>
+                row.expiryDate
+                    ? new Date(row.expiryDate).toLocaleDateString()
+                    : "N/A",
+        },
+        {
+            header: "Created",
             accessorKey: "createdAt",
             cell: (row) => new Date(row.createdAt).toLocaleDateString(),
         },
@@ -142,7 +167,11 @@ export default function DrugsPage() {
 
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
-            <Header tabName="Drug Catalog" userName="Nguyen Huu Duy" />
+            <Header
+                tabName="Drug Catalog"
+                userName={user?.fullName}
+                avatarUrl={user?.avatarUrl}
+            />
             <Toolbar buttonName="Drug" onAdd={() => setIsAddModalOpen(true)} />
 
             {loading ? (

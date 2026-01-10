@@ -12,6 +12,10 @@ type ViewDrugModalProps = {
         strength: string;
         unitPrice: number;
         createdAt: string;
+        quantity: number | null;
+        expiryDate: string | null;
+        minStockLevel: number | null;
+        batchNumber: string | null;
     } | null;
 };
 
@@ -83,7 +87,61 @@ export default function ViewDrugModal({
                                     Unit Price
                                 </span>
                             </label>
-                            <p className="font-medium">${drug.unitPrice.toFixed(2)}</p>
+                            <p className="font-medium">
+                                ${drug.unitPrice.toFixed(2)}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text text-base-content/60">
+                                    Quantity
+                                </span>
+                            </label>
+                            <p className="font-medium">
+                                {drug.quantity ?? "N/A"}
+                            </p>
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text text-base-content/60">
+                                    Min Stock Level
+                                </span>
+                            </label>
+                            <p className="font-medium">
+                                {drug.minStockLevel ?? "N/A"}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text text-base-content/60">
+                                    Batch Number
+                                </span>
+                            </label>
+                            <p className="font-medium">
+                                {drug.batchNumber ?? "N/A"}
+                            </p>
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text text-base-content/60">
+                                    Expiry Date
+                                </span>
+                            </label>
+                            <p className="font-medium">
+                                {drug.expiryDate
+                                    ? new Date(
+                                          drug.expiryDate
+                                      ).toLocaleDateString()
+                                    : "N/A"}
+                            </p>
                         </div>
                     </div>
 
