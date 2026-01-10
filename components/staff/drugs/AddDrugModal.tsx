@@ -15,10 +15,14 @@ export default function AddDrugModal({
 }: AddDrugModalProps) {
     const [formData, setFormData] = useState({
         name: "",
-        dosageForm: "",
-        unit: "",
+        dosageForm: "CAPSULE",
+        unit: "CAPSULE",
         strength: "",
         unitPrice: "",
+        quantity: "",
+        minStockLevel: "",
+        expiryDate: "",
+        batchNumber: "",
     });
 
     const [loading, setLoading] = useState(false);
@@ -35,13 +39,8 @@ export default function AddDrugModal({
     };
 
     const handleSave = async () => {
-        if (
-            !formData.name ||
-            !formData.dosageForm ||
-            !formData.unit ||
-            !formData.strength ||
-            !formData.unitPrice
-        ) {
+        if (!formData.name) {
+            setError("Drug name is required");
             return;
         }
 
@@ -50,19 +49,31 @@ export default function AddDrugModal({
 
         try {
             const token = Cookies.get("token");
+
+            const payload: Drug = {
+                name: formData.name,
+                dosageForm: formData.dosageForm,
+                unit: formData.unit,
+            };
+
+            if (formData.strength) payload.strength = formData.strength;
+            if (formData.unitPrice)
+                payload.unitPrice = parseFloat(formData.unitPrice);
+            if (formData.quantity)
+                payload.quantity = parseInt(formData.quantity);
+            if (formData.minStockLevel)
+                payload.minStockLevel = parseInt(formData.minStockLevel);
+            if (formData.expiryDate) payload.expiryDate = formData.expiryDate;
+            if (formData.batchNumber)
+                payload.batchNumber = formData.batchNumber;
+
             const res = await fetch("/api/drugs", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    name: formData.name,
-                    dosageForm: formData.dosageForm,
-                    unit: formData.unit,
-                    strength: formData.strength,
-                    unitPrice: parseFloat(formData.unitPrice),
-                }),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) {
@@ -86,21 +97,20 @@ export default function AddDrugModal({
     const handleClose = () => {
         setFormData({
             name: "",
-            dosageForm: "",
-            unit: "",
+            dosageForm: "CAPSULE",
+            unit: "CAPSULE",
             strength: "",
             unitPrice: "",
+            quantity: "",
+            minStockLevel: "",
+            expiryDate: "",
+            batchNumber: "",
         });
         setError("");
         onClose();
     };
 
-    const isFormValid =
-        formData.name &&
-        formData.dosageForm &&
-        formData.unit &&
-        formData.strength &&
-        formData.unitPrice;
+    const isFormValid = formData.name.trim() !== "";
 
     return (
         <div className={`modal ${isOpen ? "modal-open" : ""}`}>
@@ -116,7 +126,9 @@ export default function AddDrugModal({
 
                     <div className="form-control">
                         <label className="label">
-                            <span className="label-text">Drug Name</span>
+                            <span className="label-text">
+                                Drug Name <span className="text-error">*</span>
+                            </span>
                         </label>
                         <input
                             type="text"
@@ -125,21 +137,38 @@ export default function AddDrugModal({
                             className="input input-bordered w-full"
                             value={formData.name}
                             onChange={handleChange}
+                            required
                         />
                     </div>
 
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text">Strength</span>
-                        </label>
-                        <input
-                            type="text"
-                            name="strength"
-                            placeholder="e.g., 500mg, 100IU/ml"
-                            className="input input-bordered w-full"
-                            value={formData.strength}
-                            onChange={handleChange}
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Strength</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="strength"
+                                placeholder="e.g., 500mg, 100IU/ml"
+                                className="input input-bordered w-full"
+                                value={formData.strength}
+                                onChange={handleChange}
+                            />
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Batch Number</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="batchNumber"
+                                placeholder="Enter batch number"
+                                className="input input-bordered w-full"
+                                value={formData.batchNumber}
+                                onChange={handleChange}
+                            />
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -200,19 +229,69 @@ export default function AddDrugModal({
                         </div>
                     </div>
 
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">
+                                    Unit Price ($)
+                                </span>
+                            </label>
+                            <input
+                                type="number"
+                                name="unitPrice"
+                                placeholder="0.00"
+                                step="0.01"
+                                min="0"
+                                className="input input-bordered w-full"
+                                value={formData.unitPrice}
+                                onChange={handleChange}
+                            />
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Quantity</span>
+                            </label>
+                            <input
+                                type="number"
+                                name="quantity"
+                                placeholder="0"
+                                min="0"
+                                className="input input-bordered w-full"
+                                value={formData.quantity}
+                                onChange={handleChange}
+                            />
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">
+                                    Min Stock Level
+                                </span>
+                            </label>
+                            <input
+                                type="number"
+                                name="minStockLevel"
+                                placeholder="10"
+                                min="0"
+                                className="input input-bordered w-full"
+                                value={formData.minStockLevel}
+                                onChange={handleChange}
+                            />
+                        </div>
+                    </div>
+
                     <div className="form-control">
                         <label className="label">
-                            <span className="label-text">Unit Price ($)</span>
+                            <span className="label-text">Expiry Date</span>
                         </label>
                         <input
-                            type="number"
-                            name="unitPrice"
-                            placeholder="Enter unit price"
-                            step="0.01"
-                            min="0"
+                            type="date"
+                            name="expiryDate"
                             className="input input-bordered w-full"
-                            value={formData.unitPrice}
+                            value={formData.expiryDate}
                             onChange={handleChange}
+                            min={new Date().toISOString().split("T")[0]}
                         />
                     </div>
                 </div>

@@ -19,15 +19,15 @@ interface DataTableProps<T> {
 // Component Bảng Generic
 const DataTable = <T,>({ data, columns }: DataTableProps<T>) => {
     return (
-        <div className="overflow-x-auto bg-white rounded-lg shadow-sm border border-base-200">
-            <table className="table w-full">
+        <div className="bg-white rounded-lg shadow-sm border border-base-200">
+            <table className="table w-full table-auto">
                 {/* HEADER */}
                 <thead className="bg-base-200/50 text-base-content/70">
                     <tr>
                         {columns.map((col, index) => (
                             <th
                                 key={index}
-                                className={`font-semibold ${
+                                className={`font-semibold text-xs ${
                                     col.className || ""
                                 }`}
                             >
@@ -48,7 +48,7 @@ const DataTable = <T,>({ data, columns }: DataTableProps<T>) => {
                                 {columns.map((col, colIndex) => (
                                     <td
                                         key={colIndex}
-                                        className={col.className || ""}
+                                        className={`text-xs ${col.className || ""}`}
                                     >
                                         {col.cell
                                             ? col.cell(row) // Ưu tiên dùng hàm cell custom
