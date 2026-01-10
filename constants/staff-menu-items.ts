@@ -12,6 +12,7 @@ import {
     Stethoscope,
     Users,
     Star,
+    FileBarChart,
 } from "lucide-react";
 
 export const MENU_ITEMS = [
@@ -25,6 +26,7 @@ export const MENU_ITEMS = [
     { label: "Send Notification", href: "/notifications", icon: Bell },
     { label: "Invoice & Payments", href: "/invoices", icon: Receipt },
     { label: "Drug Catalog", href: "/drugs", icon: Pill },
+    { label: "Pharmacy Reports", href: "/pharmacy-reports", icon: FileBarChart },
     { label: "Manage Encounter", href: "/encounters", icon: Stethoscope },
     { label: "Staff Profile", href: "/staff", icon: Users },
 ];
