@@ -1,0 +1,33 @@
+export const DOSAGE_FORMS = [
+    { value: "CAPSULE", label: "Capsule" },
+    { value: "CREAM", label: "Cream" },
+    { value: "DROPS", label: "Drops" },
+    { value: "GEL", label: "Gel" },
+    { value: "INHALER", label: "Inhaler" },
+    { value: "INJECTION", label: "Injection" },
+    { value: "LOTION", label: "Lotion" },
+    { value: "MOUTHWASH", label: "Mouthwash" },
+    { value: "OINTMENT", label: "Ointment" },
+    { value: "PATCH", label: "Patch" },
+    { value: "POWDER", label: "Powder" },
+    { value: "SOLUTION", label: "Solution" },
+    { value: "SPRAY", label: "Spray" },
+    { value: "SUPPOSITORY", label: "Suppository" },
+    { value: "SUSPENSION", label: "Suspension" },
+    { value: "SYRUP", label: "Syrup" },
+    { value: "TABLET", label: "Tablet" },
+] as const;
+
+export const DRUG_UNITS = [
+    { value: "AMP", label: "Amp" },
+    { value: "BOTTLE", label: "Bottle" },
+    { value: "BOX", label: "Box" },
+    { value: "CAPSULE", label: "Capsule" },
+    { value: "G", label: "G" },
+    { value: "ML", label: "ML" },
+    { value: "PACK", label: "Pack" },
+    { value: "STRIP", label: "Strip" },
+    { value: "TABLET", label: "Tablet" },
+    { value: "TUBE", label: "Tube" },
+    { value: "VIAL", label: "Vial" },
+] as const;

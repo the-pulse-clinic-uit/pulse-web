@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Cookies from "js-cookie";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
@@ -8,6 +8,7 @@ import DataTable, { ColumnDef } from "@/components/staff/DataTable";
 import AddDrugModal from "@/components/staff/drugs/AddDrugModal";
 import ViewDrugModal from "@/components/staff/drugs/ViewDrugModal";
 import UpdateDrugModal from "@/components/staff/drugs/UpdateDrugModal";
+import { DOSAGE_FORMS, DRUG_UNITS } from "@/constants/drug-constants";
 
 interface ApiDrugResponse {
     id: string;
@@ -37,14 +38,28 @@ interface Drug {
     batchNumber: string | null;
 }
 
+interface UserData {
+    fullName?: string;
+    avatarUrl?: string;
+}
+
 export default function DrugsPage() {
     const [drugs, setDrugs] = useState<Drug[]>([]);
+    const [filteredDrugs, setFilteredDrugs] = useState<Drug[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [selectedDrug, setSelectedDrug] = useState<Drug | null>(null);
     const [user, setUser] = useState<UserData | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filters, setFilters] = useState({
+        dosageForm: "",
+        unit: "",
+        lowStock: false,
+        expired: false,
+    });
 
     const fetchDrugs = async () => {
         setLoading(true);
@@ -70,6 +85,7 @@ export default function DrugsPage() {
 
             const data: ApiDrugResponse[] = await res.json();
             setDrugs(data);
+            setFilteredDrugs(data);
         } catch (error) {
             console.error(error);
         } finally {
@@ -80,6 +96,71 @@ export default function DrugsPage() {
     useEffect(() => {
         fetchDrugs();
     }, []);
+
+    useEffect(() => {
+        applyFilters();
+    }, [searchQuery, filters, drugs]);
+
+    const applyFilters = useCallback(() => {
+        let result = [...drugs];
+
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(
+                (drug) =>
+                    drug.name.toLowerCase().includes(query) ||
+                    drug.strength?.toLowerCase().includes(query) ||
+                    drug.batchNumber?.toLowerCase().includes(query)
+            );
+        }
+
+        if (filters.dosageForm) {
+            result = result.filter(
+                (drug) => drug.dosageForm === filters.dosageForm
+            );
+        }
+
+        if (filters.unit) {
+            result = result.filter((drug) => drug.unit === filters.unit);
+        }
+
+        if (filters.lowStock) {
+            result = result.filter(
+                (drug) =>
+                    drug.quantity !== null &&
+                    drug.minStockLevel !== null &&
+                    drug.quantity < drug.minStockLevel
+            );
+        }
+
+        if (filters.expired) {
+            const today = new Date();
+            result = result.filter((drug) => {
+                if (!drug.expiryDate) return false;
+                return new Date(drug.expiryDate) < today;
+            });
+        }
+
+        setFilteredDrugs(result);
+    }, [searchQuery, filters, drugs]);
+
+    const handleSearch = (value: string) => {
+        setSearchQuery(value);
+    };
+
+    const handleFilterChange = (key: string, value: string | boolean) => {
+        setFilters((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const clearFilters = () => {
+        setFilters({
+            dosageForm: "",
+            unit: "",
+            lowStock: false,
+            expired: false,
+        });
+        setSearchQuery("");
+    };
 
     const handleDrugAddedSuccess = () => {
         fetchDrugs();
@@ -172,17 +253,70 @@ export default function DrugsPage() {
                 userName={user?.fullName}
                 avatarUrl={user?.avatarUrl}
             />
-            <Toolbar buttonName="Drug" onAdd={() => setIsAddModalOpen(true)} />
+            <Toolbar
+                buttonName="Drug"
+                onAdd={() => setIsAddModalOpen(true)}
+                onSearch={handleSearch}
+                onFilter={() => setIsFilterOpen(true)}
+            />
+
+            {(filters.dosageForm ||
+                filters.unit ||
+                filters.lowStock ||
+                filters.expired ||
+                searchQuery) && (
+                <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-sm text-base-content/60">
+                        Active filters:
+                    </span>
+                    {searchQuery && (
+                        <div className="badge badge-primary gap-2">
+                            Search: {searchQuery}
+                        </div>
+                    )}
+                    {filters.dosageForm && (
+                        <div className="badge badge-primary gap-2">
+                            Form: {filters.dosageForm}
+                        </div>
+                    )}
+                    {filters.unit && (
+                        <div className="badge badge-primary gap-2">
+                            Unit: {filters.unit}
+                        </div>
+                    )}
+                    {filters.lowStock && (
+                        <div className="badge badge-warning gap-2">
+                            Low Stock
+                        </div>
+                    )}
+                    {filters.expired && (
+                        <div className="badge badge-error gap-2">Expired</div>
+                    )}
+                    <button
+                        onClick={clearFilters}
+                        className="btn btn-ghost btn-xs text-error"
+                    >
+                        Clear All
+                    </button>
+                </div>
+            )}
 
             {loading ? (
                 <div className="flex justify-center items-center py-20">
                     <span className="loading loading-spinner loading-lg text-primary"></span>
                 </div>
-            ) : drugs.length > 0 ? (
-                <DataTable data={drugs} columns={columns} />
+            ) : filteredDrugs.length > 0 ? (
+                <>
+                    <div className="text-sm text-base-content/60">
+                        Showing {filteredDrugs.length} of {drugs.length} drugs
+                    </div>
+                    <DataTable data={filteredDrugs} columns={columns} />
+                </>
             ) : (
                 <div className="text-center text-gray-500 py-10">
-                    No drugs found.
+                    {drugs.length > 0
+                        ? "No drugs match your filters."
+                        : "No drugs found."}
                 </div>
             )}
 
@@ -214,6 +348,108 @@ export default function DrugsPage() {
                 onUpdate={handleDrugUpdatedSuccess}
                 drug={selectedDrug}
             />
+
+            <div className={`modal ${isFilterOpen ? "modal-open" : ""}`}>
+                <div className="modal-box">
+                    <h3 className="font-bold text-lg mb-4">Filter Drugs</h3>
+
+                    <div className="space-y-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Dosage Form</span>
+                            </label>
+                            <select
+                                className="select select-bordered w-full"
+                                value={filters.dosageForm}
+                                onChange={(e) =>
+                                    handleFilterChange(
+                                        "dosageForm",
+                                        e.target.value
+                                    )
+                                }
+                            >
+                                <option value="">All</option>
+                                {DOSAGE_FORMS.map((form) => (
+                                    <option key={form.value} value={form.value}>
+                                        {form.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Unit</span>
+                            </label>
+                            <select
+                                className="select select-bordered w-full"
+                                value={filters.unit}
+                                onChange={(e) =>
+                                    handleFilterChange("unit", e.target.value)
+                                }
+                            >
+                                <option value="">All</option>
+                                {DRUG_UNITS.map((unit) => (
+                                    <option key={unit.value} value={unit.value}>
+                                        {unit.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label cursor-pointer justify-start gap-2">
+                                <input
+                                    type="checkbox"
+                                    className="checkbox checkbox-warning"
+                                    checked={filters.lowStock}
+                                    onChange={(e) =>
+                                        handleFilterChange(
+                                            "lowStock",
+                                            e.target.checked
+                                        )
+                                    }
+                                />
+                                <span className="label-text">
+                                    Low Stock Only
+                                </span>
+                            </label>
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label cursor-pointer justify-start gap-2">
+                                <input
+                                    type="checkbox"
+                                    className="checkbox checkbox-error"
+                                    checked={filters.expired}
+                                    onChange={(e) =>
+                                        handleFilterChange(
+                                            "expired",
+                                            e.target.checked
+                                        )
+                                    }
+                                />
+                                <span className="label-text">Expired Only</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="modal-action">
+                        <button
+                            className="btn btn-ghost"
+                            onClick={clearFilters}
+                        >
+                            Clear All
+                        </button>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => setIsFilterOpen(false)}
+                        >
+                            Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
