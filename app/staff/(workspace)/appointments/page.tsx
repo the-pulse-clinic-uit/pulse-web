@@ -10,71 +10,7 @@ import Cookies from "js-cookie";
 
 interface UserData {
     fullName: string;
-}
-
-interface AppointmentDto {
-    id: string;
-    startsAt: string;
-    endsAt: string;
-    status: string;
-    type: string;
-    description: string | null;
-    createdAt: string;
-    updatedAt: string;
-    patientDto: {
-        id: string;
-        healthInsuranceId: string;
-        bloodType: string;
-        allergies: string;
-        createdAt: string;
-        userDto: {
-            id: string;
-            email: string;
-            fullName: string;
-            address: string | null;
-            citizenId: string;
-            phone: string;
-            gender: boolean;
-            birthDate: string;
-            avatarUrl: string | null;
-            createdAt: string;
-            updatedAt: string;
-            isActive: boolean;
-        };
-    };
-    doctorDto: {
-        id: string;
-        licenseId: string;
-        isVerified: boolean;
-        createdAt: string;
-        staffDto: {
-            id: string;
-            position: string;
-            createdAt: string;
-            userDto: {
-                id: string;
-                email: string;
-                fullName: string;
-                address: string;
-                citizenId: string;
-                phone: string;
-                gender: boolean;
-                birthDate: string;
-                avatarUrl: string | null;
-                createdAt: string;
-                updatedAt: string;
-                isActive: boolean;
-            };
-        };
-        departmentDto: {
-            id: string;
-            name: string;
-            description: string;
-            createdAt: string;
-        } | null;
-    };
-    shiftAssignmentDto: unknown;
-    followUpPlanDto: unknown;
+    avatarUrl: string | null;
 }
 
 type Appointment = {
@@ -103,13 +39,12 @@ export default function AppointmentsPage() {
 
     const formatTime = (dateString: string): string => {
         const date = new Date(dateString);
-        const formettedDateTime = date.toLocaleTimeString("en-US", {
+        const formattedDateTime = date.toLocaleTimeString("en-US", {
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,
         });
-        // return formettedDateTime.split("T")[1]
-        return formettedDateTime;
+        return formattedDateTime;
     };
 
     const transformAppointment = (dto: AppointmentDto): Appointment => {
@@ -130,7 +65,13 @@ export default function AppointmentsPage() {
         if (!token) return;
 
         try {
-            const [pendingRes, confirmedRes, checkedInRes, doneRes, cancelledRes] = await Promise.all([
+            const [
+                pendingRes,
+                confirmedRes,
+                checkedInRes,
+                doneRes,
+                cancelledRes,
+            ] = await Promise.all([
                 fetch("/api/appointments/status/PENDING", {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
@@ -323,7 +264,7 @@ export default function AppointmentsPage() {
 
     const handleCancel = async (appointment: Appointment) => {
         const reason = prompt("Enter cancellation reason (optional):");
-        
+
         const token = Cookies.get("token");
         if (!token) return;
 
@@ -333,8 +274,10 @@ export default function AppointmentsPage() {
             );
             if (!fullAppointment) return;
 
-            const url = reason 
-                ? `/api/appointments/${fullAppointment.id}/cancel?reason=${encodeURIComponent(reason)}`
+            const url = reason
+                ? `/api/appointments/${
+                      fullAppointment.id
+                  }/cancel?reason=${encodeURIComponent(reason)}`
                 : `/api/appointments/${fullAppointment.id}/cancel`;
 
             const response = await fetch(url, {
@@ -356,6 +299,38 @@ export default function AppointmentsPage() {
         }
     };
 
+    const handleNoShow = async (appointment: Appointment) => {
+        const token = Cookies.get("token");
+        if (!token) return;
+
+        try {
+            const fullAppointment = allAppointments.find((apt) =>
+                apt.id.startsWith(appointment.id)
+            );
+            if (!fullAppointment) return;
+
+            const response = await fetch(
+                `/api/appointments/${fullAppointment.id}/noshow`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.ok) {
+                alert("Appointment marked as no-show!");
+                await fetchAllAppointments();
+            } else {
+                alert("Failed to mark appointment as no-show");
+            }
+        } catch (error) {
+            console.error("Failed to mark as no-show:", error);
+            alert("An error occurred");
+        }
+    };
+
     const handleAddAppointment = async (appointmentData: {
         patientId: string;
         doctorId: string;
@@ -373,11 +348,8 @@ export default function AppointmentsPage() {
         }
 
         try {
-            // const slotMinutes = assignmentData.slotDurationMinutes || 30;
-
             const requestBody = {
                 startsAt: appointmentData.startsAt,
-                // endsAt: new Date(new Date(appointmentData.startsAt).getTime() + 30 * 60 * 1000).toLocaleTimeString(), // Default duration 30 mins
                 status: appointmentData.status,
                 type: appointmentData.type,
                 description: appointmentData.description || null,
@@ -403,7 +375,11 @@ export default function AppointmentsPage() {
                 try {
                     const text = await res.text();
                     const errorData = text ? JSON.parse(text) : {};
-                    alert(`Failed to create appointment: ${errorData.message || "Unknown error"}`);
+                    alert(
+                        `Failed to create appointment: ${
+                            errorData.message || "Unknown error"
+                        }`
+                    );
                 } catch {
                     alert(`Failed to create appointment: ${res.statusText}`);
                 }
@@ -434,9 +410,9 @@ export default function AppointmentsPage() {
                 return (
                     <span
                         className={`
-              inline-flex items-center justify-center px-3 py-1.5 rounded-full
-              text-xs font-medium whitespace-nowrap
-              ${statusStyles[row.status] || "bg-gray-100"}
+            inline-flex items-center justify-center px-3 py-1.5 rounded-full
+            text-xs font-medium whitespace-nowrap
+            ${statusStyles[row.status] || "bg-gray-100"}
             `}
                     >
                         {row.status}
@@ -471,6 +447,12 @@ export default function AppointmentsPage() {
                                 className="btn btn-xs bg-blue-100 text-blue-700 border-none hover:bg-blue-200"
                             >
                                 Encounter
+                            </button>
+                            <button
+                                onClick={() => handleNoShow(row)}
+                                className="btn btn-xs bg-orange-100 text-orange-700 border-none hover:bg-orange-200"
+                            >
+                                No Show
                             </button>
                             <button
                                 onClick={() => handleCancel(row)}
@@ -519,13 +501,18 @@ export default function AppointmentsPage() {
         {
             label: "Cancelled",
             value: "CANCELLED",
-            count: allAppointments.filter((a) => a.status === "CANCELLED").length,
+            count: allAppointments.filter((a) => a.status === "CANCELLED")
+                .length,
         },
     ];
 
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
-            <Header tabName="Manage Appointments" userName={user?.fullName} />
+            <Header
+                tabName="Manage Appointments"
+                userName={user?.fullName}
+                avatarUrl={user?.avatarUrl || undefined}
+            />
             <Toolbar
                 buttonName="Appointments"
                 onSearch={() => {}}
