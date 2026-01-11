@@ -26,47 +26,12 @@ interface Encounter {
     diagnosis: string;
     notes: string;
     createdAt: string;
-    appointmentDto: {
-        id: string;
-        startsAt: string;
-        endsAt: string;
-        status: string;
-        type: string;
-        description: string | null;
-    };
-    patientDto: {
-        id: string;
-        healthInsuranceId: string;
-        bloodType: string;
-        allergies: string;
-        userDto: {
-            id: string;
-            email: string;
-            fullName: string;
-            citizenId: string;
-            phone: string;
-            gender: boolean;
-            birthDate: string;
-        };
-    };
-    doctorDto: {
-        id: string;
-        licenseId: string;
-        staffDto: {
-            id: string;
-            userDto: {
-                id: string;
-                fullName: string;
-                email: string;
-                phone: string;
-            };
-            departmentDto: {
-                id: string;
-                name: string;
-                description: string;
-            };
-        };
-    };
+    patientId: string;
+    patientName: string;
+    doctorId: string;
+    doctorName: string;
+    appointmentId: string;
+    admissionStatus: "ONGOING" | "DISCHARGED" | "OUTPATIENT" | null;
 }
 
 interface Props {
@@ -127,13 +92,22 @@ export default function AddAdmissionModal({
 
             setLoadingEncounters(true);
             try {
-                const response = await fetch("/api/encounters/completed", {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const response = await fetch(
+                    "/api/encounters/eligible-for-admission",
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
 
                 if (response.ok) {
                     const data: Encounter[] = await response.json();
-                    setEncounters(data);
+                    const filteredEncounters = data.filter(
+                        (enc) =>
+                            enc.admissionStatus === null ||
+                            enc.admissionStatus === "DISCHARGED" ||
+                            enc.admissionStatus === "OUTPATIENT"
+                    );
+                    setEncounters(filteredEncounters);
                 } else {
                     console.error(
                         "Failed to fetch encounters:",
@@ -300,9 +274,9 @@ export default function AddAdmissionModal({
                             </option>
                             {encounters.map((enc) => (
                                 <option key={enc.id} value={enc.id}>
-                                    {enc.patientDto.userDto.fullName} -{" "}
+                                    {enc.patientName} -{" "}
                                     {formatDateTime(enc.startedAt)} (
-                                    {enc.doctorDto.staffDto.userDto.fullName})
+                                    {enc.doctorName})
                                 </option>
                             ))}
                         </select>
@@ -312,31 +286,13 @@ export default function AddAdmissionModal({
                                     <span className="font-semibold">
                                         Patient:
                                     </span>{" "}
-                                    {
-                                        selectedEncounter.patientDto.userDto
-                                            .fullName
-                                    }{" "}
-                                    (
-                                    {selectedEncounter.patientDto.userDto.phone}
-                                    )
+                                    {selectedEncounter.patientName}
                                 </p>
                                 <p>
                                     <span className="font-semibold">
                                         Doctor:
                                     </span>{" "}
-                                    {
-                                        selectedEncounter.doctorDto.staffDto
-                                            .userDto.fullName
-                                    }
-                                </p>
-                                <p>
-                                    <span className="font-semibold">
-                                        Department:
-                                    </span>{" "}
-                                    {
-                                        selectedEncounter.doctorDto.staffDto
-                                            .departmentDto.name
-                                    }
+                                    {selectedEncounter.doctorName}
                                 </p>
                                 <p>
                                     <span className="font-semibold">
@@ -344,14 +300,24 @@ export default function AddAdmissionModal({
                                     </span>{" "}
                                     {selectedEncounter.diagnosis}
                                 </p>
-                                {selectedEncounter.patientDto.allergies && (
-                                    <p className="text-error">
-                                        <span className="font-semibold">
-                                            Allergies:
-                                        </span>{" "}
-                                        {selectedEncounter.patientDto.allergies}
-                                    </p>
-                                )}
+                                <p>
+                                    <span className="font-semibold">
+                                        Type:
+                                    </span>{" "}
+                                    {selectedEncounter.type}
+                                </p>
+                                <p>
+                                    <span className="font-semibold">
+                                        Started:
+                                    </span>{" "}
+                                    {formatDateTime(selectedEncounter.startedAt)}
+                                </p>
+                                <p>
+                                    <span className="font-semibold">
+                                        Ended:
+                                    </span>{" "}
+                                    {formatDateTime(selectedEncounter.endedAt)}
+                                </p>
                             </div>
                         )}
                     </div>
