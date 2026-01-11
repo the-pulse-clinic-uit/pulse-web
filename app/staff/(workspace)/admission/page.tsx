@@ -1,11 +1,85 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
 import DataTable, { ColumnDef } from "@/components/staff/DataTable";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
 import Pagination from "@/components/ui/Pagination";
 import ApproveAdmissionModal from "@/components/staff/admission/ApproveAdmissionModal";
 import AddAdmissionModal from "@/components/staff/admission/AddAdmissionModal";
+
+type AdmissionStatus = "ONGOING" | "DISCHARGED" | "OUTPATIENT";
+
+interface ApiAdmission {
+    id: string;
+    status: AdmissionStatus;
+    notes: string;
+    admittedAt: string;
+    dischargedAt: string | null;
+    encounterDto: {
+        id: string;
+        type: string;
+        startedAt: string;
+        endedAt: string;
+        diagnosis: string;
+        notes: string;
+        appointmentDto: {
+            id: string;
+            startsAt: string;
+            endsAt: string;
+            status: string;
+            type: string;
+            description: string | null;
+        };
+    } | null;
+    patientDto: {
+        id: string;
+        healthInsuranceId: string;
+        bloodType: string;
+        allergies: string;
+        userDto: {
+            id: string;
+            email: string;
+            fullName: string;
+            citizenId: string;
+            phone: string;
+            gender: boolean;
+            birthDate: string;
+        };
+    };
+    doctorDto: {
+        id: string;
+        licenseId: string;
+        staffDto: {
+            id: string;
+            userDto: {
+                id: string;
+                fullName: string;
+                email: string;
+                phone: string;
+            };
+            departmentDto: {
+                id: string;
+                name: string;
+                description: string;
+            };
+        };
+    };
+    roomDto: {
+        id: string;
+        roomNumber: string;
+        bedAmount: number;
+        isAvailable: boolean;
+        createdAt: string;
+        departmentDto: {
+            id: string;
+            name: string;
+            description: string;
+            createdAt: string;
+        };
+    };
+}
 
 type AdmissionPatient = {
     id: string;
@@ -19,69 +93,101 @@ type AdmissionPatient = {
     status: "Under Treatment" | "Pending" | "Discharged";
 };
 
-const mockAdmissionData: AdmissionPatient[] = [
-    {
-        id: "#001",
-        name: "Nguyen Van Anh",
-        age: 45,
-        chiefComplaint: "High fever, sore throat",
-        attendingPhysician: "Nguyen Van B",
-        department: "Infectious Disease",
-        room: "B108",
-        admissionDate: "27/05/2025",
-        status: "Under Treatment",
-    },
-    {
-        id: "#002",
-        name: "Tran Thi B",
-        age: 32,
-        chiefComplaint: "Severe headache, nausea",
-        attendingPhysician: "Le Van C",
-        department: "Neurology",
-        room: "A205",
-        admissionDate: "26/05/2025",
-        status: "Under Treatment",
-    },
-    {
-        id: "#003",
-        name: "Le Van C",
-        age: 28,
-        chiefComplaint: "Fractured arm",
-        attendingPhysician: "Nguyen Van B",
-        department: "Orthopedics",
-        room: "",
-        admissionDate: "27/05/2025",
-        status: "Pending",
-    },
-    {
-        id: "#004",
-        name: "Pham Van D",
-        age: 55,
-        chiefComplaint: "Chest pain",
-        attendingPhysician: "Tran Van E",
-        department: "Cardiology",
-        room: "C101",
-        admissionDate: "20/05/2025",
-        status: "Discharged",
-    },
-    {
-        id: "#005",
-        name: "Hoang Thi E",
-        age: 45,
-        chiefComplaint: "High fever, sore throat",
-        attendingPhysician: "Nguyen Van B",
-        department: "Infectious Disease",
-        room: "B108",
-        admissionDate: "27/05/2025",
-        status: "Discharged",
-    },
-];
-
 export default function AdmissionPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedAdmission, setSelectedAdmission] =
         useState<AdmissionPatient | null>(null);
+    const [admissions, setAdmissions] = useState<AdmissionPatient[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const calculateAge = (birthDate: string): number => {
+        const birth = new Date(birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < birth.getDate())
+        ) {
+            age--;
+        }
+        return age;
+    };
+
+    const mapApiStatusToDisplayStatus = (
+        status: AdmissionStatus
+    ): "Under Treatment" | "Pending" | "Discharged" => {
+        switch (status) {
+            case "ONGOING":
+                return "Under Treatment";
+            case "OUTPATIENT":
+                return "Pending";
+            case "DISCHARGED":
+                return "Discharged";
+            default:
+                return "Under Treatment";
+        }
+    };
+
+    const formatDateTime = (dateString: string): string => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        });
+    };
+
+    const mapApiAdmissionToTableData = (
+        apiAdmission: ApiAdmission
+    ): AdmissionPatient => {
+        return {
+            id: apiAdmission.id,
+            name: apiAdmission.patientDto.userDto.fullName,
+            age: calculateAge(apiAdmission.patientDto.userDto.birthDate),
+            chiefComplaint: apiAdmission.encounterDto?.diagnosis || "N/A",
+            attendingPhysician:
+                apiAdmission.doctorDto.staffDto.userDto.fullName,
+            department: apiAdmission.doctorDto.staffDto.departmentDto.name,
+            room: `Room ${apiAdmission.roomDto.roomNumber}`,
+            admissionDate: formatDateTime(apiAdmission.admittedAt),
+            status: mapApiStatusToDisplayStatus(apiAdmission.status),
+        };
+    };
+
+    const fetchAdmissions = async () => {
+        const token = Cookies.get("token");
+        if (!token) {
+            console.log("No token found");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await fetch("/api/admissions", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.ok) {
+                const data: ApiAdmission[] = await response.json();
+                const mappedData = data.map(mapApiAdmissionToTableData);
+                setAdmissions(mappedData);
+            } else {
+                console.error("Failed to fetch admissions:", response.status);
+                toast.error("Failed to load admissions");
+            }
+        } catch (error) {
+            console.error("Error fetching admissions:", error);
+            toast.error("Error loading admissions");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchAdmissions();
+    }, []);
 
     const handleApprove = (admission: AdmissionPatient) => {
         setSelectedAdmission(admission);
@@ -160,12 +266,20 @@ export default function AdmissionPage() {
                 onFilter={() => {}}
                 onAdd={() => setIsAddModalOpen(true)}
             />
-            <DataTable columns={admissionColumns} data={mockAdmissionData} />
-            <Pagination
-                currentPage={1}
-                totalPages={10}
-                onPageChange={() => {}}
-            />
+            {loading ? (
+                <div className="flex justify-center items-center py-20">
+                    <span className="loading loading-spinner loading-lg"></span>
+                </div>
+            ) : (
+                <>
+                    <DataTable columns={admissionColumns} data={admissions} />
+                    <Pagination
+                        currentPage={1}
+                        totalPages={10}
+                        onPageChange={() => {}}
+                    />
+                </>
+            )}
 
             {selectedAdmission && (
                 <ApproveAdmissionModal
@@ -191,7 +305,9 @@ export default function AdmissionPage() {
             <AddAdmissionModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
-                onSuccess={() => {}}
+                onSuccess={() => {
+                    fetchAdmissions();
+                }}
             />
         </div>
     );
