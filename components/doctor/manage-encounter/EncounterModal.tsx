@@ -100,6 +100,9 @@ export default function EncounterModal({
     const [loadingDrugs, setLoadingDrugs] = useState(false);
     const [prescriptionId, setPrescriptionId] = useState<string | null>(null);
     const [totalCost, setTotalCost] = useState<number>(0);
+    const [allergyWarnings, setAllergyWarnings] = useState<{
+        [key: string]: { hasWarning: boolean; message: string };
+    }>({});
 
     const isDrugOutOfStock = (drugId: string): boolean => {
         const drug = drugs.find((d) => d.id === drugId);
@@ -126,6 +129,57 @@ export default function EncounterModal({
                 isDrugOutOfStock(med.drugId) ||
                 isQuantityExceedingStock(med.drugId, med.quantity)
         );
+    };
+
+    const hasAllergyWarnings = (): boolean => {
+        return medications.some(
+            (med) => med.drugId && allergyWarnings[med.drugId]?.hasWarning
+        );
+    };
+
+    const checkDrugAllergy = async (drugId: string): Promise<void> => {
+        if (!drugId || !encounter.patientDto.id) return;
+
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            const response = await fetch(
+                `/api/prescriptions/check-allergies`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        patientId: encounter.patientDto.id,
+                        drugIds: [drugId],
+                    }),
+                }
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.hasWarnings && data.warnings.length > 0) {
+                    const warning = data.warnings[0];
+                    setAllergyWarnings((prev) => ({
+                        ...prev,
+                        [drugId]: {
+                            hasWarning: true,
+                            message: warning.message,
+                        },
+                    }));
+                } else {
+                    setAllergyWarnings((prev) => ({
+                        ...prev,
+                        [drugId]: { hasWarning: false, message: "" },
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error("Error checking drug allergies:", error);
+        }
     };
 
     useEffect(() => {
@@ -185,6 +239,15 @@ export default function EncounterModal({
     };
 
     const removeMedication = (id: string) => {
+        const medication = medications.find((med) => med.id === id);
+        if (medication?.drugId) {
+            // Clean up allergy warnings for removed medication
+            setAllergyWarnings((prev) => {
+                const updated = { ...prev };
+                delete updated[medication.drugId];
+                return updated;
+            });
+        }
         setMedications(medications.filter((med) => med.id !== id));
     };
 
@@ -198,6 +261,11 @@ export default function EncounterModal({
                 med.id === id ? { ...med, [field]: value } : med
             )
         );
+
+        // Check for allergies when drug is selected
+        if (field === "drugId" && value) {
+            checkDrugAllergy(value);
+        }
     };
 
     const handleSaveDiagnosis = async () => {
@@ -784,6 +852,21 @@ export default function EncounterModal({
                                 </div>
                             )}
 
+                            {medications.length > 0 && hasAllergyWarnings() && (
+                                <div className="alert alert-error">
+                                    <div>
+                                        <p className="font-semibold">
+                                            ⚠ Allergy Warnings Detected
+                                        </p>
+                                        <p className="text-sm">
+                                            Patient has known allergies to some of the
+                                            selected medications. Please review carefully
+                                            before proceeding.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <label className="label">
@@ -959,6 +1042,33 @@ export default function EncounterModal({
                                                                             stock
                                                                         </span>
                                                                     </label>
+                                                                )}
+                                                            {medication.drugId &&
+                                                                allergyWarnings[
+                                                                    medication.drugId
+                                                                ]?.hasWarning && (
+                                                                    <div className="alert alert-warning mt-2">
+                                                                        <div className="flex items-start gap-2">
+                                                                            <span className="text-warning text-lg">
+                                                                                ⚠
+                                                                            </span>
+                                                                            <div>
+                                                                                <p className="font-semibold text-sm">
+                                                                                    Allergy
+                                                                                    Warning
+                                                                                </p>
+                                                                                <p className="text-xs">
+                                                                                    {
+                                                                                        allergyWarnings[
+                                                                                            medication
+                                                                                                .drugId
+                                                                                        ]
+                                                                                            ?.message
+                                                                                    }
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
                                                                 )}
                                                         </div>
 
