@@ -5,6 +5,7 @@ import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
 import Pagination from "@/components/ui/Pagination";
 import ApproveAdmissionModal from "@/components/staff/admission/ApproveAdmissionModal";
+import AddAdmissionModal from "@/components/staff/admission/AddAdmissionModal";
 
 type AdmissionPatient = {
     id: string;
@@ -78,6 +79,7 @@ const mockAdmissionData: AdmissionPatient[] = [
 
 export default function AdmissionPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedAdmission, setSelectedAdmission] =
         useState<AdmissionPatient | null>(null);
 
@@ -156,7 +158,7 @@ export default function AdmissionPage() {
                 buttonName="Admission"
                 onSearch={() => {}}
                 onFilter={() => {}}
-                onAdd={() => {}}
+                onAdd={() => setIsAddModalOpen(true)}
             />
             <DataTable columns={admissionColumns} data={mockAdmissionData} />
             <Pagination
@@ -185,6 +187,12 @@ export default function AdmissionPage() {
                     }}
                 />
             )}
+
+            <AddAdmissionModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSuccess={() => {}}
+            />
         </div>
     );
 }
