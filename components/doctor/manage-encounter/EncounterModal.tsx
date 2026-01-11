@@ -13,6 +13,8 @@ interface Drug {
     strength: string;
     createdAt: string;
     unitPrice: number;
+    quantity: number | null;
+    minStockLevel: number | null;
 }
 
 interface EncounterDto {
@@ -98,6 +100,33 @@ export default function EncounterModal({
     const [loadingDrugs, setLoadingDrugs] = useState(false);
     const [prescriptionId, setPrescriptionId] = useState<string | null>(null);
     const [totalCost, setTotalCost] = useState<number>(0);
+
+    const isDrugOutOfStock = (drugId: string): boolean => {
+        const drug = drugs.find((d) => d.id === drugId);
+        return !drug || drug.quantity === null || drug.quantity === 0;
+    };
+
+    const getDrugStock = (drugId: string): number => {
+        const drug = drugs.find((d) => d.id === drugId);
+        return drug?.quantity ?? 0;
+    };
+
+    const isQuantityExceedingStock = (
+        drugId: string,
+        quantity: number
+    ): boolean => {
+        const stock = getDrugStock(drugId);
+        return quantity > stock;
+    };
+
+    const hasStockIssues = (): boolean => {
+        return medications.some(
+            (med) =>
+                !med.drugId ||
+                isDrugOutOfStock(med.drugId) ||
+                isQuantityExceedingStock(med.drugId, med.quantity)
+        );
+    };
 
     useEffect(() => {
         const fetchDrugs = async () => {
@@ -220,7 +249,7 @@ export default function EncounterModal({
             }
 
             toast.success("Diagnosis saved successfully");
-            setStep(2); // Move to prescriptions step
+            setStep(2);
         } catch (error) {
             console.error("Error saving diagnosis:", error);
             toast.error(
@@ -242,7 +271,6 @@ export default function EncounterModal({
 
         setSaving(true);
         try {
-            // First create the prescription
             const prescriptionResponse = await fetch(`/api/prescriptions`, {
                 method: "POST",
                 headers: {
@@ -262,7 +290,6 @@ export default function EncounterModal({
             const newPrescriptionId = prescription.id;
             setPrescriptionId(newPrescriptionId);
 
-            // Then add each medication to the prescription
             if (medications.length > 0) {
                 for (const med of medications) {
                     if (!med.drugId) {
@@ -293,12 +320,13 @@ export default function EncounterModal({
                     );
 
                     if (!medResponse.ok) {
-                        throw new Error(`Failed to add medication: ${med.drugId}`);
+                        throw new Error(
+                            `Failed to add medication: ${med.drugId}`
+                        );
                     }
                 }
             }
 
-            // Fetch the total cost from the API
             const totalResponse = await fetch(
                 `/api/prescriptions/${newPrescriptionId}/total`,
                 {
@@ -315,7 +343,7 @@ export default function EncounterModal({
             }
 
             toast.success("Prescription saved successfully");
-            setStep(3); // Move to summary step
+            setStep(3);
         } catch (error) {
             console.error("Error saving prescriptions:", error);
             toast.error(
@@ -333,17 +361,22 @@ export default function EncounterModal({
         const pageWidth = doc.internal.pageSize.getWidth();
         let yPosition = 20;
 
-        // Header
         doc.setFontSize(20);
         doc.setFont("helvetica", "bold");
-        doc.text("Medical Encounter Summary", pageWidth / 2, yPosition, { align: "center" });
+        doc.text("Medical Encounter Summary", pageWidth / 2, yPosition, {
+            align: "center",
+        });
 
         yPosition += 15;
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-        doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPosition, { align: "center" });
+        doc.text(
+            `Date: ${new Date().toLocaleDateString()}`,
+            pageWidth / 2,
+            yPosition,
+            { align: "center" }
+        );
 
-        // Patient Information
         yPosition += 15;
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
@@ -352,27 +385,44 @@ export default function EncounterModal({
         yPosition += 8;
         doc.setFontSize(11);
         doc.setFont("helvetica", "normal");
-        doc.text(`Name: ${encounter.patientDto.userDto.fullName}`, 20, yPosition);
+        doc.text(
+            `Name: ${encounter.patientDto.userDto.fullName}`,
+            20,
+            yPosition
+        );
 
         yPosition += 6;
         doc.text(`Phone: ${encounter.patientDto.userDto.phone}`, 20, yPosition);
 
         yPosition += 6;
-        doc.text(`Blood Type: ${encounter.patientDto.bloodType || "N/A"}`, 20, yPosition);
+        doc.text(
+            `Blood Type: ${encounter.patientDto.bloodType || "N/A"}`,
+            20,
+            yPosition
+        );
 
         yPosition += 6;
-        doc.text(`Gender: ${encounter.patientDto.userDto.gender ? "Male" : "Female"}`, 20, yPosition);
+        doc.text(
+            `Gender: ${
+                encounter.patientDto.userDto.gender ? "Male" : "Female"
+            }`,
+            20,
+            yPosition
+        );
 
         if (encounter.patientDto.allergies) {
             yPosition += 6;
             doc.setTextColor(200, 0, 0);
             doc.setFont("helvetica", "bold");
-            doc.text(`Allergies: ${encounter.patientDto.allergies}`, 20, yPosition);
+            doc.text(
+                `Allergies: ${encounter.patientDto.allergies}`,
+                20,
+                yPosition
+            );
             doc.setTextColor(0, 0, 0);
             doc.setFont("helvetica", "normal");
         }
 
-        // Diagnosis
         yPosition += 15;
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
@@ -410,7 +460,7 @@ export default function EncounterModal({
             yPosition += 10;
 
             medications.forEach((med, index) => {
-                const drug = drugs.find(d => d.id === med.drugId);
+                const drug = drugs.find((d) => d.id === med.drugId);
 
                 if (yPosition > 250) {
                     doc.addPage();
@@ -477,7 +527,11 @@ export default function EncounterModal({
                     doc.setFont("helvetica", "bold");
                     doc.text("Subtotal:", 25, yPosition);
                     doc.setFont("helvetica", "normal");
-                    doc.text(`$${(drug.unitPrice * med.quantity).toFixed(2)}`, 50, yPosition);
+                    doc.text(
+                        `$${(drug.unitPrice * med.quantity).toFixed(2)}`,
+                        50,
+                        yPosition
+                    );
                     yPosition += 5;
                 }
 
@@ -487,7 +541,10 @@ export default function EncounterModal({
                     yPosition += 5;
                     doc.setFont("helvetica", "normal");
                     doc.setTextColor(60, 60, 60);
-                    const instructionLines = doc.splitTextToSize(med.instructions, pageWidth - 50);
+                    const instructionLines = doc.splitTextToSize(
+                        med.instructions,
+                        pageWidth - 50
+                    );
                     doc.text(instructionLines, 25, yPosition);
                     yPosition += instructionLines.length * 5;
                     doc.setTextColor(0, 0, 0);
@@ -519,10 +576,18 @@ export default function EncounterModal({
         doc.setFontSize(9);
         doc.setFont("helvetica", "italic");
         doc.setTextColor(100, 100, 100);
-        doc.text(`Doctor: ${encounter.doctorDto.staffDto.userDto.fullName}`, 20, yPosition);
+        doc.text(
+            `Doctor: ${encounter.doctorDto.staffDto.userDto.fullName}`,
+            20,
+            yPosition
+        );
         if (encounter.doctorDto.departmentDto) {
             yPosition += 5;
-            doc.text(`Department: ${encounter.doctorDto.departmentDto.name}`, 20, yPosition);
+            doc.text(
+                `Department: ${encounter.doctorDto.departmentDto.name}`,
+                20,
+                yPosition
+            );
         }
 
         return doc;
@@ -530,14 +595,18 @@ export default function EncounterModal({
 
     const handleDownloadPDF = () => {
         const doc = generatePDF();
-        doc.save(`encounter-${encounter.id.substring(0, 8)}-${encounter.patientDto.userDto.fullName}.pdf`);
+        doc.save(
+            `encounter-${encounter.id.substring(0, 8)}-${
+                encounter.patientDto.userDto.fullName
+            }.pdf`
+        );
         toast.success("PDF downloaded successfully");
     };
 
     const handlePrintPDF = () => {
         const doc = generatePDF();
         doc.autoPrint();
-        window.open(doc.output('bloburl'), '_blank');
+        window.open(doc.output("bloburl"), "_blank");
         toast.success("Opening print dialog...");
     };
 
@@ -591,7 +660,9 @@ export default function EncounterModal({
             // Download PDF
             handleDownloadPDF();
 
-            toast.success("Encounter completed and invoice created successfully");
+            toast.success(
+                "Encounter completed and invoice created successfully"
+            );
             onSuccess();
         } catch (error) {
             console.error("Error completing encounter:", error);
@@ -613,7 +684,11 @@ export default function EncounterModal({
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h3 className="font-bold text-2xl">
-                            {step === 1 ? "Step 1: Diagnosis" : step === 2 ? "Step 2: Prescriptions" : "Step 3: Summary"}
+                            {step === 1
+                                ? "Step 1: Diagnosis"
+                                : step === 2
+                                ? "Step 2: Prescriptions"
+                                : "Step 3: Summary"}
                         </h3>
                         <p className="text-sm text-gray-500 mt-1">
                             Patient: {encounter.patientDto.userDto.fullName}
@@ -645,12 +720,15 @@ export default function EncounterModal({
                             <div className="form-control">
                                 <label className="label">
                                     <span className="label-text font-semibold">
-                                        Diagnosis <span className="text-error">*</span>
+                                        Diagnosis{" "}
+                                        <span className="text-error">*</span>
                                     </span>
                                 </label>
                                 <textarea
                                     value={diagnosis}
-                                    onChange={(e) => setDiagnosis(e.target.value)}
+                                    onChange={(e) =>
+                                        setDiagnosis(e.target.value)
+                                    }
                                     placeholder="Enter diagnosis..."
                                     className="textarea textarea-bordered w-full h-32"
                                     disabled={saving}
@@ -678,249 +756,450 @@ export default function EncounterModal({
                         <>
                             <div className="alert alert-info">
                                 <div>
-                                    <p className="font-semibold">Diagnosis: {diagnosis}</p>
-                                    {notes && <p className="text-sm mt-1">Notes: {notes}</p>}
+                                    <p className="font-semibold">
+                                        Diagnosis: {diagnosis}
+                                    </p>
+                                    {notes && (
+                                        <p className="text-sm mt-1">
+                                            Notes: {notes}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="divider">Prescription</div>
 
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <label className="label">
-                                <span className="label-text font-semibold flex items-center gap-2">
-                                    <Pill className="w-5 h-5" />
-                                    Medications
-                                </span>
-                            </label>
-                            <button
-                                onClick={addMedication}
-                                className="btn btn-sm btn-outline btn-primary gap-2"
-                                disabled={saving}
-                            >
-                                <Plus className="w-4 h-4" />
-                                Add Medication
-                            </button>
-                        </div>
-
-                        {medications.length === 0 ? (
-                            <div className="text-center py-8 bg-base-200 rounded-lg">
-                                <p className="text-gray-500">
-                                    No medications added yet
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {medications.map((medication, index) => (
-                                    <div
-                                        key={medication.id}
-                                        className="card bg-base-200 p-4"
-                                    >
-                                        <div className="flex items-start justify-between mb-4">
-                                            <h4 className="font-semibold">
-                                                Medication {index + 1}
-                                            </h4>
-                                            <button
-                                                onClick={() =>
-                                                    removeMedication(
-                                                        medication.id
-                                                    )
-                                                }
-                                                className="btn btn-ghost btn-sm btn-circle text-error"
-                                                disabled={saving}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <div className="form-control">
-                                                <label className="label">
-                                                    <span className="label-text font-medium">
-                                                        Drug{" "}
-                                                        <span className="text-error">
-                                                            *
-                                                        </span>
-                                                        <span className="text-xs text-gray-500 ml-2">
-                                                            ({drugs.length}{" "}
-                                                            available)
-                                                        </span>
-                                                    </span>
-                                                </label>
-                                                <select
-                                                    value={medication.drugId}
-                                                    onChange={(e) =>
-                                                        updateMedication(
-                                                            medication.id,
-                                                            "drugId",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className="select select-bordered w-full"
-                                                    disabled={
-                                                        saving || loadingDrugs
-                                                    }
-                                                >
-                                                    <option value="">
-                                                        {loadingDrugs
-                                                            ? "Loading drugs..."
-                                                            : `Select a drug (${drugs.length} available)`}
-                                                    </option>
-                                                    {drugs.map((drug) => (
-                                                        <option
-                                                            key={drug.id}
-                                                            value={drug.id}
-                                                        >
-                                                            {drug.name} -{" "}
-                                                            {drug.strength} (
-                                                            {drug.dosageForm})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="form-control">
-                                                    <label className="label">
-                                                        <span className="label-text">
-                                                            Dose
-                                                        </span>
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={medication.dose}
-                                                        onChange={(e) =>
-                                                            updateMedication(
-                                                                medication.id,
-                                                                "dose",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        placeholder="e.g., 500mg"
-                                                        className="input input-bordered w-full"
-                                                        disabled={saving}
-                                                    />
-                                                </div>
-
-                                                <div className="form-control">
-                                                    <label className="label">
-                                                        <span className="label-text">
-                                                            Frequency
-                                                        </span>
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={medication.frequency}
-                                                        onChange={(e) =>
-                                                            updateMedication(
-                                                                medication.id,
-                                                                "frequency",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        placeholder="e.g., Twice daily"
-                                                        className="input input-bordered w-full"
-                                                        disabled={saving}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="form-control">
-                                                    <label className="label">
-                                                        <span className="label-text">
-                                                            Timing
-                                                        </span>
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={medication.timing}
-                                                        onChange={(e) =>
-                                                            updateMedication(
-                                                                medication.id,
-                                                                "timing",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        placeholder="e.g., After meals"
-                                                        className="input input-bordered w-full"
-                                                        disabled={saving}
-                                                    />
-                                                </div>
-
-                                                <div className="form-control">
-                                                    <label className="label">
-                                                        <span className="label-text">
-                                                            Duration
-                                                        </span>
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={medication.duration}
-                                                        onChange={(e) =>
-                                                            updateMedication(
-                                                                medication.id,
-                                                                "duration",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        placeholder="e.g., 7 days"
-                                                        className="input input-bordered w-full"
-                                                        disabled={saving}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="form-control">
-                                                <label className="label">
-                                                    <span className="label-text">
-                                                        Quantity
-                                                    </span>
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    value={medication.quantity}
-                                                    onChange={(e) =>
-                                                        updateMedication(
-                                                            medication.id,
-                                                            "quantity",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    placeholder="0"
-                                                    className="input input-bordered w-full"
-                                                    disabled={saving}
-                                                />
-                                            </div>
-
-                                            <div className="form-control">
-                                                <label className="label">
-                                                    <span className="label-text">
-                                                        Instructions
-                                                    </span>
-                                                </label>
-                                                <textarea
-                                                    value={
-                                                        medication.instructions
-                                                    }
-                                                    onChange={(e) =>
-                                                        updateMedication(
-                                                            medication.id,
-                                                            "instructions",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    placeholder="e.g., Take it twice a day, after meals"
-                                                    className="textarea textarea-bordered h-20"
-                                                    disabled={saving}
-                                                />
-                                            </div>
-                                        </div>
+                            {medications.length > 0 && hasStockIssues() && (
+                                <div className="alert alert-warning">
+                                    <div>
+                                        <p className="font-semibold">
+                                            ⚠ Stock Issues Detected
+                                        </p>
+                                        <p className="text-sm">
+                                            Some medications are out of stock or
+                                            exceed available quantities. Please
+                                            review and adjust before proceeding.
+                                        </p>
                                     </div>
-                                ))}
+                                </div>
+                            )}
+
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="label">
+                                        <span className="label-text font-semibold flex items-center gap-2">
+                                            <Pill className="w-5 h-5" />
+                                            Medications
+                                        </span>
+                                    </label>
+                                    <button
+                                        onClick={addMedication}
+                                        className="btn btn-sm btn-outline btn-primary gap-2"
+                                        disabled={saving}
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Add Medication
+                                    </button>
+                                </div>
+
+                                {medications.length === 0 ? (
+                                    <div className="text-center py-8 bg-base-200 rounded-lg">
+                                        <p className="text-gray-500">
+                                            No medications added yet
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {medications.map(
+                                            (medication, index) => (
+                                                <div
+                                                    key={medication.id}
+                                                    className="card bg-base-200 p-4"
+                                                >
+                                                    <div className="flex items-start justify-between mb-4">
+                                                        <h4 className="font-semibold">
+                                                            Medication{" "}
+                                                            {index + 1}
+                                                        </h4>
+                                                        <button
+                                                            onClick={() =>
+                                                                removeMedication(
+                                                                    medication.id
+                                                                )
+                                                            }
+                                                            className="btn btn-ghost btn-sm btn-circle text-error"
+                                                            disabled={saving}
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        <div className="form-control">
+                                                            <label className="label">
+                                                                <span className="label-text font-medium">
+                                                                    Drug{" "}
+                                                                    <span className="text-error">
+                                                                        *
+                                                                    </span>
+                                                                    <span className="text-xs text-gray-500 ml-2">
+                                                                        (
+                                                                        {
+                                                                            drugs.filter(
+                                                                                (
+                                                                                    d
+                                                                                ) =>
+                                                                                    !isDrugOutOfStock(
+                                                                                        d.id
+                                                                                    )
+                                                                            )
+                                                                                .length
+                                                                        }{" "}
+                                                                        in
+                                                                        stock)
+                                                                    </span>
+                                                                </span>
+                                                            </label>
+                                                            <select
+                                                                value={
+                                                                    medication.drugId
+                                                                }
+                                                                onChange={(e) =>
+                                                                    updateMedication(
+                                                                        medication.id,
+                                                                        "drugId",
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                                className="select select-bordered w-full"
+                                                                disabled={
+                                                                    saving ||
+                                                                    loadingDrugs
+                                                                }
+                                                            >
+                                                                <option value="">
+                                                                    {loadingDrugs
+                                                                        ? "Loading drugs..."
+                                                                        : `Select a drug (${
+                                                                              drugs.filter(
+                                                                                  (
+                                                                                      d
+                                                                                  ) =>
+                                                                                      !isDrugOutOfStock(
+                                                                                          d.id
+                                                                                      )
+                                                                              )
+                                                                                  .length
+                                                                          } in stock)`}
+                                                                </option>
+                                                                {drugs.map(
+                                                                    (drug) => {
+                                                                        const isOutOfStock =
+                                                                            isDrugOutOfStock(
+                                                                                drug.id
+                                                                            );
+                                                                        const stock =
+                                                                            drug.quantity ??
+                                                                            0;
+                                                                        return (
+                                                                            <option
+                                                                                key={
+                                                                                    drug.id
+                                                                                }
+                                                                                value={
+                                                                                    drug.id
+                                                                                }
+                                                                                disabled={
+                                                                                    isOutOfStock
+                                                                                }
+                                                                            >
+                                                                                {
+                                                                                    drug.name
+                                                                                }{" "}
+                                                                                -{" "}
+                                                                                {
+                                                                                    drug.strength
+                                                                                }{" "}
+                                                                                (
+                                                                                {
+                                                                                    drug.dosageForm
+                                                                                }
+
+                                                                                )
+                                                                                -
+                                                                                Stock:{" "}
+                                                                                {
+                                                                                    stock
+                                                                                }{" "}
+                                                                                {
+                                                                                    drug.unit
+                                                                                }
+                                                                                {isOutOfStock
+                                                                                    ? " [OUT OF STOCK]"
+                                                                                    : ""}
+                                                                            </option>
+                                                                        );
+                                                                    }
+                                                                )}
+                                                            </select>
+                                                            {medication.drugId &&
+                                                                isDrugOutOfStock(
+                                                                    medication.drugId
+                                                                ) && (
+                                                                    <label className="label">
+                                                                        <span className="label-text-alt text-error">
+                                                                            ⚠
+                                                                            This
+                                                                            drug
+                                                                            is
+                                                                            currently
+                                                                            out
+                                                                            of
+                                                                            stock
+                                                                        </span>
+                                                                    </label>
+                                                                )}
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="form-control">
+                                                                <label className="label">
+                                                                    <span className="label-text">
+                                                                        Dose
+                                                                    </span>
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={
+                                                                        medication.dose
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        updateMedication(
+                                                                            medication.id,
+                                                                            "dose",
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                    placeholder="e.g., 500mg"
+                                                                    className="input input-bordered w-full"
+                                                                    disabled={
+                                                                        saving
+                                                                    }
+                                                                />
+                                                            </div>
+
+                                                            <div className="form-control">
+                                                                <label className="label">
+                                                                    <span className="label-text">
+                                                                        Frequency
+                                                                    </span>
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={
+                                                                        medication.frequency
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        updateMedication(
+                                                                            medication.id,
+                                                                            "frequency",
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                    placeholder="e.g., Twice daily"
+                                                                    className="input input-bordered w-full"
+                                                                    disabled={
+                                                                        saving
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="form-control">
+                                                                <label className="label">
+                                                                    <span className="label-text">
+                                                                        Timing
+                                                                    </span>
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={
+                                                                        medication.timing
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        updateMedication(
+                                                                            medication.id,
+                                                                            "timing",
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                    placeholder="e.g., After meals"
+                                                                    className="input input-bordered w-full"
+                                                                    disabled={
+                                                                        saving
+                                                                    }
+                                                                />
+                                                            </div>
+
+                                                            <div className="form-control">
+                                                                <label className="label">
+                                                                    <span className="label-text">
+                                                                        Duration
+                                                                    </span>
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={
+                                                                        medication.duration
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        updateMedication(
+                                                                            medication.id,
+                                                                            "duration",
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                    placeholder="e.g., 7 days"
+                                                                    className="input input-bordered w-full"
+                                                                    disabled={
+                                                                        saving
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="form-control">
+                                                            <label className="label">
+                                                                <span className="label-text">
+                                                                    Quantity
+                                                                    {medication.drugId && (
+                                                                        <span className="text-xs text-gray-500 ml-2">
+                                                                            (Available:{" "}
+                                                                            {getDrugStock(
+                                                                                medication.drugId
+                                                                            )}
+                                                                            )
+                                                                        </span>
+                                                                    )}
+                                                                </span>
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                value={
+                                                                    medication.quantity
+                                                                }
+                                                                onChange={(e) =>
+                                                                    updateMedication(
+                                                                        medication.id,
+                                                                        "quantity",
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                                placeholder="0"
+                                                                className={`input input-bordered w-full ${
+                                                                    medication.drugId &&
+                                                                    medication.quantity >
+                                                                        0 &&
+                                                                    isQuantityExceedingStock(
+                                                                        medication.drugId,
+                                                                        medication.quantity
+                                                                    )
+                                                                        ? "input-error"
+                                                                        : ""
+                                                                }`}
+                                                                disabled={
+                                                                    saving
+                                                                }
+                                                                min="0"
+                                                                max={
+                                                                    medication.drugId
+                                                                        ? getDrugStock(
+                                                                              medication.drugId
+                                                                          )
+                                                                        : undefined
+                                                                }
+                                                            />
+                                                            {medication.drugId &&
+                                                                medication.quantity >
+                                                                    0 &&
+                                                                isQuantityExceedingStock(
+                                                                    medication.drugId,
+                                                                    medication.quantity
+                                                                ) && (
+                                                                    <label className="label">
+                                                                        <span className="label-text-alt text-error">
+                                                                            ⚠
+                                                                            Requested
+                                                                            quantity
+                                                                            (
+                                                                            {
+                                                                                medication.quantity
+                                                                            }
+                                                                            )
+                                                                            exceeds
+                                                                            available
+                                                                            stock
+                                                                            (
+                                                                            {getDrugStock(
+                                                                                medication.drugId
+                                                                            )}
+                                                                            )
+                                                                        </span>
+                                                                    </label>
+                                                                )}
+                                                        </div>
+
+                                                        <div className="form-control">
+                                                            <label className="label">
+                                                                <span className="label-text">
+                                                                    Instructions
+                                                                </span>
+                                                            </label>
+                                                            <textarea
+                                                                value={
+                                                                    medication.instructions
+                                                                }
+                                                                onChange={(e) =>
+                                                                    updateMedication(
+                                                                        medication.id,
+                                                                        "instructions",
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                                placeholder="e.g., Take it twice a day, after meals"
+                                                                className="textarea textarea-bordered h-20 w-full"
+                                                                disabled={
+                                                                    saving
+                                                                }
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
                         </>
                     )}
 
@@ -928,29 +1207,42 @@ export default function EncounterModal({
                         <>
                             <div className="alert alert-success mb-4">
                                 <div>
-                                    <p className="font-semibold">Prescription created successfully!</p>
-                                    <p className="text-sm">Review the details below before completing the encounter.</p>
+                                    <p className="font-semibold">
+                                        Prescription created successfully!
+                                    </p>
+                                    <p className="text-sm">
+                                        Review the details below before
+                                        completing the encounter.
+                                    </p>
                                 </div>
                             </div>
 
                             <div className="card bg-base-100 border">
                                 <div className="card-body">
-                                    <h3 className="card-title">Encounter Summary</h3>
+                                    <h3 className="card-title">
+                                        Encounter Summary
+                                    </h3>
 
                                     <div className="space-y-4">
                                         <div>
-                                            <p className="font-semibold text-sm text-gray-500">Diagnosis</p>
+                                            <p className="font-semibold text-sm text-gray-500">
+                                                Diagnosis
+                                            </p>
                                             <p>{diagnosis}</p>
                                         </div>
 
                                         {notes && (
                                             <div>
-                                                <p className="font-semibold text-sm text-gray-500">Notes</p>
+                                                <p className="font-semibold text-sm text-gray-500">
+                                                    Notes
+                                                </p>
                                                 <p>{notes}</p>
                                             </div>
                                         )}
 
-                                        <div className="divider">Medications</div>
+                                        <div className="divider">
+                                            Medications
+                                        </div>
 
                                         <div className="overflow-x-auto">
                                             <table className="table">
@@ -965,23 +1257,59 @@ export default function EncounterModal({
                                                 </thead>
                                                 <tbody>
                                                     {medications.map((med) => {
-                                                        const drug = drugs.find(d => d.id === med.drugId);
-                                                        const itemTotal = drug ? drug.unitPrice * med.quantity : 0;
+                                                        const drug = drugs.find(
+                                                            (d) =>
+                                                                d.id ===
+                                                                med.drugId
+                                                        );
+                                                        const itemTotal = drug
+                                                            ? drug.unitPrice *
+                                                              med.quantity
+                                                            : 0;
                                                         return (
                                                             <tr key={med.id}>
-                                                                <td>{drug?.name || 'N/A'}</td>
-                                                                <td>{med.dose}</td>
-                                                                <td>{med.quantity}</td>
-                                                                <td>${drug?.unitPrice.toFixed(2) || '0.00'}</td>
-                                                                <td>${itemTotal.toFixed(2)}</td>
+                                                                <td>
+                                                                    {drug?.name ||
+                                                                        "N/A"}
+                                                                </td>
+                                                                <td>
+                                                                    {med.dose}
+                                                                </td>
+                                                                <td>
+                                                                    {
+                                                                        med.quantity
+                                                                    }
+                                                                </td>
+                                                                <td>
+                                                                    $
+                                                                    {drug?.unitPrice.toFixed(
+                                                                        2
+                                                                    ) || "0.00"}
+                                                                </td>
+                                                                <td>
+                                                                    $
+                                                                    {itemTotal.toFixed(
+                                                                        2
+                                                                    )}
+                                                                </td>
                                                             </tr>
                                                         );
                                                     })}
                                                 </tbody>
                                                 <tfoot>
                                                     <tr className="font-bold">
-                                                        <td colSpan={4} className="text-right">Total:</td>
-                                                        <td>${totalCost.toFixed(2)}</td>
+                                                        <td
+                                                            colSpan={4}
+                                                            className="text-right"
+                                                        >
+                                                            Total:
+                                                        </td>
+                                                        <td>
+                                                            $
+                                                            {totalCost.toFixed(
+                                                                2
+                                                            )}
+                                                        </td>
                                                     </tr>
                                                 </tfoot>
                                             </table>
@@ -1013,7 +1341,11 @@ export default function EncounterModal({
                 <div className="modal-action">
                     {step === 1 ? (
                         <>
-                            <button onClick={onClose} className="btn" disabled={saving}>
+                            <button
+                                onClick={onClose}
+                                className="btn"
+                                disabled={saving}
+                            >
                                 Cancel
                             </button>
                             <button
@@ -1039,8 +1371,13 @@ export default function EncounterModal({
                             </button>
                             <button
                                 onClick={handleSavePrescriptions}
-                                disabled={saving}
+                                disabled={saving || hasStockIssues()}
                                 className="btn btn-primary"
+                                title={
+                                    hasStockIssues()
+                                        ? "Cannot proceed with out-of-stock items or quantities exceeding available stock"
+                                        : ""
+                                }
                             >
                                 {saving ? (
                                     <span className="loading loading-spinner"></span>
