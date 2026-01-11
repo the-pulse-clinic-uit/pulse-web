@@ -1,50 +1,57 @@
 "use client";
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import { TriangleAlert } from "lucide-react";
 
 // ==================== VALIDATION FUNCTIONS ====================
 
-const validateDateTime = (dateTimeStr: string, fieldName: string): string | null => {
+const validateDateTime = (
+    dateTimeStr: string,
+    fieldName: string
+): string | null => {
     if (!dateTimeStr) {
         return `${fieldName} is required.`;
     }
-    
+
     const date = new Date(dateTimeStr);
-    
+
     // Check if date is invalid
     if (isNaN(date.getTime())) {
         return `${fieldName} is invalid. Please enter a valid date and time.`;
     }
-    
+
     const year = date.getFullYear();
-    
+
     // Check year range
     if (year < 1900 || year > 3000) {
         return `${fieldName} year must be between 1900 and 3000.`;
     }
-    
+
     return null;
 };
 
-const validateDateOnly = (dateStr: string, fieldName: string): string | null => {
+const validateDateOnly = (
+    dateStr: string,
+    fieldName: string
+): string | null => {
     if (!dateStr) {
         return `${fieldName} is required.`;
     }
-    
+
     const date = new Date(dateStr);
-    
+
     // Check if date is invalid
     if (isNaN(date.getTime())) {
         return `${fieldName} is invalid. Please enter a valid date.`;
     }
-    
+
     const year = date.getFullYear();
-    
+
     // Check year range
     if (year < 1900 || year > 3000) {
         return `${fieldName} year must be between 1900 and 3000.`;
     }
-    
+
     return null;
 };
 
@@ -53,6 +60,9 @@ interface PatientOption {
     fullName: string;
     citizenId: string;
     phone: string;
+    hasViolations: boolean;
+    violationLevel: string | null;
+    noShowCount: number | null;
 }
 
 interface PatientApiResponse {
@@ -62,6 +72,9 @@ interface PatientApiResponse {
         citizenId: string;
         phone: string;
     };
+    hasViolations: boolean | null;
+    violationLevel: string | null;
+    noShowCount: number | null;
 }
 
 interface DepartmentOption {
@@ -192,11 +205,20 @@ export default function AddAppointmentModal({
     const [filteredRooms, setFilteredRooms] = useState<RoomOption[]>([]);
     const [allShifts, setAllShifts] = useState<ShiftDto[]>([]);
     const [filteredShifts, setFilteredShifts] = useState<ShiftDto[]>([]);
-    const [filteredAssignments, setFilteredAssignments] = useState<ShiftAssignmentOption[]>([]);
-    const [fullAssignments, setFullAssignments] = useState<ShiftAssignmentDto[]>([]); // Store full assignment data
+    const [filteredAssignments, setFilteredAssignments] = useState<
+        ShiftAssignmentOption[]
+    >([]);
+    const [fullAssignments, setFullAssignments] = useState<
+        ShiftAssignmentDto[]
+    >([]);
     const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
     const [loadingAssignments, setLoadingAssignments] = useState(false);
     const [loadingSlots, setLoadingSlots] = useState(false);
+    const [patientViolations, setPatientViolations] = useState<{
+        hasViolations: boolean;
+        violationLevel: string | null;
+        noShowCount: number | null;
+    } | null>(null);
 
     // Fetch patients, departments, doctors, rooms, and shifts when modal opens
     useEffect(() => {
@@ -233,7 +255,6 @@ export default function AddAppointmentModal({
         }
     }, [formData.departmentId, allRooms]);
 
-    // Filter shifts when department changes
     useEffect(() => {
         if (formData.departmentId) {
             const filtered = allShifts.filter(
@@ -245,7 +266,6 @@ export default function AddAppointmentModal({
         }
     }, [formData.departmentId, allShifts]);
 
-    // Fetch assignments when doctor or date changes
     useEffect(() => {
         if (formData.doctorId && formData.date && filteredShifts.length > 0) {
             fetchAssignmentsByDoctor(formData.doctorId, formData.date);
@@ -254,9 +274,12 @@ export default function AddAppointmentModal({
         }
     }, [formData.doctorId, formData.date, filteredShifts]);
 
-    // Fetch available slots when assignment changes
     useEffect(() => {
-        if (formData.assignmentId && formData.date && fullAssignments.length > 0) {
+        if (
+            formData.assignmentId &&
+            formData.date &&
+            fullAssignments.length > 0
+        ) {
             fetchAvailableSlots(formData.assignmentId, formData.date);
         } else {
             setAvailableSlots([]);
@@ -268,18 +291,23 @@ export default function AddAppointmentModal({
         if (!token) return;
 
         try {
-            const res = await fetch("/api/patients", {
+            const res = await fetch("/api/patients?withViolations=true", {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
             if (res.ok) {
                 const data: PatientApiResponse[] = await res.json();
+                console.log("Fetched patients data:", data);
                 const patientsList: PatientOption[] = data.map((patient) => ({
                     id: patient.id,
                     fullName: patient.userDto.fullName,
                     citizenId: patient.userDto.citizenId,
                     phone: patient.userDto.phone,
+                    hasViolations: patient.hasViolations ?? false,
+                    violationLevel: patient.violationLevel,
+                    noShowCount: patient.noShowCount,
                 }));
+                console.log("Processed patients list:", patientsList);
                 setPatients(patientsList);
             }
         } catch (error) {
@@ -298,10 +326,12 @@ export default function AddAppointmentModal({
 
             if (res.ok) {
                 const data = await res.json();
-                const departmentsList: DepartmentOption[] = data.map((dept: { id: string; name: string }) => ({
-                    id: dept.id,
-                    name: dept.name,
-                }));
+                const departmentsList: DepartmentOption[] = data.map(
+                    (dept: { id: string; name: string }) => ({
+                        id: dept.id,
+                        name: dept.name,
+                    })
+                );
                 setDepartments(departmentsList);
             }
         } catch (error) {
@@ -407,22 +437,25 @@ export default function AddAppointmentModal({
             );
 
             // Format for dropdown
-            const assignmentOptions: ShiftAssignmentOption[] = doctorAssignments.map(
-                (assignment) => ({
+            const assignmentOptions: ShiftAssignmentOption[] =
+                doctorAssignments.map((assignment) => ({
                     id: assignment.id,
                     shiftName: assignment.shiftDto.name,
-                    startTime: new Date(assignment.shiftDto.startTime).toLocaleTimeString(
-                        "en-US",
-                        { hour: "2-digit", minute: "2-digit" }
-                    ),
-                    endTime: new Date(assignment.shiftDto.endTime).toLocaleTimeString(
-                        "en-US",
-                        { hour: "2-digit", minute: "2-digit" }
-                    ),
+                    startTime: new Date(
+                        assignment.shiftDto.startTime
+                    ).toLocaleTimeString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    }),
+                    endTime: new Date(
+                        assignment.shiftDto.endTime
+                    ).toLocaleTimeString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    }),
                     role: assignment.roleInShift,
                     roomNumber: assignment.roomDto?.roomNumber || "N/A",
-                })
-            );
+                }));
 
             setFilteredAssignments(assignmentOptions);
             setFullAssignments(doctorAssignments); // Store full data
@@ -438,7 +471,9 @@ export default function AddAppointmentModal({
         if (!token) return;
 
         // Find the full assignment to get shiftId
-        const selectedAssignment = fullAssignments.find(a => a.id === assignmentId);
+        const selectedAssignment = fullAssignments.find(
+            (a) => a.id === assignmentId
+        );
         if (!selectedAssignment) {
             setAvailableSlots([]);
             return;
@@ -459,7 +494,10 @@ export default function AddAppointmentModal({
                 const data: AvailableSlot[] = await res.json();
                 setAvailableSlots(data);
             } else {
-                console.error("Failed to fetch available slots:", res.statusText);
+                console.error(
+                    "Failed to fetch available slots:",
+                    res.statusText
+                );
                 setAvailableSlots([]);
             }
         } catch (error) {
@@ -472,6 +510,7 @@ export default function AddAppointmentModal({
 
     const handlePatientChange = (patientId: string) => {
         const selectedPatient = patients.find((p) => p.id === patientId);
+        console.log("Selected patient:", selectedPatient);
         if (selectedPatient) {
             setFormData((prev) => ({
                 ...prev,
@@ -479,6 +518,22 @@ export default function AddAppointmentModal({
                 name: selectedPatient.fullName,
                 phoneNumber: selectedPatient.phone,
             }));
+
+            if (selectedPatient.hasViolations) {
+                console.log("Setting violations:", {
+                    hasViolations: selectedPatient.hasViolations,
+                    violationLevel: selectedPatient.violationLevel,
+                    noShowCount: selectedPatient.noShowCount,
+                });
+                setPatientViolations({
+                    hasViolations: selectedPatient.hasViolations,
+                    violationLevel: selectedPatient.violationLevel,
+                    noShowCount: selectedPatient.noShowCount,
+                });
+            } else {
+                console.log("No violations for this patient");
+                setPatientViolations(null);
+            }
         } else {
             setFormData((prev) => ({
                 ...prev,
@@ -486,6 +541,7 @@ export default function AddAppointmentModal({
                 name: "",
                 phoneNumber: "",
             }));
+            setPatientViolations(null);
         }
     };
 
@@ -548,7 +604,10 @@ export default function AddAppointmentModal({
         }
 
         // Validate slot time
-        const slotTimeError = validateDateTime(formData.slotStartTime, "Appointment time");
+        const slotTimeError = validateDateTime(
+            formData.slotStartTime,
+            "Appointment time"
+        );
         if (slotTimeError) {
             alert(slotTimeError);
             return;
@@ -608,6 +667,7 @@ export default function AddAppointmentModal({
         });
         setFilteredAssignments([]);
         setAvailableSlots([]);
+        setPatientViolations(null);
         onClose();
     };
 
@@ -635,18 +695,60 @@ export default function AddAppointmentModal({
                             <select
                                 name="patientId"
                                 value={formData.patientId}
-                                onChange={(e) => handlePatientChange(e.target.value)}
+                                onChange={(e) =>
+                                    handlePatientChange(e.target.value)
+                                }
                                 className="select select-bordered w-full"
                             >
                                 <option value="">Select a patient</option>
                                 {patients.map((patient) => (
                                     <option key={patient.id} value={patient.id}>
-                                        {patient.fullName} - {patient.citizenId} ({patient.phone})
+                                        {patient.fullName} - {patient.citizenId}{" "}
+                                        ({patient.phone})
                                     </option>
                                 ))}
                             </select>
                         </div>
                     </div>
+
+                    {patientViolations && patientViolations.hasViolations && (
+                        <div className="alert alert-warning shadow-lg">
+                            <div>
+                                <TriangleAlert className="stroke-current flex-shrink-0 h-6 w-6" />
+                                <div>
+                                    <h3 className="font-bold">
+                                        Patient Violation Warning
+                                    </h3>
+                                    <div className="text-sm">
+                                        This patient has violations.
+                                        {patientViolations.violationLevel && (
+                                            <span className="ml-1">
+                                                Level:{" "}
+                                                <strong>
+                                                    {
+                                                        patientViolations.violationLevel
+                                                    }
+                                                </strong>
+                                            </span>
+                                        )}
+                                        {patientViolations.noShowCount !==
+                                            null &&
+                                            patientViolations.noShowCount >
+                                                0 && (
+                                                <span className="ml-2">
+                                                    No-shows:{" "}
+                                                    <strong>
+                                                        {
+                                                            patientViolations.noShowCount
+                                                        }
+                                                    </strong>
+                                                </span>
+                                            )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="form-control">
@@ -690,14 +792,15 @@ export default function AddAppointmentModal({
                     <div className="form-control">
                         <label className="label">
                             <span className="label-text">
-                                Department{" "}
-                                <span className="text-error">*</span>
+                                Department <span className="text-error">*</span>
                             </span>
                         </label>
                         <select
                             name="departmentId"
                             value={formData.departmentId}
-                            onChange={(e) => handleDepartmentChange(e.target.value)}
+                            onChange={(e) =>
+                                handleDepartmentChange(e.target.value)
+                            }
                             className="select select-bordered w-full"
                         >
                             <option value="">Select department first</option>
@@ -782,7 +885,10 @@ export default function AddAppointmentModal({
                             >
                                 <option value="">Select room</option>
                                 {filteredRooms.map((room) => (
-                                    <option key={room.id} value={room.roomNumber}>
+                                    <option
+                                        key={room.id}
+                                        value={room.roomNumber}
+                                    >
                                         {room.roomNumber}
                                     </option>
                                 ))}
@@ -800,8 +906,12 @@ export default function AddAppointmentModal({
                             <select
                                 name="assignmentId"
                                 value={formData.assignmentId}
-                                onChange={(e) => handleAssignmentChange(e.target.value)}
-                                disabled={!formData.doctorId || loadingAssignments}
+                                onChange={(e) =>
+                                    handleAssignmentChange(e.target.value)
+                                }
+                                disabled={
+                                    !formData.doctorId || loadingAssignments
+                                }
                                 className="select select-bordered w-full"
                             >
                                 <option value="">
@@ -810,19 +920,25 @@ export default function AddAppointmentModal({
                                         : "Select shift"}
                                 </option>
                                 {filteredAssignments.map((assignment) => (
-                                    <option key={assignment.id} value={assignment.id}>
-                                        {assignment.shiftName} ({assignment.startTime} -{" "}
+                                    <option
+                                        key={assignment.id}
+                                        value={assignment.id}
+                                    >
+                                        {assignment.shiftName} (
+                                        {assignment.startTime} -{" "}
                                         {assignment.endTime})
                                     </option>
                                 ))}
                             </select>
-                            {filteredAssignments.length === 0 && !loadingAssignments && formData.doctorId && (
-                                <label className="label">
-                                    <span className="label-text-alt text-warning">
-                                        ⚠️ No active shifts for this doctor
-                                    </span>
-                                </label>
-                            )}
+                            {filteredAssignments.length === 0 &&
+                                !loadingAssignments &&
+                                formData.doctorId && (
+                                    <label className="label">
+                                        <span className="label-text-alt text-warning">
+                                            ⚠️ No active shifts for this doctor
+                                        </span>
+                                    </label>
+                                )}
                         </div>
                     </div>
 
@@ -843,13 +959,25 @@ export default function AddAppointmentModal({
                                 );
                                 if (selectedSlot) {
                                     // Calculate end time based on shift slot duration
-                                    const selectedAssignment = fullAssignments.find(
-                                        (a) => a.id === formData.assignmentId
+                                    const selectedAssignment =
+                                        fullAssignments.find(
+                                            (a) =>
+                                                a.id === formData.assignmentId
+                                        );
+                                    const slotMinutes =
+                                        selectedAssignment?.shiftDto
+                                            .slotMinutes || 30;
+                                    const startTime = new Date(
+                                        selectedSlot.startsAt
                                     );
-                                    const slotMinutes = selectedAssignment?.shiftDto.slotMinutes || 30;
-                                    const startTime = new Date(selectedSlot.startsAt);
-                                    const endTime = new Date(startTime.getTime() + slotMinutes * 60000);
-                                    handleSlotChange(selectedSlot.startsAt, endTime.toISOString());
+                                    const endTime = new Date(
+                                        startTime.getTime() +
+                                            slotMinutes * 60000
+                                    );
+                                    handleSlotChange(
+                                        selectedSlot.startsAt,
+                                        endTime.toISOString()
+                                    );
                                 }
                             }}
                             disabled={!formData.assignmentId || loadingSlots}
@@ -865,16 +993,26 @@ export default function AddAppointmentModal({
                                 const selectedAssignment = fullAssignments.find(
                                     (a) => a.id === formData.assignmentId
                                 );
-                                const slotMinutes = selectedAssignment?.shiftDto.slotMinutes || 30;
-                                const endTime = new Date(startTime.getTime() + slotMinutes * 60000);
-                                
-                                const startTimeStr = startTime.toLocaleTimeString(
-                                    "en-US",
-                                    { hour: "2-digit", minute: "2-digit", hour12: false }
+                                const slotMinutes =
+                                    selectedAssignment?.shiftDto.slotMinutes ||
+                                    30;
+                                const endTime = new Date(
+                                    startTime.getTime() + slotMinutes * 60000
                                 );
+
+                                const startTimeStr =
+                                    startTime.toLocaleTimeString("en-US", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: false,
+                                    });
                                 const endTimeStr = endTime.toLocaleTimeString(
                                     "en-US",
-                                    { hour: "2-digit", minute: "2-digit", hour12: false }
+                                    {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: false,
+                                    }
                                 );
                                 const isAvailable = slot.capacity > 0;
 
@@ -884,7 +1022,8 @@ export default function AddAppointmentModal({
                                         value={slot.startsAt}
                                         disabled={!isAvailable}
                                     >
-                                        Slot #{index + 1}: {startTimeStr} - {endTimeStr}
+                                        Slot #{index + 1}: {startTimeStr} -{" "}
+                                        {endTimeStr}
                                         {isAvailable
                                             ? ` (${slot.capacity} available)`
                                             : " (FULL)"}

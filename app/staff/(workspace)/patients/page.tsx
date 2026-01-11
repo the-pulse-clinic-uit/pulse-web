@@ -92,9 +92,12 @@ export default function PatientsPage() {
             });
             if (userRes.ok) setUser(await userRes.json());
 
-            const patientRes = await fetch("/api/patients", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const patientRes = await fetch(
+                "/api/patients?withViolations=true",
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
 
             if (patientRes.ok) {
                 const data = await patientRes.json();
@@ -153,7 +156,9 @@ export default function PatientsPage() {
         }
 
         if (filters.gender) {
-            result = result.filter((patient) => patient.gender === filters.gender);
+            result = result.filter(
+                (patient) => patient.gender === filters.gender
+            );
         }
 
         if (filters.bloodType) {
@@ -240,9 +245,7 @@ export default function PatientsPage() {
         {
             header: "Blood Type",
             cell: (row) => (
-                <span className="font-medium">
-                    {row.bloodType || "N/A"}
-                </span>
+                <span className="font-medium">{row.bloodType || "N/A"}</span>
             ),
         },
         {
@@ -308,11 +311,20 @@ export default function PatientsPage() {
                 onAdd={() => setIsAddModalOpen(true)}
             />
 
-            {(searchTerm || filters.gender || filters.bloodType || filters.hasInsurance || filters.hasViolations) && (
+            {(searchTerm ||
+                filters.gender ||
+                filters.bloodType ||
+                filters.hasInsurance ||
+                filters.hasViolations) && (
                 <div className="flex items-center justify-between bg-base-200 px-4 py-2 rounded-lg">
                     <p className="text-sm text-base-content/70">
-                        Showing <span className="font-semibold">{filteredPatients.length}</span> of{" "}
-                        <span className="font-semibold">{patients.length}</span> patients
+                        Showing{" "}
+                        <span className="font-semibold">
+                            {filteredPatients.length}
+                        </span>{" "}
+                        of{" "}
+                        <span className="font-semibold">{patients.length}</span>{" "}
+                        patients
                     </p>
                     <button
                         onClick={handleFilterReset}
