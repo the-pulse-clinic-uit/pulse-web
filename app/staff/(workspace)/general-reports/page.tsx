@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import PatientReportsChart from "@/components/staff/reports/PatientReportsChart";
 import AppointmentReportsChart from "@/components/staff/reports/AppointmentReportsChart";
-import { Users, Calendar } from "lucide-react";
+import RevenueReportsChart from "@/components/staff/reports/RevenueReportsChart";
+import { Users, Calendar, DollarSign } from "lucide-react";
 
-type ReportSection = "patients" | "appointments";
+type ReportSection = "patients" | "appointments" | "revenue";
 
 export default function GeneralReportsPage() {
     const router = useRouter();
@@ -51,10 +52,20 @@ export default function GeneralReportsPage() {
                     <Calendar className="w-4 h-4" />
                     Appointment Reports
                 </button>
+                <button
+                    className={`tab gap-2 ${
+                        activeSection === "revenue" ? "tab-active" : ""
+                    }`}
+                    onClick={() => setActiveSection("revenue")}
+                >
+                    <DollarSign className="w-4 h-4" />
+                    Revenue Reports
+                </button>
             </div>
 
             {activeSection === "patients" && <PatientReportsChart />}
             {activeSection === "appointments" && <AppointmentReportsChart />}
+            {activeSection === "revenue" && <RevenueReportsChart />}
         </div>
     );
 }
