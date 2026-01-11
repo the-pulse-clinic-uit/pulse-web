@@ -16,6 +16,10 @@ type ViewPatientModalProps = {
         citizenId?: string;
         bloodType?: string;
         allergies?: string;
+        hasViolations?: boolean | null;
+        violationLevel?: string | null;
+        noShowCount?: number | null;
+        outstandingDebt?: number | null;
     } | null;
 };
 
@@ -168,6 +172,73 @@ export default function ViewPatientModal({
                                 </p>
                             </div>
                         )}
+                    </div>
+
+                    <div className="divider my-6">Patient Status</div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text text-gray-500">
+                                    Has Violations
+                                </span>
+                            </label>
+                            <span
+                                className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium w-fit ${
+                                    patient.hasViolations
+                                        ? "bg-red-100 text-red-700"
+                                        : "bg-green-100 text-green-700"
+                                }`}
+                            >
+                                {patient.hasViolations ? "Yes" : "No"}
+                            </span>
+                        </div>
+
+                        {patient.hasViolations && patient.violationLevel && (
+                            <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text text-gray-500">
+                                        Violation Level
+                                    </span>
+                                </label>
+                                <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium w-fit bg-red-100 text-red-700">
+                                    {patient.violationLevel}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text text-gray-500">
+                                    No-Show Count
+                                </span>
+                            </label>
+                            <p className="font-medium text-lg">
+                                {patient.noShowCount ?? 0}
+                            </p>
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text text-gray-500">
+                                    Outstanding Debt
+                                </span>
+                            </label>
+                            <p
+                                className={`font-medium text-lg ${
+                                    patient.outstandingDebt &&
+                                    patient.outstandingDebt > 0
+                                        ? "text-red-600"
+                                        : "text-green-600"
+                                }`}
+                            >
+                                {patient.outstandingDebt
+                                    ? `$${patient.outstandingDebt.toFixed(2)}`
+                                    : "$0.00"}
+                            </p>
+                        </div>
                     </div>
                 </div>
 

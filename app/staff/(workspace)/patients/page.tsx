@@ -24,6 +24,10 @@ type Patient = {
     citizenId?: string;
     bloodType?: string;
     allergies?: string;
+    hasViolations?: boolean | null;
+    violationLevel?: string | null;
+    noShowCount?: number | null;
+    outstandingDebt?: number | null;
 };
 
 interface PatientDTO {
@@ -40,6 +44,10 @@ interface PatientDTO {
     healthInsuranceId: string | null;
     bloodType: string;
     allergies: string;
+    hasViolations: boolean | null;
+    violationLevel: string | null;
+    noShowCount: number | null;
+    outstandingDebt: number | null;
 }
 
 interface UserData {
@@ -94,6 +102,10 @@ export default function PatientsPage() {
                         citizenId: item.userDto.citizenId,
                         bloodType: item.bloodType,
                         allergies: item.allergies,
+                        hasViolations: item.hasViolations,
+                        violationLevel: item.violationLevel,
+                        noShowCount: item.noShowCount,
+                        outstandingDebt: item.outstandingDebt,
                     })
                 );
 
@@ -146,7 +158,14 @@ export default function PatientsPage() {
         { header: "Birth Date", accessorKey: "birthDate" },
         { header: "Gender", accessorKey: "gender" },
         { header: "Phone", accessorKey: "phoneNumber" },
-        { header: "Address", accessorKey: "address" },
+        {
+            header: "Blood Type",
+            cell: (row) => (
+                <span className="font-medium">
+                    {row.bloodType || "N/A"}
+                </span>
+            ),
+        },
         {
             header: "Insurance",
             cell: (row) => (
@@ -157,7 +176,21 @@ export default function PatientsPage() {
                             : "bg-gray-100 text-gray-600"
                     }`}
                 >
-                    {row.healthInsurance ? row.insuranceNumber : "No"}
+                    {row.healthInsurance ? "Yes" : "No"}
+                </span>
+            ),
+        },
+        {
+            header: "Violations",
+            cell: (row) => (
+                <span
+                    className={`px-2 py-1 rounded text-xs font-semibold ${
+                        row.hasViolations
+                            ? "bg-red-100 text-red-700"
+                            : "bg-green-100 text-green-700"
+                    }`}
+                >
+                    {row.hasViolations ? row.violationLevel || "Yes" : "No"}
                 </span>
             ),
         },
