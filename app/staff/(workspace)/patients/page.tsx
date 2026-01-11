@@ -7,6 +7,7 @@ import Pagination from "@/components/ui/Pagination";
 import AddPatientModal from "@/components/staff/patients/AddPatientModal";
 import ViewPatientModal from "@/components/staff/patients/ViewPatientModal";
 import EditPatientModal from "@/components/staff/patients/EditPatientModal";
+import FilterPatientModal from "@/components/staff/patients/FilterPatientModal";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
@@ -58,15 +59,25 @@ interface UserData {
 export default function PatientsPage() {
     const router = useRouter();
     const [patients, setPatients] = useState<Patient[]>([]);
+    const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<UserData | null>(null);
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<Patient | null>(
         null
     );
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filters, setFilters] = useState({
+        gender: "",
+        bloodType: "",
+        hasInsurance: "",
+        hasViolations: "",
+    });
 
     const fetchData = useCallback(async () => {
         const token = Cookies.get("token");
@@ -110,6 +121,7 @@ export default function PatientsPage() {
                 );
 
                 setPatients(formattedPatients);
+                setFilteredPatients(formattedPatients);
             } else if (patientRes.status === 401 || patientRes.status === 403) {
                 Cookies.remove("token");
                 router.push("/login");
@@ -124,6 +136,73 @@ export default function PatientsPage() {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    useEffect(() => {
+        let result = [...patients];
+
+        if (searchTerm.trim()) {
+            const search = searchTerm.toLowerCase();
+            result = result.filter(
+                (patient) =>
+                    patient.name.toLowerCase().includes(search) ||
+                    patient.email.toLowerCase().includes(search) ||
+                    patient.phoneNumber.toLowerCase().includes(search) ||
+                    patient.citizenId?.toLowerCase().includes(search) ||
+                    patient.insuranceNumber?.toLowerCase().includes(search)
+            );
+        }
+
+        if (filters.gender) {
+            result = result.filter((patient) => patient.gender === filters.gender);
+        }
+
+        if (filters.bloodType) {
+            result = result.filter(
+                (patient) => patient.bloodType === filters.bloodType
+            );
+        }
+
+        if (filters.hasInsurance) {
+            const hasInsurance = filters.hasInsurance === "yes";
+            result = result.filter(
+                (patient) => patient.healthInsurance === hasInsurance
+            );
+        }
+
+        if (filters.hasViolations) {
+            const hasViolations = filters.hasViolations === "yes";
+            result = result.filter(
+                (patient) => !!patient.hasViolations === hasViolations
+            );
+        }
+
+        setFilteredPatients(result);
+    }, [searchTerm, filters, patients]);
+
+    const handleSearch = (term: string) => {
+        setSearchTerm(term);
+    };
+
+    const handleFilterChange = (key: string, value: string) => {
+        setFilters((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
+    };
+
+    const handleFilterApply = () => {
+        setIsFilterModalOpen(false);
+    };
+
+    const handleFilterReset = () => {
+        setFilters({
+            gender: "",
+            bloodType: "",
+            hasInsurance: "",
+            hasViolations: "",
+        });
+        setSearchTerm("");
+    };
 
     if (loading) {
         return (
@@ -224,12 +303,27 @@ export default function PatientsPage() {
             />
             <Toolbar
                 buttonName="Patient"
-                onSearch={() => {}}
-                onFilter={() => {}}
+                onSearch={handleSearch}
+                onFilter={() => setIsFilterModalOpen(true)}
                 onAdd={() => setIsAddModalOpen(true)}
             />
 
-            <DataTable columns={patientColumns} data={patients} />
+            {(searchTerm || filters.gender || filters.bloodType || filters.hasInsurance || filters.hasViolations) && (
+                <div className="flex items-center justify-between bg-base-200 px-4 py-2 rounded-lg">
+                    <p className="text-sm text-base-content/70">
+                        Showing <span className="font-semibold">{filteredPatients.length}</span> of{" "}
+                        <span className="font-semibold">{patients.length}</span> patients
+                    </p>
+                    <button
+                        onClick={handleFilterReset}
+                        className="btn btn-ghost btn-sm text-primary"
+                    >
+                        Clear Filters
+                    </button>
+                </div>
+            )}
+
+            <DataTable columns={patientColumns} data={filteredPatients} />
 
             <Pagination
                 currentPage={1}
@@ -254,6 +348,15 @@ export default function PatientsPage() {
                 onClose={() => setIsEditModalOpen(false)}
                 onSave={handleSaveEdit}
                 patient={selectedPatient}
+            />
+
+            <FilterPatientModal
+                isOpen={isFilterModalOpen}
+                onClose={() => setIsFilterModalOpen(false)}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                onApply={handleFilterApply}
+                onReset={handleFilterReset}
             />
         </div>
     );

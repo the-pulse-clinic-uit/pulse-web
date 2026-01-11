@@ -144,20 +144,17 @@ export default function EncounterModal({
             const token = localStorage.getItem("token");
             if (!token) return;
 
-            const response = await fetch(
-                `/api/prescriptions/check-allergies`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        patientId: encounter.patientDto.id,
-                        drugIds: [drugId],
-                    }),
-                }
-            );
+            const response = await fetch(`/api/prescriptions/check-allergies`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    patientId: encounter.patientDto.id,
+                    drugIds: [drugId],
+                }),
+            });
 
             if (response.ok) {
                 const data = await response.json();
@@ -620,7 +617,6 @@ export default function EncounterModal({
 
                 yPosition += 8;
 
-                // Draw separator line between medications
                 if (index < medications.length - 1) {
                     doc.setDrawColor(200, 200, 200);
                     doc.line(20, yPosition, pageWidth - 20, yPosition);
@@ -629,7 +625,6 @@ export default function EncounterModal({
             });
         }
 
-        // Total Cost
         yPosition += 10;
         if (yPosition > 270) {
             doc.addPage();
@@ -639,7 +634,6 @@ export default function EncounterModal({
         doc.setFont("helvetica", "bold");
         doc.text(`Total Cost: $${totalCost.toFixed(2)}`, 20, yPosition);
 
-        // Footer
         yPosition = doc.internal.pageSize.getHeight() - 20;
         doc.setFontSize(9);
         doc.setFont("helvetica", "italic");
@@ -692,7 +686,6 @@ export default function EncounterModal({
 
         setSaving(true);
         try {
-            // First, end the encounter
             const endEncounterResponse = await fetch(
                 `/api/encounters/${encounter.id}/end`,
                 {
@@ -707,7 +700,6 @@ export default function EncounterModal({
                 throw new Error("Failed to end encounter");
             }
 
-            // Then create invoice for this encounter
             const invoiceResponse = await fetch("/api/invoices", {
                 method: "POST",
                 headers: {
@@ -725,7 +717,6 @@ export default function EncounterModal({
                 throw new Error("Failed to create invoice");
             }
 
-            // Download PDF
             handleDownloadPDF();
 
             toast.success(
@@ -859,9 +850,9 @@ export default function EncounterModal({
                                             ⚠ Allergy Warnings Detected
                                         </p>
                                         <p className="text-sm">
-                                            Patient has known allergies to some of the
-                                            selected medications. Please review carefully
-                                            before proceeding.
+                                            Patient has known allergies to some
+                                            of the selected medications. Please
+                                            review carefully before proceeding.
                                         </p>
                                     </div>
                                 </div>
@@ -1045,8 +1036,10 @@ export default function EncounterModal({
                                                                 )}
                                                             {medication.drugId &&
                                                                 allergyWarnings[
-                                                                    medication.drugId
-                                                                ]?.hasWarning && (
+                                                                    medication
+                                                                        .drugId
+                                                                ]
+                                                                    ?.hasWarning && (
                                                                     <div className="alert alert-warning mt-2">
                                                                         <div className="flex items-start gap-2">
                                                                             <span className="text-warning text-lg">
