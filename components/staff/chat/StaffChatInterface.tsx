@@ -74,6 +74,7 @@ const StaffChatInterface: React.FC = () => {
                 }
 
                 const user: UserData = await response.json();
+                setUserData(user);
 
                 const userId = user.email;
                 const userName = user.fullName;
