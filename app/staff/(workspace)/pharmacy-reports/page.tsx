@@ -28,9 +28,6 @@ export default function PharmacyReportsPage() {
     const [activeTab, setActiveTab] = useState<TabType>("lowStock");
     const [loading, setLoading] = useState(true);
     const [drugs, setDrugs] = useState<Drug[]>([]);
-    const [filters, setFilters] = useState({
-        urgency: "",
-    });
 
     useEffect(() => {
         fetchData();
@@ -203,33 +200,7 @@ export default function PharmacyReportsPage() {
                 </a>
             </div>
 
-            {/* Filters and Export */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-base-100 p-4 rounded-lg">
-                {/* Urgency Filter */}
-                <div className="form-control">
-                    <label className="label">
-                        <span className="label-text text-sm">
-                            Filter by Urgency
-                        </span>
-                    </label>
-                    <select
-                        className="select select-bordered select-sm"
-                        value={filters.urgency}
-                        onChange={(e) =>
-                            setFilters((prev) => ({
-                                ...prev,
-                                urgency: e.target.value,
-                            }))
-                        }
-                    >
-                        <option value="">All Levels</option>
-                        <option value="critical">Critical</option>
-                        <option value="warning">Warning</option>
-                        <option value="monitor">Monitor</option>
-                    </select>
-                </div>
-
-                {/* Export Buttons */}
                 <div className="flex gap-2">
                     <button
                         className="btn btn-sm btn-outline gap-2"
@@ -248,7 +219,6 @@ export default function PharmacyReportsPage() {
                 </div>
             </div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="stats shadow">
                     <div className="stat">
@@ -290,7 +260,6 @@ export default function PharmacyReportsPage() {
                 </div>
             </div>
 
-            {/* Table */}
             {loading ? (
                 <div className="flex justify-center items-center py-20">
                     <span className="loading loading-spinner loading-lg text-primary"></span>
@@ -314,10 +283,7 @@ export default function PharmacyReportsPage() {
                         </thead>
                         <tbody>
                             {tabData.map((drug) => (
-                                <tr
-                                    key={drug.id}
-                                    className="hover:bg-base-50"
-                                >
+                                <tr key={drug.id} className="hover:bg-base-50">
                                     <td className="text-xs">{drug.name}</td>
                                     <td className="text-xs">
                                         {drug.strength || "N/A"}
