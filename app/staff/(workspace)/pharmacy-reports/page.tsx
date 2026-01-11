@@ -5,6 +5,8 @@ import Header from "@/components/staff/Header";
 import { FileDown, RefreshCw, AlertTriangle } from "lucide-react";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 
 interface UserData {
     fullName?: string;
@@ -21,6 +23,16 @@ interface Drug {
     minStockLevel: number | null;
     expiryDate: string | null;
     batchNumber: string | null;
+}
+
+interface ExcelRow {
+    "Drug Name": string;
+    Strength: string;
+    "Batch No.": string;
+    Quantity: number;
+    "Min Stock": number | string;
+    "Expiry Date"?: string;
+    Urgency: string;
 }
 
 type TabType = "lowStock" | "expiring" | "outOfStock";
@@ -244,12 +256,13 @@ export default function PharmacyReportsPage() {
 
     const exportToExcel = (data: Drug[], title: string) => {
         const worksheetData = data.map((drug) => {
-            const row: Record<string, string | number> = {
+            const row: ExcelRow = {
                 "Drug Name": drug.name,
                 Strength: drug.strength || "N/A",
                 "Batch No.": drug.batchNumber || "N/A",
                 Quantity: drug.quantity ?? 0,
                 "Min Stock": drug.minStockLevel ?? "N/A",
+                Urgency: "",
             };
 
             if (activeTab === "expiring") {
