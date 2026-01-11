@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import Header from "@/components/staff/Header";
 import { FileDown, RefreshCw, AlertTriangle } from "lucide-react";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 
 interface UserData {
     fullName?: string;
@@ -107,12 +109,208 @@ export default function PharmacyReportsPage() {
     };
 
     const handleExport = (format: "excel" | "pdf") => {
-        // Placeholder for export functionality
-        alert(`Exporting to ${format.toUpperCase()}...`);
+        const currentData = getCurrentTabData();
+        const tabTitle =
+            activeTab === "lowStock"
+                ? "Low Stock Drugs"
+                : activeTab === "expiring"
+                ? "Expiring Drugs"
+                : "Out of Stock Drugs";
+
+        if (format === "pdf") {
+            exportToPDF(currentData, tabTitle);
+        } else {
+            exportToExcel(currentData, tabTitle);
+        }
+    };
+
+    const exportToPDF = (data: Drug[], title: string) => {
+        const doc = new jsPDF();
+
+        doc.setFontSize(18);
+        doc.text("Pharmacy Report", 14, 20);
+
+        doc.setFontSize(14);
+        doc.text(title, 14, 30);
+
+        doc.setFontSize(10);
+        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 38);
+
+        const headers: string[] = [
+            "Drug Name",
+            "Strength",
+            "Batch No.",
+            "Quantity",
+            "Min Stock",
+        ];
+
+        if (activeTab === "expiring") {
+            headers.push("Expiry Date");
+        }
+        headers.push("Urgency");
+
+        const tableData = data.map((drug) => {
+            const row = [
+                drug.name,
+                drug.strength || "N/A",
+                drug.batchNumber || "N/A",
+                (drug.quantity ?? 0).toString(),
+                (drug.minStockLevel ?? "N/A").toString(),
+            ];
+
+            if (activeTab === "expiring" && drug.expiryDate) {
+                row.push(new Date(drug.expiryDate).toLocaleDateString());
+            } else if (activeTab === "expiring") {
+                row.push("N/A");
+            }
+
+            let urgency = "";
+            if (activeTab === "outOfStock") {
+                urgency = "Urgent";
+            } else if (activeTab === "lowStock") {
+                if (drug.quantity !== null && drug.minStockLevel !== null) {
+                    const percentage =
+                        (drug.quantity / drug.minStockLevel) * 100;
+                    if (percentage < 25) urgency = "Critical";
+                    else if (percentage < 50) urgency = "Low";
+                    else urgency = "Monitor";
+                }
+            } else if (activeTab === "expiring" && drug.expiryDate) {
+                const daysUntilExpiry = Math.floor(
+                    (new Date(drug.expiryDate).getTime() -
+                        new Date().getTime()) /
+                        (1000 * 60 * 60 * 24)
+                );
+                if (daysUntilExpiry < 30) urgency = "Critical";
+                else if (daysUntilExpiry < 60) urgency = "Warning";
+                else urgency = "Soon";
+            }
+            row.push(urgency);
+
+            return row;
+        });
+
+        let yPos = 48;
+        const lineHeight = 7;
+        const pageHeight = doc.internal.pageSize.height;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        let xPos = 14;
+        const columnWidths =
+            activeTab === "expiring"
+                ? [35, 25, 25, 20, 20, 25, 25]
+                : [40, 30, 25, 20, 20, 30];
+
+        headers.forEach((header, i) => {
+            doc.text(header, xPos, yPos);
+            xPos += columnWidths[i];
+        });
+
+        yPos += lineHeight;
+        doc.setFont("helvetica", "normal");
+
+        tableData.forEach((row) => {
+            if (yPos > pageHeight - 20) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            xPos = 14;
+            row.forEach((cell, i) => {
+                const cellText =
+                    cell.length > 15 ? cell.substring(0, 12) + "..." : cell;
+                doc.text(cellText, xPos, yPos);
+                xPos += columnWidths[i];
+            });
+            yPos += lineHeight;
+        });
+
+        if (yPos > pageHeight - 40) {
+            doc.addPage();
+            yPos = 20;
+        } else {
+            yPos += 10;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total ${title}: ${data.length}`, 14, yPos);
+
+        const fileName = `pharmacy_report_${activeTab}_${
+            new Date().toISOString().split("T")[0]
+        }.pdf`;
+        doc.save(fileName);
+    };
+
+    const exportToExcel = (data: Drug[], title: string) => {
+        const worksheetData = data.map((drug) => {
+            const row: Record<string, string | number> = {
+                "Drug Name": drug.name,
+                Strength: drug.strength || "N/A",
+                "Batch No.": drug.batchNumber || "N/A",
+                Quantity: drug.quantity ?? 0,
+                "Min Stock": drug.minStockLevel ?? "N/A",
+            };
+
+            if (activeTab === "expiring") {
+                row["Expiry Date"] = drug.expiryDate
+                    ? new Date(drug.expiryDate).toLocaleDateString()
+                    : "N/A";
+            }
+
+            let urgency = "";
+            if (activeTab === "outOfStock") {
+                urgency = "Urgent";
+            } else if (activeTab === "lowStock") {
+                if (drug.quantity !== null && drug.minStockLevel !== null) {
+                    const percentage =
+                        (drug.quantity / drug.minStockLevel) * 100;
+                    if (percentage < 25) urgency = "Critical";
+                    else if (percentage < 50) urgency = "Low";
+                    else urgency = "Monitor";
+                }
+            } else if (activeTab === "expiring" && drug.expiryDate) {
+                const daysUntilExpiry = Math.floor(
+                    (new Date(drug.expiryDate).getTime() -
+                        new Date().getTime()) /
+                        (1000 * 60 * 60 * 24)
+                );
+                if (daysUntilExpiry < 30) urgency = "Critical";
+                else if (daysUntilExpiry < 60) urgency = "Warning";
+                else urgency = "Soon";
+            }
+            row["Urgency"] = urgency;
+
+            return row;
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+        const workbook = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, title);
+
+        const columnWidths = [
+            { wch: 30 },
+            { wch: 15 },
+            { wch: 15 },
+            { wch: 10 },
+            { wch: 12 },
+        ];
+
+        if (activeTab === "expiring") {
+            columnWidths.push({ wch: 15 });
+        }
+        columnWidths.push({ wch: 12 });
+
+        worksheet["!cols"] = columnWidths;
+
+        const fileName = `pharmacy_report_${activeTab}_${
+            new Date().toISOString().split("T")[0]
+        }.xlsx`;
+        XLSX.writeFile(workbook, fileName);
     };
 
     const handleRestock = (drugId: string) => {
-        // Placeholder for restock functionality
         alert(`Restocking drug ${drugId}...`);
     };
 
@@ -157,7 +355,6 @@ export default function PharmacyReportsPage() {
                 avatarUrl={user?.avatarUrl}
             />
 
-            {/* Tabs */}
             <div className="tabs tabs-boxed bg-base-200 w-fit">
                 <a
                     className={`tab ${
