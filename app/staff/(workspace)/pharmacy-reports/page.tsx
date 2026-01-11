@@ -2,9 +2,8 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import Header from "@/components/staff/Header";
+import RestockModal from "@/components/staff/RestockModal";
 import { FileDown, RefreshCw, AlertTriangle } from "lucide-react";
-import jsPDF from "jspdf";
-import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 
@@ -42,6 +41,8 @@ export default function PharmacyReportsPage() {
     const [activeTab, setActiveTab] = useState<TabType>("lowStock");
     const [loading, setLoading] = useState(true);
     const [drugs, setDrugs] = useState<Drug[]>([]);
+    const [showRestockModal, setShowRestockModal] = useState(false);
+    const [selectedDrug, setSelectedDrug] = useState<Drug | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -323,8 +324,18 @@ export default function PharmacyReportsPage() {
         XLSX.writeFile(workbook, fileName);
     };
 
-    const handleRestock = (drugId: string) => {
-        alert(`Restocking drug ${drugId}...`);
+    const handleRestock = (drug: Drug) => {
+        setSelectedDrug(drug);
+        setShowRestockModal(true);
+    };
+
+    const handleRestockSuccess = () => {
+        fetchData();
+    };
+
+    const closeRestockModal = () => {
+        setShowRestockModal(false);
+        setSelectedDrug(null);
     };
 
     const getUrgencyBadge = (drug: Drug) => {
@@ -522,9 +533,7 @@ export default function PharmacyReportsPage() {
                                     <td className="text-xs">
                                         <button
                                             className="btn btn-primary btn-xs gap-1"
-                                            onClick={() =>
-                                                handleRestock(drug.id)
-                                            }
+                                            onClick={() => handleRestock(drug)}
                                         >
                                             <RefreshCw size={12} />
                                             Restock
@@ -543,6 +552,13 @@ export default function PharmacyReportsPage() {
                         "No out of stock drugs found."}
                 </div>
             )}
+
+            <RestockModal
+                drug={selectedDrug}
+                isOpen={showRestockModal}
+                onClose={closeRestockModal}
+                onSuccess={handleRestockSuccess}
+            />
         </div>
     );
 }
