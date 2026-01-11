@@ -37,7 +37,7 @@ const ProfileForm = () => {
                     throw new Error("No authentication token found");
                 }
 
-                const response = await fetch("api/patients/me", {
+                const response = await fetch("/api/patients/me", {
                     method: "GET",
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -187,7 +187,7 @@ const ProfileForm = () => {
             };
 
             // Update user information
-            const userResponse = await fetch("api/users/me", {
+            const userResponse = await fetch("/api/users/me", {
                 method: "PATCH",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -200,7 +200,7 @@ const ProfileForm = () => {
                 throw new Error("Failed to update user profile");
 
             // Update patient information
-            const patientResponse = await fetch("api/patients/me", {
+            const patientResponse = await fetch("/api/patients/me", {
                 method: "PATCH",
                 headers: {
                     Authorization: `Bearer ${token}`,

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
         const backendUrl = process.env.BACKEND_API_URL || "localhost:8080";
 
-        const response = await fetch(`http://${backendUrl}/users/me`, {
+        const response = await fetch(`http://${backendUrl}/patients/me`, {
             headers: {
                 Authorization: token,
             },
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
         if (!response.ok) {
             return NextResponse.json(
-                { error: "Failed to fetch user data" },
+                { error: "Failed to fetch patient data" },
                 { status: response.status }
             );
         }
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         const data = await response.json();
         return NextResponse.json(data);
     } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error("Error fetching patient data:", error);
         return NextResponse.json(
             { error: "Internal server error" },
             { status: 500 }
@@ -51,7 +51,7 @@ export async function PATCH(request: NextRequest) {
         const body = await request.json();
         const backendUrl = process.env.BACKEND_API_URL || "localhost:8080";
 
-        const response = await fetch(`http://${backendUrl}/users/me`, {
+        const response = await fetch(`http://${backendUrl}/patients/me`, {
             method: "PATCH",
             headers: {
                 Authorization: token,
@@ -62,7 +62,7 @@ export async function PATCH(request: NextRequest) {
 
         if (!response.ok) {
             return NextResponse.json(
-                { error: "Failed to update user data" },
+                { error: "Failed to update patient data" },
                 { status: response.status }
             );
         }
@@ -70,7 +70,7 @@ export async function PATCH(request: NextRequest) {
         const data = await response.json();
         return NextResponse.json(data);
     } catch (error) {
-        console.error("Error updating user data:", error);
+        console.error("Error updating patient data:", error);
         return NextResponse.json(
             { error: "Internal server error" },
             { status: 500 }
