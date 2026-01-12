@@ -66,8 +66,6 @@ export default function NotificationsPage() {
     const router = useRouter();
     const [user, setUser] = useState<UserData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<"new" | "sent">("new");
-    const [selectedMonth, setSelectedMonth] = useState("May'23");
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
         mockTemplates[0]
     );
@@ -83,7 +81,6 @@ export default function NotificationsPage() {
 
         const fetchData = async () => {
             try {
-                // Fetch user data
                 const userResponse = await fetch("/api/users/me", {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -99,7 +96,6 @@ export default function NotificationsPage() {
                     return;
                 }
 
-                // Fetch all patients
                 const patientsResponse = await fetch("/api/patients", {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -144,14 +140,12 @@ export default function NotificationsPage() {
             return;
         }
 
-        // Find the selected patient to get their userId
         const selectedPatient = patients.find((p) => p.id === data.patient);
         if (!selectedPatient) {
             toast.error("Selected patient not found");
             return;
         }
 
-        // Map template name to type
         const typeMap: { [key: string]: string } = {
             "Appointment Reminder": "APPOINTMENT",
             "Invoice Reminder": "INVOICE",
@@ -165,7 +159,7 @@ export default function NotificationsPage() {
             const notificationBody = {
                 userId: selectedPatient.userId,
                 title: data.subject,
-                message: data.content,
+                content: data.content,
                 type: notificationType,
             };
 
@@ -180,7 +174,6 @@ export default function NotificationsPage() {
 
             if (response.ok) {
                 toast.success("Notification sent successfully!");
-                // Reset form or close modal here if needed
             } else {
                 const error = await response.json();
                 toast.error(error.message || "Failed to send notification");
