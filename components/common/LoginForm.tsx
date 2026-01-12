@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, X } from "lucide-react";
 import Cookies from "js-cookie";
 
 const LoginForm = () => {
@@ -79,7 +79,14 @@ const LoginForm = () => {
         >
             <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 lg:items-start lg:pl-24">
                 {" "}
-                <div className="card w-full max-w-md bg-white shadow-2xl rounded-3xl">
+                <div className="card w-full max-w-md bg-white shadow-2xl rounded-3xl relative">
+                    <button
+                        onClick={() => router.push("/")}
+                        className="absolute top-4 right-4 btn btn-ghost btn-sm btn-circle text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                        aria-label="Close"
+                    >
+                        <X size={20} />
+                    </button>
                     <div className="card-body p-8 lg:p-10">
                         <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center lg:text-left">
                             Login to your account
