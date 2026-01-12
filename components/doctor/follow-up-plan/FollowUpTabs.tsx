@@ -1,31 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { FollowUpPlanStatus } from "@/types";
 
-const tabs = [
-  { id: "pending", label: "Pending", count: 8 },
-  { id: "completed", label: "Completed", count: 12 },
-  { id: "overdue", label: "Overdue", count: 3 },
+interface Tab {
+  id: FollowUpPlanStatus;
+  label: string;
+}
+
+const tabs: Tab[] = [
+  { id: "ACTIVE", label: "Active" },
+  { id: "PAUSED", label: "Paused" },
+  { id: "COMPLETED", label: "Completed" },
 ];
 
 interface FollowUpTabsProps {
+  activeTab: FollowUpPlanStatus;
   onTabChange: (tab: string) => void;
+  counts: Record<FollowUpPlanStatus, number>;
 }
 
-export default function FollowUpTabs({ onTabChange }: FollowUpTabsProps) {
-  const [activeTab, setActiveTab] = useState("pending");
-
-  const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId);
-    onTabChange(tabId);
-  };
-
+export default function FollowUpTabs({
+  activeTab,
+  onTabChange,
+  counts,
+}: FollowUpTabsProps) {
   return (
     <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
       {tabs.map((tab) => (
         <button
           key={tab.id}
-          onClick={() => handleTabChange(tab.id)}
+          onClick={() => onTabChange(tab.id)}
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === tab.id
               ? "bg-white text-blue-600 shadow-sm"
@@ -40,7 +44,7 @@ export default function FollowUpTabs({ onTabChange }: FollowUpTabsProps) {
                 : "bg-gray-200 text-gray-600"
             }`}
           >
-            {tab.count}
+            {counts[tab.id]}
           </span>
         </button>
       ))}

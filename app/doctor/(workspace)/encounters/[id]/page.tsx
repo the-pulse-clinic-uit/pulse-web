@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, User, Calendar, Clock, Stethoscope } from "lucide-react";
+import { ArrowLeft, User, Calendar, Clock, Stethoscope, CalendarClock } from "lucide-react";
 import { toast } from "react-hot-toast";
+import CreatePlanModal from "@/components/doctor/follow-up-plan/CreatePlanModal";
 
 interface EncounterDto {
     id: string;
@@ -65,6 +66,7 @@ export default function EncounterDetailPage() {
     const [saving, setSaving] = useState(false);
     const [diagnosis, setDiagnosis] = useState("");
     const [notes, setNotes] = useState("");
+    const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchEncounter = async () => {
@@ -201,7 +203,7 @@ export default function EncounterDetailPage() {
 
             if (response.ok) {
                 toast.success("Encounter closed successfully");
-                router.push("/encounters");
+                setIsCreatePlanModalOpen(true);
             } else {
                 toast.error("Failed to close encounter");
             }
@@ -493,6 +495,22 @@ export default function EncounterDetailPage() {
                     </div>
                 )}
             </div>
+
+            {/* Create Follow-up Plan Modal */}
+            <CreatePlanModal
+                isOpen={isCreatePlanModalOpen}
+                onClose={() => {
+                    setIsCreatePlanModalOpen(false);
+                    router.push("/doctor/encounters");
+                }}
+                onSuccess={() => {
+                    setIsCreatePlanModalOpen(false);
+                    toast.success("Follow-up plan created successfully");
+                    router.push("/doctor/follow-up-plan");
+                }}
+                preSelectedEncounterId={encounterId}
+                preSelectedPatientId={encounter?.patient?.patientId}
+            />
         </div>
     );
 }
