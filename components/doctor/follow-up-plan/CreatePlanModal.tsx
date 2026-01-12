@@ -43,6 +43,7 @@ export default function CreatePlanModal({
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [encounters, setEncounters] = useState<Encounter[]>([]);
+  const [doctorId, setDoctorId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstDueAt: "",
     notes: "",
@@ -57,6 +58,7 @@ export default function CreatePlanModal({
 
   useEffect(() => {
     if (isOpen) {
+      fetchDoctorInfo();
       fetchPatients();
       if (preSelectedPatientId) {
         fetchEncounters(preSelectedPatientId);
@@ -70,6 +72,24 @@ export default function CreatePlanModal({
       }
     }
   }, [isOpen, preSelectedPatientId, preSelectedEncounterId]);
+
+  const fetchDoctorInfo = async () => {
+    const token = Cookies.get("token");
+    if (!token) return;
+
+    try {
+      const res = await fetch("/api/doctors/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setDoctorId(data.id);
+      }
+    } catch (error) {
+      console.error("Error fetching doctor info:", error);
+    }
+  };
 
   const fetchPatients = async () => {
     const token = Cookies.get("token");
@@ -124,6 +144,11 @@ export default function CreatePlanModal({
       return;
     }
 
+    if (!doctorId) {
+      alert("Doctor information not available");
+      return;
+    }
+
     const requestDto: FollowUpPlanRequestDto = {
       firstDueAt: formData.firstDueAt,
       rrule: buildRRule(rruleOption),
@@ -164,8 +189,8 @@ export default function CreatePlanModal({
     setFormData({
       firstDueAt: "",
       notes: "",
-      patientId: patientId || "",
-      baseEncounterId: encounterId || "",
+      patientId: preSelectedPatientId || "",
+      baseEncounterId: preSelectedEncounterId || "",
     });
     setRruleOption({ freq: "WEEKLY", count: 4, interval: 1 });
     onClose();
@@ -174,7 +199,7 @@ export default function CreatePlanModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">
@@ -198,7 +223,7 @@ export default function CreatePlanModal({
               value={formData.patientId}
               onChange={(e) => handlePatientChange(e.target.value)}
               required
-              disabled={!!patientId}
+              disabled={!!preSelectedPatientId}
             >
               <option value="">Select a patient</option>
               {patients.map((patient) => (
@@ -222,7 +247,7 @@ export default function CreatePlanModal({
                 setFormData({ ...formData, baseEncounterId: e.target.value })
               }
               required
-              disabled={!formData.patientId || !!encounterId}
+              disabled={!formData.patientId || !!preSelectedEncounterId}
             >
               <option value="">Select an encounter</option>
               {encounters.map((encounter) => (

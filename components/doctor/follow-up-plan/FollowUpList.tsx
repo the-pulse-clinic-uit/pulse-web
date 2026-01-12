@@ -6,6 +6,7 @@ import Cookies from "js-cookie";
 import FollowUpCard from "./FollowUpCard";
 import FollowUpTabs from "./FollowUpTabs";
 import FollowUpHeader from "./FollowUpHeader";
+import CreatePlanModal from "./CreatePlanModal";
 import { FollowUpPlanDto, FollowUpPlanStatus } from "@/types";
 
 export default function FollowUpList() {
@@ -16,6 +17,7 @@ export default function FollowUpList() {
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const fetchDoctorInfo = useCallback(async () => {
     const token = Cookies.get("token");
@@ -125,6 +127,7 @@ export default function FollowUpList() {
       <FollowUpHeader
         onSearch={setSearchQuery}
         onDateChange={setSelectedDate}
+        onCreateClick={() => setIsCreateModalOpen(true)}
       />
 
       <FollowUpTabs
@@ -151,6 +154,17 @@ export default function FollowUpList() {
           </div>
         )}
       </div>
+
+      <CreatePlanModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          setIsCreateModalOpen(false);
+          if (doctorId) {
+            fetchPlans(doctorId);
+          }
+        }}
+      />
     </div>
   );
 }
