@@ -8,6 +8,7 @@ import {
     Stethoscope,
     Users,
     PillBottle,
+    CalendarClock,
 } from "lucide-react";
 
 export const MENU_ITEMS = [
@@ -20,5 +21,6 @@ export const MENU_ITEMS = [
         icon: PillBottle,
     },
     { label: "Manage Encounter", href: "/encounters", icon: Stethoscope },
+    { label: "Follow-up Plans", href: "/follow-up-plan", icon: CalendarClock },
     { label: "Doctor Profile", href: "/profile", icon: Users },
 ];
