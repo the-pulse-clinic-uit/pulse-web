@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Search, Plus } from "lucide-react";
 
 interface Props {
   onSearch?: (query: string) => void;
   onDateChange?: (date: Date) => void;
+  onCreateClick?: () => void;
 }
 
 const months = [
@@ -15,7 +16,7 @@ const months = [
 
 const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export default function FollowUpHeader({ onSearch, onDateChange }: Props) {
+export default function FollowUpHeader({ onSearch, onDateChange, onCreateClick }: Props) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
@@ -116,6 +117,14 @@ export default function FollowUpHeader({ onSearch, onDateChange }: Props) {
       </div>
 
       <div className="flex items-center gap-4">
+        <button
+          onClick={onCreateClick}
+          className="btn btn-primary gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Create Plan
+        </button>
+
         <div className="relative" ref={calendarRef}>
           <button
             onClick={() => setIsCalendarOpen(!isCalendarOpen)}
