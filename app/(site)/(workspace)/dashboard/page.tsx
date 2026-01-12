@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import Cookies from "js-cookie";
 import WelcomeBanner from "@/components/patient/dashboard/WelcomeBanner";
 import SummaryCard from "@/components/patient/dashboard/SummaryCard";
 import QuickAction from "@/components/patient/dashboard/QuickAction";
@@ -14,10 +16,58 @@ import {
     User,
 } from "lucide-react";
 
+type InvoiceStatus = "PAID" | "UNPAID" | "VOID" | "PARTIAL" | "OVERDUE";
+
+interface Invoice {
+    id: string;
+    invoiceNumber: string;
+    issuedAt: string;
+    dueDate: string;
+    totalAmount: number;
+    paidAmount: number;
+    status: InvoiceStatus;
+}
+
 export default function DashboardPage() {
     const user = {
         name: "Patient",
     };
+
+    const [pendingInvoices, setPendingInvoices] = useState<Invoice[]>([]);
+    const [loadingInvoices, setLoadingInvoices] = useState(true);
+
+    useEffect(() => {
+        const fetchInvoices = async () => {
+            const token = Cookies.get("token");
+            if (!token) {
+                setLoadingInvoices(false);
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/invoices/me", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (response.ok) {
+                    const data: Invoice[] = await response.json();
+                    const unpaid = data.filter(
+                        (invoice) =>
+                            invoice.status === "UNPAID" ||
+                            invoice.status === "PARTIAL" ||
+                            invoice.status === "OVERDUE"
+                    );
+                    setPendingInvoices(unpaid);
+                }
+            } catch (error) {
+                console.error("Error fetching invoices:", error);
+            } finally {
+                setLoadingInvoices(false);
+            }
+        };
+
+        fetchInvoices();
+    }, []);
 
     return (
         <div className="min-h-screen mt-24">
@@ -45,15 +95,48 @@ export default function DashboardPage() {
                         href="/prescriptions"
                     />
 
-                    <SummaryCard
-                        icon={<CreditCard className="w-4 h-4 text-white" />}
-                        badge="Due"
-                        badgeColor="orange"
-                        title="Pending Payment"
-                        main="$250.00"
-                        sub="Invoice #INV-2025-0042"
-                        href="/invoices"
-                    />
+                    {loadingInvoices ? (
+                        <div className="bg-white rounded-2xl shadow-lg p-4 flex items-center justify-center">
+                            <span className="loading loading-spinner loading-md text-purple-600"></span>
+                        </div>
+                    ) : pendingInvoices.length > 0 ? (
+                        <SummaryCard
+                            icon={<CreditCard className="w-4 h-4 text-white" />}
+                            badge="Due"
+                            badgeColor="orange"
+                            title="Pending Payment"
+                            main={`$${pendingInvoices
+                                .reduce(
+                                    (sum, inv) =>
+                                        sum +
+                                        (inv.totalAmount - inv.paidAmount),
+                                    0
+                                )
+                                .toFixed(2)}`}
+                            sub={`${pendingInvoices.length} invoice${pendingInvoices.length > 1 ? "s" : ""} pending`}
+                            href="/invoices"
+                        />
+                    ) : (
+                        <div className="bg-white rounded-2xl shadow-lg p-4">
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl flex items-center justify-center">
+                                    <CreditCard className="w-4 h-4 text-white" />
+                                </div>
+                                <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-600">
+                                    All Paid
+                                </span>
+                            </div>
+                            <h3 className="text-purple-900 mb-1 font-medium text-sm">
+                                Pending Payment
+                            </h3>
+                            <p className="text-gray-700 mb-0.5 text-sm">
+                                No pending invoices
+                            </p>
+                            <p className="text-gray-600 text-xs mb-3">
+                                All invoices are paid
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="mb-8">
