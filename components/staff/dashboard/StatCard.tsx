@@ -4,19 +4,9 @@ interface StatCardProps {
     title: string;
     value: string | number;
     icon: LucideIcon;
-    trend: string;
-    trendUp?: boolean;
-    description?: string;
 }
 
-const StatCard = ({
-    title,
-    value,
-    icon: Icon,
-    trend,
-    trendUp = true,
-    description = "from last week",
-}: StatCardProps) => {
+const StatCard = ({ title, value, icon: Icon }: StatCardProps) => {
     return (
         <div className="card bg-base-100 shadow-sm border border-base-200">
             <div className="card-body p-5">
@@ -33,22 +23,6 @@ const StatCard = ({
                     <div className="p-3 bg-primary/10 rounded-xl text-primary">
                         <Icon size={24} />
                     </div>
-                </div>
-
-                <div className="mt-4 flex items-center gap-2 text-xs">
-                    <span
-                        className={`flex items-center gap-1 font-medium ${
-                            trendUp ? "text-success" : "text-error"
-                        }`}
-                    >
-                        {trendUp ? (
-                            <TrendingUp size={14} />
-                        ) : (
-                            <TrendingDown size={14} />
-                        )}
-                        {trend}
-                    </span>
-                    <span className="text-base-content/50">{description}</span>
                 </div>
             </div>
         </div>
