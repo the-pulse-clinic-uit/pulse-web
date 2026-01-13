@@ -8,6 +8,7 @@ import Toolbar from "@/components/staff/ToolBar";
 import Pagination from "@/components/ui/Pagination";
 import ApproveAdmissionModal from "@/components/staff/admission/ApproveAdmissionModal";
 import AddAdmissionModal from "@/components/staff/admission/AddAdmissionModal";
+import TransferRoomModal from "@/components/staff/admission/TransferRoomModal";
 
 type AdmissionStatus = "ONGOING" | "DISCHARGED" | "OUTPATIENT";
 
@@ -96,6 +97,7 @@ type AdmissionPatient = {
 export default function AdmissionPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const [selectedAdmission, setSelectedAdmission] =
         useState<AdmissionPatient | null>(null);
     const [admissions, setAdmissions] = useState<AdmissionPatient[]>([]);
@@ -200,6 +202,11 @@ export default function AdmissionPage() {
         setIsModalOpen(true);
     };
 
+    const handleTransferRoom = (admission: AdmissionPatient) => {
+        setSelectedAdmission(admission);
+        setIsTransferModalOpen(true);
+    };
+
     const handleSaveRoom = (room: string) => {
         console.log(
             "Assigning room:",
@@ -212,14 +219,34 @@ export default function AdmissionPage() {
     };
 
     const admissionColumns: ColumnDef<AdmissionPatient>[] = [
-        { header: "ID", accessorKey: "id", className: "font-bold" },
-        { header: "Name", accessorKey: "name", className: "font-medium" },
-        { header: "Age", accessorKey: "age" },
-        { header: "Chief Complaint", accessorKey: "chiefComplaint" },
-        { header: "Attending Physician", accessorKey: "attendingPhysician" },
-        { header: "Department", accessorKey: "department" },
-        { header: "Room", accessorKey: "room" },
-        { header: "Admission Date", accessorKey: "admissionDate" },
+        {
+            header: "Patient Name",
+            accessorKey: "name",
+            className: "font-medium",
+        },
+        { header: "Age", accessorKey: "age", className: "text-center w-14" },
+        {
+            header: "Chief Complaint",
+            cell: (row) => (
+                <div className="max-w-[200px] truncate" title={row.chiefComplaint}>
+                    {row.chiefComplaint}
+                </div>
+            ),
+        },
+        {
+            header: "Physician",
+            accessorKey: "attendingPhysician",
+        },
+        {
+            header: "Department",
+            accessorKey: "department",
+        },
+        { header: "Room", accessorKey: "room", className: "text-center w-20" },
+        {
+            header: "Admitted",
+            accessorKey: "admissionDate",
+            className: "whitespace-nowrap",
+        },
         {
             header: "Status",
             cell: (row) => {
@@ -230,11 +257,9 @@ export default function AdmissionPage() {
                 };
                 return (
                     <span
-                        className={`
-            inline-flex items-center justify-center px-3 py-1.5 rounded-full 
-            text-xs font-medium whitespace-nowrap 
-            ${statusStyles[row.status] || "bg-gray-100"}
-            `}
+                        className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                            statusStyles[row.status] || "bg-gray-100"
+                        }`}
                     >
                         {row.status}
                     </span>
@@ -242,9 +267,9 @@ export default function AdmissionPage() {
             },
         },
         {
-            header: "Action",
+            header: "Actions",
             cell: (row) => (
-                <div className="flex gap-2">
+                <div className="flex gap-1 justify-end">
                     {row.status === "Pending" && (
                         <button
                             onClick={() => handleApprove(row)}
@@ -254,9 +279,17 @@ export default function AdmissionPage() {
                         </button>
                     )}
                     {row.status !== "Discharged" && (
-                        <button className="btn btn-xs bg-purple-100 text-purple-700 border-none hover:bg-purple-200">
-                            Discharge
-                        </button>
+                        <>
+                            <button
+                                onClick={() => handleTransferRoom(row)}
+                                className="btn btn-xs bg-blue-100 text-blue-700 border-none hover:bg-blue-200"
+                            >
+                                Transfer
+                            </button>
+                            <button className="btn btn-xs bg-purple-100 text-purple-700 border-none hover:bg-purple-200">
+                                Discharge
+                            </button>
+                        </>
                     )}
                 </div>
             ),
@@ -264,7 +297,7 @@ export default function AdmissionPage() {
     ];
 
     return (
-        <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
+        <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white overflow-x-hidden">
             <Header
                 tabName="Manage Admission"
                 userName={user?.fullName}
@@ -319,6 +352,22 @@ export default function AdmissionPage() {
                     fetchAdmissions();
                 }}
             />
+
+            {selectedAdmission && (
+                <TransferRoomModal
+                    isOpen={isTransferModalOpen}
+                    onClose={() => {
+                        setIsTransferModalOpen(false);
+                        setSelectedAdmission(null);
+                    }}
+                    onSuccess={() => {
+                        fetchAdmissions();
+                    }}
+                    admissionId={selectedAdmission.id}
+                    currentRoom={selectedAdmission.room}
+                    patientName={selectedAdmission.name}
+                />
+            )}
         </div>
     );
 }

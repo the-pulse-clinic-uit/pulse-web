@@ -2,7 +2,6 @@
 
 import React, { ReactNode } from "react";
 
-// Định nghĩa kiểu dữ liệu cho một Cột
 export interface ColumnDef<T> {
     header: string;
     accessorKey?: keyof T;
@@ -10,70 +9,69 @@ export interface ColumnDef<T> {
     cell?: (row: T) => ReactNode;
 }
 
-// Định nghĩa Props mà bảng chấp nhận
 interface DataTableProps<T> {
-    data: T[]; // Dữ liệu đầu vào (Mảng generic T)
-    columns: ColumnDef<T>[]; // Cấu hình cột tương ứng với T
+    data: T[];
+    columns: ColumnDef<T>[];
 }
 
-// Component Bảng Generic
 const DataTable = <T,>({ data, columns }: DataTableProps<T>) => {
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-base-200">
-            <table className="table w-full table-auto">
-                {/* HEADER */}
-                <thead className="bg-base-200/50 text-base-content/70">
-                    <tr>
-                        {columns.map((col, index) => (
-                            <th
-                                key={index}
-                                className={`font-semibold text-xs ${
-                                    col.className || ""
-                                }`}
-                            >
-                                {col.header}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-
-                {/* BODY */}
-                <tbody>
-                    {data.length > 0 ? (
-                        data.map((row, rowIndex) => (
-                            <tr
-                                key={rowIndex}
-                                className="border-b border-base-100 last:border-none hover:bg-base-50"
-                            >
-                                {columns.map((col, colIndex) => (
-                                    <td
-                                        key={colIndex}
-                                        className={`text-xs ${col.className || ""}`}
-                                    >
-                                        {col.cell
-                                            ? col.cell(row) // Ưu tiên dùng hàm cell custom
-                                            : col.accessorKey
-                                            ? (row[
-                                                  col.accessorKey
-                                              ] as ReactNode) // Lấy dữ liệu từ key
-                                            : null}
-                                    </td>
-                                ))}
-                            </tr>
-                        ))
-                    ) : (
-                        // Hiển thị khi không có dữ liệu
+        <div className="bg-white rounded-lg shadow-sm border border-base-200 overflow-hidden w-full">
+            <div className="overflow-x-auto">
+                <table className="table w-full">
+                    <thead className="bg-base-200/50 text-base-content/70">
                         <tr>
-                            <td
-                                colSpan={columns.length}
-                                className="text-center py-8 text-base-content/50"
-                            >
-                                No data available
-                            </td>
+                            {columns.map((col, index) => (
+                                <th
+                                    key={index}
+                                    className={`font-semibold text-xs ${
+                                        col.className || ""
+                                    }`}
+                                >
+                                    {col.header}
+                                </th>
+                            ))}
                         </tr>
-                    )}
-                </tbody>
-            </table>
+                    </thead>
+
+                    <tbody>
+                        {data.length > 0 ? (
+                            data.map((row, rowIndex) => (
+                                <tr
+                                    key={rowIndex}
+                                    className="border-b border-base-100 last:border-none hover:bg-base-50"
+                                >
+                                    {columns.map((col, colIndex) => (
+                                        <td
+                                            key={colIndex}
+                                            className={`text-xs ${
+                                                col.className || ""
+                                            }`}
+                                        >
+                                            {col.cell
+                                                ? col.cell(row)
+                                                : col.accessorKey
+                                                ? (row[
+                                                      col.accessorKey
+                                                  ] as ReactNode)
+                                                : null}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td
+                                    colSpan={columns.length}
+                                    className="text-center py-8 text-base-content/50"
+                                >
+                                    No data available
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 };
