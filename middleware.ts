@@ -14,24 +14,43 @@ export async function middleware(req: NextRequest) {
     const hostWithoutPort = hostname.split(":")[0];
     const rootDomainWithoutPort = ROOT_DOMAIN.split(":")[0];
 
-    if (hostWithoutPort.includes(".")) {
-        const subdomain = hostWithoutPort.split(".")[0];
+    // Extract subdomain
+    const hostParts = hostWithoutPort.split(".");
 
-        if (
-            !hostWithoutPort.endsWith(rootDomainWithoutPort) ||
-            hostWithoutPort !== rootDomainWithoutPort
-        ) {
-            currentHost = subdomain;
+    // For Vercel deployments like "pulse-web-galt.vercel.app"
+    // we want to treat the main domain as "root" and any prefix before it as subdomain
+    if (hostParts.length >= 2) {
+        // Check if it's a Vercel domain
+        if (hostname.includes("vercel.app")) {
+            // For vercel.app: hms.pulse-web-galt.vercel.app
+            // Extract first part only if there are 4+ parts
+            if (hostParts.length >= 4) {
+                currentHost = hostParts[0];
+            }
+        } else if (hostname.includes(rootDomainWithoutPort)) {
+            // For custom domains: subdomain.yourdomain.com
+            const rootParts = rootDomainWithoutPort.split(".");
+            if (hostParts.length > rootParts.length) {
+                currentHost = hostParts[0];
+            }
         }
     }
 
     const session = await getToken({ req, secret: SECRET });
     const userRole = session?.role as string;
 
-    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+    const protocol = req.headers.get("x-forwarded-proto") ||
+                    (process.env.NODE_ENV === "production" ? "https" : "http");
     const isLocalhost = ROOT_DOMAIN.includes("localhost");
 
     const buildUrl = (subdomain: string, path: string = "") => {
+        // For Vercel deployments
+        if (hostname.includes("vercel.app")) {
+            const baseVercelDomain = hostname.split(".").slice(-3).join(".");
+            return `${protocol}://${subdomain}.${baseVercelDomain}${path}`;
+        }
+
+        // For custom domains and localhost
         const domain = isLocalhost
             ? `${subdomain}.${ROOT_DOMAIN}`
             : `${subdomain}.${rootDomainWithoutPort}`;
@@ -73,6 +92,12 @@ export async function middleware(req: NextRequest) {
         return NextResponse.rewrite(
             new URL(`/staff${url.pathname}${url.search}`, req.url)
         );
+    }
+
+    // If no subdomain is detected and not on root, redirect to HMS
+    // But only for the main page to avoid redirect loops
+    if (!currentHost && url.pathname === "/") {
+        return NextResponse.rewrite(new URL("/hms", req.url));
     }
 
     return NextResponse.next();
