@@ -207,13 +207,47 @@ export default function AdmissionPage() {
         setIsTransferModalOpen(true);
     };
 
-    const handleSaveRoom = (room: string) => {
-        console.log(
-            "Assigning room:",
-            room,
-            "to admission:",
-            selectedAdmission?.id
+    const handleDischarge = async (admission: AdmissionPatient) => {
+        const confirmed = window.confirm(
+            `Are you sure you want to discharge ${admission.name}? This action cannot be undone.`
         );
+
+        if (!confirmed) return;
+
+        try {
+            const token = Cookies.get("token");
+            if (!token) {
+                throw new Error("No authentication token");
+            }
+
+            const response = await fetch(
+                `/api/admissions/${admission.id}/discharge`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || "Failed to discharge patient");
+            }
+
+            toast.success("Patient discharged successfully!");
+            fetchAdmissions();
+        } catch (error) {
+            console.error("Error discharging patient:", error);
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to discharge patient"
+            );
+        }
+    };
+
+    const handleSaveRoom = (room: string) => {
         setIsModalOpen(false);
         setSelectedAdmission(null);
     };
@@ -228,7 +262,10 @@ export default function AdmissionPage() {
         {
             header: "Chief Complaint",
             cell: (row) => (
-                <div className="max-w-[200px] truncate" title={row.chiefComplaint}>
+                <div
+                    className="max-w-[200px] truncate"
+                    title={row.chiefComplaint}
+                >
                     {row.chiefComplaint}
                 </div>
             ),
@@ -286,7 +323,10 @@ export default function AdmissionPage() {
                             >
                                 Transfer
                             </button>
-                            <button className="btn btn-xs bg-purple-100 text-purple-700 border-none hover:bg-purple-200">
+                            <button
+                                onClick={() => handleDischarge(row)}
+                                className="btn btn-xs bg-purple-100 text-purple-700 border-none hover:bg-purple-200"
+                            >
                                 Discharge
                             </button>
                         </>
