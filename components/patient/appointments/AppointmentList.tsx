@@ -84,32 +84,13 @@ export default function AppointmentList() {
                     throw new Error("No authentication token found");
                 }
 
-                //get patient ID
-                const patientRes = await fetch("/api/patients/me", {
+                const appointmentsRes = await fetch("/api/appointments/me", {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
                 });
-
-                if (!patientRes.ok) {
-                    throw new Error("Failed to fetch patient data");
-                }
-
-                const patientData = await patientRes.json();
-                const patientId = patientData.id;
-
-                const appointmentsRes = await fetch(
-                    `/api/appointments/patient/${patientId}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
 
                 if (!appointmentsRes.ok) {
                     throw new Error("Failed to fetch appointments");
