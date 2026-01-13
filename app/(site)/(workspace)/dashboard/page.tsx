@@ -29,6 +29,30 @@ interface Invoice {
     status: InvoiceStatus;
 }
 
+type AppointmentStatus =
+    | "PENDING"
+    | "CONFIRMED"
+    | "CANCELLED"
+    | "DONE"
+    | "NO_SHOW";
+
+interface Appointment {
+    id: string;
+    startsAt: string;
+    endsAt: string;
+    status: AppointmentStatus;
+    type: string;
+    description: string | null;
+    doctorDto: {
+        id: string;
+        staffDto: {
+            userDto: {
+                fullName: string;
+            };
+        };
+    };
+}
+
 export default function DashboardPage() {
     const user = {
         name: "Patient",
@@ -36,6 +60,10 @@ export default function DashboardPage() {
 
     const [pendingInvoices, setPendingInvoices] = useState<Invoice[]>([]);
     const [loadingInvoices, setLoadingInvoices] = useState(true);
+    const [nextAppointment, setNextAppointment] = useState<Appointment | null>(
+        null
+    );
+    const [loadingAppointments, setLoadingAppointments] = useState(true);
 
     useEffect(() => {
         const fetchInvoices = async () => {
@@ -70,21 +98,101 @@ export default function DashboardPage() {
         fetchInvoices();
     }, []);
 
+    useEffect(() => {
+        const fetchAppointments = async () => {
+            const token = Cookies.get("token");
+            if (!token) {
+                setLoadingAppointments(false);
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/appointments/me", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (response.ok) {
+                    const data: Appointment[] = await response.json();
+                    const confirmedAppointments = data.filter(
+                        (appointment) => appointment.status === "CONFIRMED"
+                    );
+
+                    const sortedAppointments = confirmedAppointments.sort(
+                        (a, b) =>
+                            new Date(a.startsAt).getTime() -
+                            new Date(b.startsAt).getTime()
+                    );
+
+                    const now = new Date();
+                    const upcoming = sortedAppointments.find(
+                        (apt) => new Date(apt.startsAt) > now
+                    );
+
+                    setNextAppointment(upcoming || null);
+                }
+            } catch (error) {
+                console.error("Error fetching appointments:", error);
+            } finally {
+                setLoadingAppointments(false);
+            }
+        };
+
+        fetchAppointments();
+    }, []);
+
     return (
         <div className="min-h-screen mt-24">
             <div className="max-w-7xl mx-auto px-4 py-4">
                 <WelcomeBanner userName={user.name} />
 
                 <div className="grid md:grid-cols-3 gap-4 mb-8">
-                    <SummaryCard
-                        icon={<Calendar className="w-4 h-4 text-white" />}
-                        badge="Upcoming"
-                        badgeColor="purple"
-                        title="Next Appointment"
-                        main="Dr. Emily Carter"
-                        sub="Dec 22, 2025 at 10:00 AM"
-                        href="/appointments"
-                    />
+                    {loadingAppointments ? (
+                        <div className="bg-white rounded-2xl shadow-lg p-4 flex items-center justify-center">
+                            <span className="loading loading-spinner loading-md text-purple-600"></span>
+                        </div>
+                    ) : nextAppointment ? (
+                        <SummaryCard
+                            icon={<Calendar className="w-4 h-4 text-white" />}
+                            badge="Upcoming"
+                            badgeColor="purple"
+                            title="Next Appointment"
+                            main={
+                                nextAppointment.doctorDto.staffDto.userDto
+                                    .fullName
+                            }
+                            sub={new Date(
+                                nextAppointment.startsAt
+                            ).toLocaleString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
+                            })}
+                            href="/appointments"
+                        />
+                    ) : (
+                        <div className="bg-white rounded-2xl shadow-lg p-4">
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl flex items-center justify-center">
+                                    <Calendar className="w-4 h-4 text-white" />
+                                </div>
+                                <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">
+                                    None
+                                </span>
+                            </div>
+                            <h3 className="text-purple-900 mb-1 font-medium text-sm">
+                                Next Appointment
+                            </h3>
+                            <p className="text-gray-700 mb-0.5 text-sm">
+                                No upcoming appointments
+                            </p>
+                            <p className="text-gray-600 text-xs mb-3">
+                                Book an appointment to see a doctor
+                            </p>
+                        </div>
+                    )}
 
                     <SummaryCard
                         icon={<Pill className="w-4 h-4 text-white" />}
