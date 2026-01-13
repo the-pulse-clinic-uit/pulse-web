@@ -95,7 +95,7 @@ const DoctorLoginForm = () => {
                     );
                 }
 
-                router.push("/dashboard");
+                router.push("/schedule");
             } else {
                 setError("No token received");
                 setLoading(false);
