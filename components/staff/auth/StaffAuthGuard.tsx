@@ -20,7 +20,7 @@ const StaffAuthGuard = ({ children }: StaffAuthGuardProps) => {
             const userStr = localStorage.getItem("user");
 
             if (!token) {
-                window.location.href = "http://staff.localhost:3000/login";
+                navigateToSubdomain("staff", "/login");
                 return;
             }
 
@@ -30,12 +30,12 @@ const StaffAuthGuard = ({ children }: StaffAuthGuardProps) => {
                     const user = JSON.parse(userStr);
                     if (user.role !== "STAFF") {
                         // Wrong role, redirect to HMS
-                        window.location.href = "http://hms.localhost:3000";
+                        navigateToSubdomain("hms");
                         return;
                     }
                 } catch (error) {
                     console.error("Error parsing user data:", error);
-                    window.location.href = "http://staff.localhost:3000/login";
+                    navigateToSubdomain("staff", "/login");
                     return;
                 }
             }

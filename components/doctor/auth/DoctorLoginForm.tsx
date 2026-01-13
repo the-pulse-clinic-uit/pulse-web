@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Stethoscope } from "lucide-react";
 import Cookies from "js-cookie";
+import { navigateToSubdomain } from "@/utils/subdomainUtils";
 
 const DoctorLoginForm = () => {
     const router = useRouter();
@@ -164,12 +165,13 @@ const DoctorLoginForm = () => {
 
                         <div className="divider my-6">OR</div>
 
-                        <Link
-                            href="http://hms.localhost:3000"
+                        <button
+                            type="button"
+                            onClick={() => navigateToSubdomain("hms")}
                             className="btn btn-outline btn-primary normal-case text-base font-semibold rounded-xl h-12 w-full"
                         >
                             Back to Role Selection
-                        </Link>
+                        </button>
                     </div>
                 </div>
             </div>

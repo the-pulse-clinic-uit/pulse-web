@@ -5,12 +5,13 @@ import SidebarItem from "../staff/SidebarItem";
 import { MENU_ITEMS } from "@/constants/doctor-menu-items";
 import logo from "../../public/images/logo.png";
 import Image from "next/image";
+import { navigateToSubdomain } from "@/utils/subdomainUtils";
 
 const DoctorSidebar = () => {
     const handleLogout = () => {
         Cookies.remove("token");
         Cookies.remove("user");
-        window.location.href = "http://doctor.localhost:3000/login";
+        navigateToSubdomain("doctor", "/login");
     };
 
     return (

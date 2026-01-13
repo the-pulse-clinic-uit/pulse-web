@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Cookies from "js-cookie";
+import { navigateToSubdomain } from "@/utils/subdomainUtils";
 
 interface DoctorAuthGuardProps {
     children: React.ReactNode;
@@ -30,7 +31,7 @@ const DoctorAuthGuard = ({ children }: DoctorAuthGuardProps) => {
                     const user = JSON.parse(userStr);
                     if (user.role !== "DOCTOR") {
                         // Wrong role, redirect to HMS
-                        window.location.href = "http://hms.localhost:3000";
+                        navigateToSubdomain("hms");
                         return;
                     }
                 } catch (error) {

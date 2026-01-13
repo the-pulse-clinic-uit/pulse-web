@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Users } from "lucide-react";
 import Cookies from "js-cookie";
+import { buildSubdomainUrl, navigateToSubdomain } from "@/utils/subdomainUtils";
 
 const StaffLoginForm = () => {
     const router = useRouter();
@@ -66,7 +67,7 @@ const StaffLoginForm = () => {
                     localStorage.setItem("user", JSON.stringify(data.user));
                 }
 
-                window.location.href = "http://staff.localhost:3000/dashboard";
+                navigateToSubdomain("staff", "/dashboard");
             } else {
                 setError("No token received");
                 setLoading(false);
@@ -165,12 +166,13 @@ const StaffLoginForm = () => {
 
                         <div className="divider my-6">OR</div>
 
-                        <Link
-                            href="http://hms.localhost:3000"
+                        <button
+                            type="button"
+                            onClick={() => navigateToSubdomain("hms")}
                             className="btn btn-outline btn-primary normal-case text-base font-semibold rounded-xl h-12 w-full"
                         >
                             Back to Role Selection
-                        </Link>
+                        </button>
                     </div>
                 </div>
             </div>
