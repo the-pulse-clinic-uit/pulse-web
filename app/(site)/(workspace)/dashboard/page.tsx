@@ -15,6 +15,7 @@ import {
     MessageSquare,
     User,
 } from "lucide-react";
+import { formatVND } from "@/utils/currencyUtils";
 
 type InvoiceStatus = "PAID" | "UNPAID" | "VOID" | "PARTIAL" | "OVERDUE";
 
@@ -105,15 +106,17 @@ export default function DashboardPage() {
                             badge="Due"
                             badgeColor="orange"
                             title="Pending Payment"
-                            main={`$${pendingInvoices
-                                .reduce(
+                            main={formatVND(
+                                pendingInvoices.reduce(
                                     (sum, inv) =>
                                         sum +
                                         (inv.totalAmount - inv.paidAmount),
                                     0
                                 )
-                                .toFixed(2)}`}
-                            sub={`${pendingInvoices.length} invoice${pendingInvoices.length > 1 ? "s" : ""} pending`}
+                            )}
+                            sub={`${pendingInvoices.length} invoice${
+                                pendingInvoices.length > 1 ? "s" : ""
+                            } pending`}
                             href="/invoices"
                         />
                     ) : (
