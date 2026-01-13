@@ -115,14 +115,19 @@ export default function WaitListPage() {
                             }
 
                             // Loại bỏ các record có dutyDate trong quá khứ
-                            if (item.dutyDate < new Date().toISOString().split("T")[0]) {
+                            if (
+                                item.dutyDate <
+                                new Date().toISOString().split("T")[0]
+                            ) {
                                 return null;
                             }
 
                             return {
                                 id: item.id,
                                 ticketNo: item.ticketNo
-                                    ? `#${item.ticketNo.toString().padStart(3, "0")}`
+                                    ? `#${item.ticketNo
+                                          .toString()
+                                          .padStart(3, "0")}`
                                     : "N/A",
                                 name: item.patientDto.userDto.fullName,
                                 age:
@@ -133,20 +138,30 @@ export default function WaitListPage() {
                                 gender: item.patientDto.userDto.gender
                                     ? "Male"
                                     : "Female",
-                                department: item.doctorDto.staffDto.departmentDto
+                                department: item.doctorDto.staffDto
+                                    .departmentDto
                                     ? item.doctorDto.staffDto.departmentDto.name
                                     : "General",
-                                departmentId: item.doctorDto.staffDto.departmentDto
+                                departmentId: item.doctorDto.staffDto
+                                    .departmentDto
                                     ? item.doctorDto.staffDto.departmentDto.id
                                     : "",
-                                priority: item.priority as "NORMAL" | "PRIORITY" | "EMERGENCY",
+                                priority: item.priority as
+                                    | "NORMAL"
+                                    | "PRIORITY"
+                                    | "EMERGENCY",
                             };
                         })
-                        .filter((item: WaitListPatient | null) => item !== null) as WaitListPatient[];
+                        .filter(
+                            (item: WaitListPatient | null) => item !== null
+                        ) as WaitListPatient[];
 
                     // Sort by priority (EMERGENCY -> PRIORITY -> NORMAL)
                     formattedPatients.sort((a, b) => {
-                        return getPriorityOrder(a.priority) - getPriorityOrder(b.priority);
+                        return (
+                            getPriorityOrder(a.priority) -
+                            getPriorityOrder(b.priority)
+                        );
                     });
 
                     setPatients(formattedPatients);
@@ -182,13 +197,16 @@ export default function WaitListPage() {
                 // Filter doctors theo departmentId
                 const filteredDoctors = data.filter(
                     (doctor) =>
-                        doctor.staffDto?.departmentDto?.id === staff.departmentDto.id
+                        doctor.staffDto?.departmentDto?.id ===
+                        staff.departmentDto.id
                 );
 
-                const doctorsList: DoctorOption[] = filteredDoctors.map((doctor) => ({
-                    id: doctor.id,
-                    fullName: doctor.staffDto.userDto.fullName,
-                }));
+                const doctorsList: DoctorOption[] = filteredDoctors.map(
+                    (doctor) => ({
+                        id: doctor.id,
+                        fullName: doctor.staffDto.userDto.fullName,
+                    })
+                );
 
                 setDoctors(doctorsList);
             }
@@ -223,111 +241,129 @@ export default function WaitListPage() {
     }, []);
 
     // Fetch appointments cho ngày được chọn
-    const fetchAppointments = useCallback(async (date: string, doctorId: string) => {
-        if (!doctorId) return;
+    const fetchAppointments = useCallback(
+        async (date: string, doctorId: string) => {
+            if (!doctorId) return;
 
-        const token = Cookies.get("token");
-        if (!token) return;
+            const token = Cookies.get("token");
+            if (!token) return;
 
-        try {
-            const res = await fetch(
-                `/api/appointments/doctor/${doctorId}?date=${date}&status=SCHEDULED`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
+            try {
+                const res = await fetch(
+                    `/api/appointments/doctor/${doctorId}?date=${date}&status=SCHEDULED`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+
+                if (res.ok) {
+                    const data: AppointmentApiResponse[] = await res.json();
+                    const appointmentsList: AppointmentOption[] = data.map(
+                        (apt) => ({
+                            id: apt.id,
+                            patientName:
+                                apt.patientDto?.userDto?.fullName || "Unknown",
+                            appointmentTime: new Date(
+                                apt.startsAt
+                            ).toLocaleTimeString("en-US", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            }),
+                            description: apt.description || "",
+                        })
+                    );
+                    setAppointments(appointmentsList);
                 }
-            );
-
-            if (res.ok) {
-                const data: AppointmentApiResponse[] = await res.json();
-                const appointmentsList: AppointmentOption[] = data.map((apt) => ({
-                    id: apt.id,
-                    patientName: apt.patientDto?.userDto?.fullName || "Unknown",
-                    appointmentTime: new Date(apt.startsAt).toLocaleTimeString("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    }),
-                    description: apt.description || "",
-                }));
-                setAppointments(appointmentsList);
+            } catch (error) {
+                console.error("Error fetching appointments:", error);
             }
-        } catch (error) {
-            console.error("Error fetching appointments:", error);
-        }
-    }, []);
+        },
+        []
+    );
 
-    const handleApproveWaitlist = useCallback(async (departmentId: string) => {
-        const token = Cookies.get("token");
-        if (!token) {
-            router.push("/login");
-            return;
-        }
+    const handleApproveWaitlist = useCallback(
+        async (departmentId: string) => {
+            const token = Cookies.get("token");
+            if (!token) {
+                router.push("/login");
+                return;
+            }
 
-        try {
-            const dutyDate = new Date().toISOString().split("T")[0];
+            try {
+                const dutyDate = new Date().toISOString().split("T")[0];
 
-            const res = await fetch(
-                `/api/waitlist/department/${departmentId}/call-next?dutyDate=${dutyDate}`,
-                {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${token}` },
+                const res = await fetch(
+                    `/api/waitlist/department/${departmentId}/call-next?dutyDate=${dutyDate}`,
+                    {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+
+                if (res.ok) {
+                    // TODO: Sau khi call-next thành công, tự động thêm vào encounter
+                    const waitlistData = await res.json();
+                    await fetch("/api/encounters", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                            patientId: waitlistData.patientDto.id,
+                            doctorId: waitlistData.doctorDto.id,
+                            notes: waitlistData.notes,
+                        }),
+                    });
+
+                    await fetchData();
+                } else {
+                    alert("Failed to update status");
                 }
-            );
+            } catch (error) {
+                console.error("Update error:", error);
+            }
+        },
+        [router, fetchData]
+    );
 
-            if (res.ok) {
-                // TODO: Sau khi call-next thành công, tự động thêm vào encounter
-                const waitlistData = await res.json();
-                await fetch('/api/encounters', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}` 
-                    },
-                    body: JSON.stringify({
-                        patientId: waitlistData.patientDto.id,
-                        doctorId: waitlistData.doctorDto.id,
-                        notes: waitlistData.notes,
-                    }),
+    const handleCancelWaitlist = useCallback(
+        async (entryId: string) => {
+            const token = Cookies.get("token");
+            if (!token) {
+                router.push("/login");
+                return;
+            }
+
+            const confirmed = window.confirm(
+                "Are you sure you want to cancel this patient's appointment?"
+            );
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/api/waitlist/${entryId}/cancel`, {
+                    method: "PUT",
+                    headers: { Authorization: `Bearer ${token}` },
                 });
-                
-                await fetchData();
-            } else {
-                alert("Failed to update status");
+
+                if (res.ok) {
+                    alert("Patient appointment cancelled successfully");
+                    await fetchData();
+                } else {
+                    const errorData = await res.json();
+                    alert(
+                        `Failed to cancel: ${
+                            errorData.message || "Unknown error"
+                        }`
+                    );
+                }
+            } catch (error) {
+                console.error("Cancel error:", error);
+                alert("An error occurred while cancelling the appointment");
             }
-        } catch (error) {
-            console.error("Update error:", error);
-        }
-    }, [router, fetchData]);
-
-    const handleCancelWaitlist = useCallback(async (entryId: string) => {
-        const token = Cookies.get("token");
-        if (!token) {
-            router.push("/login");
-            return;
-        }
-
-        const confirmed = window.confirm(
-            "Are you sure you want to cancel this patient's appointment?"
-        );
-        if (!confirmed) return;
-
-        try {
-            const res = await fetch(`/api/waitlist/${entryId}/cancel`, {
-                method: "PUT",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (res.ok) {
-                alert("Patient appointment cancelled successfully");
-                await fetchData();
-            } else {
-                const errorData = await res.json();
-                alert(`Failed to cancel: ${errorData.message || "Unknown error"}`);
-            }
-        } catch (error) {
-            console.error("Cancel error:", error);
-            alert("An error occurred while cancelling the appointment");
-        }
-    }, [router, fetchData]);
+        },
+        [router, fetchData]
+    );
 
     const handleOpenAddModal = () => {
         setIsAddModalOpen(true);
@@ -357,8 +393,10 @@ export default function WaitListPage() {
 
         // Fetch appointments khi chọn doctor hoặc thay đổi date
         if (field === "doctorId" || field === "dutyDate") {
-            const newDoctorId = field === "doctorId" ? (value as string) : formData.doctorId;
-            const newDate = field === "dutyDate" ? (value as string) : formData.dutyDate;
+            const newDoctorId =
+                field === "doctorId" ? (value as string) : formData.doctorId;
+            const newDate =
+                field === "dutyDate" ? (value as string) : formData.dutyDate;
             if (newDoctorId && newDate) {
                 fetchAppointments(newDate, newDoctorId);
             }
@@ -435,12 +473,16 @@ export default function WaitListPage() {
 
         // Apply priority filter
         if (filters.priority !== "ALL") {
-            result = result.filter((patient) => patient.priority === filters.priority);
+            result = result.filter(
+                (patient) => patient.priority === filters.priority
+            );
         }
 
         // Apply department filter
         if (filters.department !== "ALL") {
-            result = result.filter((patient) => patient.departmentId === filters.department);
+            result = result.filter(
+                (patient) => patient.departmentId === filters.department
+            );
         }
 
         return result;
@@ -449,7 +491,11 @@ export default function WaitListPage() {
     // Get unique departments for filter
     const departments = useMemo(() => {
         const uniqueDepts = Array.from(
-            new Set(patients.map((p) => JSON.stringify({ id: p.departmentId, name: p.department })))
+            new Set(
+                patients.map((p) =>
+                    JSON.stringify({ id: p.departmentId, name: p.department })
+                )
+            )
         ).map((str) => JSON.parse(str));
         return uniqueDepts;
     }, [patients]);
@@ -502,7 +548,9 @@ export default function WaitListPage() {
                     <div className="flex flex-row gap-2">
                         <button
                             className="btn btn-xs bg-green-100 text-green-700 border-none hover:bg-green-200"
-                            onClick={() => handleApproveWaitlist(row.departmentId)}
+                            onClick={() =>
+                                handleApproveWaitlist(row.departmentId)
+                            }
                         >
                             Serve
                         </button>
@@ -533,7 +581,11 @@ export default function WaitListPage() {
 
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
-            <Header tabName="Manage Wait List" userName={user?.fullName} />
+            <Header
+                tabName="Manage Wait List"
+                userName={user?.fullName}
+                avatarUrl={user?.avatarUrl}
+            />
             <Toolbar
                 buttonName="Wait List"
                 onSearch={handleSearch}
@@ -542,9 +594,13 @@ export default function WaitListPage() {
             />
 
             {/* Active filters display */}
-            {(filters.priority !== "ALL" || filters.department !== "ALL" || searchQuery) && (
+            {(filters.priority !== "ALL" ||
+                filters.department !== "ALL" ||
+                searchQuery) && (
                 <div className="flex flex-wrap items-center gap-2 px-4">
-                    <span className="text-sm font-semibold text-gray-600">Active Filters:</span>
+                    <span className="text-sm font-semibold text-gray-600">
+                        Active Filters:
+                    </span>
                     {searchQuery && (
                         <div className="badge badge-lg gap-2">
                             Search: &apos;{searchQuery}&apos;
@@ -560,7 +616,9 @@ export default function WaitListPage() {
                         <div className="badge badge-lg gap-2">
                             Priority: {filters.priority}
                             <button
-                                onClick={() => setFilters({ ...filters, priority: "ALL" })}
+                                onClick={() =>
+                                    setFilters({ ...filters, priority: "ALL" })
+                                }
                                 className="text-xs hover:text-error"
                             >
                                 ✕
@@ -569,9 +627,19 @@ export default function WaitListPage() {
                     )}
                     {filters.department !== "ALL" && (
                         <div className="badge badge-lg gap-2">
-                            Department: {departments.find(d => d.id === filters.department)?.name}
+                            Department:{" "}
+                            {
+                                departments.find(
+                                    (d) => d.id === filters.department
+                                )?.name
+                            }
                             <button
-                                onClick={() => setFilters({ ...filters, department: "ALL" })}
+                                onClick={() =>
+                                    setFilters({
+                                        ...filters,
+                                        department: "ALL",
+                                    })
+                                }
                                 className="text-xs hover:text-error"
                             >
                                 ✕
@@ -589,7 +657,8 @@ export default function WaitListPage() {
 
             <div className="px-4">
                 <p className="text-sm text-gray-600">
-                    Showing {filteredPatients.length} of {patients.length} patients
+                    Showing {filteredPatients.length} of {patients.length}{" "}
+                    patients
                 </p>
             </div>
 
@@ -597,7 +666,7 @@ export default function WaitListPage() {
             <Pagination
                 currentPage={1}
                 totalPages={10}
-                onPageChange={() => { }}
+                onPageChange={() => {}}
             />
 
             {/* Add to Waitlist Modal */}
@@ -616,13 +685,17 @@ export default function WaitListPage() {
             {isFilterModalOpen && (
                 <div className="modal modal-open">
                     <div className="modal-box max-w-lg">
-                        <h3 className="font-bold text-xl mb-6">Filter Wait List</h3>
+                        <h3 className="font-bold text-xl mb-6">
+                            Filter Wait List
+                        </h3>
 
                         <div className="space-y-5">
                             {/* Priority Filter */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Priority</span>
+                                    <span className="label-text font-semibold">
+                                        Priority
+                                    </span>
                                 </label>
                                 <select
                                     className="select select-bordered w-full"
@@ -630,13 +703,18 @@ export default function WaitListPage() {
                                     onChange={(e) =>
                                         setFilters({
                                             ...filters,
-                                            priority: e.target.value as typeof filters.priority,
+                                            priority: e.target
+                                                .value as typeof filters.priority,
                                         })
                                     }
                                 >
                                     <option value="ALL">All Priorities</option>
-                                    <option value="EMERGENCY">🔴 Emergency</option>
-                                    <option value="PRIORITY">🟠 Priority</option>
+                                    <option value="EMERGENCY">
+                                        🔴 Emergency
+                                    </option>
+                                    <option value="PRIORITY">
+                                        🟠 Priority
+                                    </option>
                                     <option value="NORMAL">⚪ Normal</option>
                                 </select>
                             </div>
@@ -644,13 +722,18 @@ export default function WaitListPage() {
                             {/* Department Filter */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Department</span>
+                                    <span className="label-text font-semibold">
+                                        Department
+                                    </span>
                                 </label>
                                 <select
                                     className="select select-bordered w-full"
                                     value={filters.department}
                                     onChange={(e) =>
-                                        setFilters({ ...filters, department: e.target.value })
+                                        setFilters({
+                                            ...filters,
+                                            department: e.target.value,
+                                        })
                                     }
                                 >
                                     <option value="ALL">All Departments</option>
@@ -666,14 +749,28 @@ export default function WaitListPage() {
 
                             {/* Filter Summary */}
                             <div className="bg-base-200 p-4 rounded-lg">
-                                <p className="text-sm font-semibold mb-2">Filter Summary:</p>
+                                <p className="text-sm font-semibold mb-2">
+                                    Filter Summary:
+                                </p>
                                 <ul className="text-sm space-y-1 text-gray-600">
-                                    <li>• Priority: <span className="font-medium">{filters.priority}</span></li>
-                                    <li>• Department: <span className="font-medium">
-                                        {filters.department === "ALL"
-                                            ? "ALL"
-                                            : departments.find(d => d.id === filters.department)?.name || "ALL"}
-                                    </span></li>
+                                    <li>
+                                        • Priority:{" "}
+                                        <span className="font-medium">
+                                            {filters.priority}
+                                        </span>
+                                    </li>
+                                    <li>
+                                        • Department:{" "}
+                                        <span className="font-medium">
+                                            {filters.department === "ALL"
+                                                ? "ALL"
+                                                : departments.find(
+                                                      (d) =>
+                                                          d.id ===
+                                                          filters.department
+                                                  )?.name || "ALL"}
+                                        </span>
+                                    </li>
                                 </ul>
                             </div>
                         </div>

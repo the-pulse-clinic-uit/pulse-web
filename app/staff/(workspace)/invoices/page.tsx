@@ -1,10 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import DataTable, { ColumnDef } from "@/components/staff/DataTable";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
 import Pagination from "@/components/ui/Pagination";
 import AddInvoiceModal from "@/components/staff/invoices/AddInvoiceModal";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import router from "next/router";
 
 type Invoice = {
     id: string;
@@ -73,10 +76,31 @@ const mockInvoiceData: Invoice[] = [
 export default function InvoicesPage() {
     const [invoices, setInvoices] = useState(mockInvoiceData);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
+    const [user, setUser] = useState<UserData | null>(null);
     const handleDetail = (invoice: Invoice) => {
         console.log("View details for invoice:", invoice.id);
     };
+
+    const fetchUserData = useCallback(async () => {
+        const token = Cookies.get("token");
+        if (!token) {
+            router.push("/staff/login");
+            return;
+        }
+
+        try {
+            const userRes = await fetch("/api/users/me", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (userRes.ok) {
+                const userData = await userRes.json();
+                setUser(userData);
+            }
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+        }
+    }, [router]);
+    fetchUserData();
 
     const handleAddInvoice = (newInvoice: {
         name: string;
@@ -147,7 +171,11 @@ export default function InvoicesPage() {
 
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
-            <Header tabName="Manage Invoices" userName="Nguyen Huu Duy" />
+            <Header
+                tabName="Manage Invoices"
+                userName={user?.fullName}
+                avatarUrl={user?.avatarUrl}
+            />
             <Toolbar
                 buttonName="Invoice"
                 onSearch={() => {}}

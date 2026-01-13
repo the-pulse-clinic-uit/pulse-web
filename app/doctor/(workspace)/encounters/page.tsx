@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
 import EncounterCard from "@/components/doctor/manage-encounter/EncounterCard";
 
 interface EncounterDto {
@@ -61,7 +62,7 @@ export default function ManageEncounterPage() {
     const [loading, setLoading] = useState(true);
 
     const fetchEncounters = async () => {
-        const token = localStorage.getItem("token");
+        const token = Cookies.get("token");
 
         if (!token) {
             router.push("/login");
@@ -79,8 +80,8 @@ export default function ManageEncounterPage() {
                     doctorResponse.status === 401 ||
                     doctorResponse.status === 403
                 ) {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
+                    Cookies.remove("token");
+                    Cookies.remove("user");
                     router.push("/login");
                 } else {
                     toast.error("Failed to fetch doctor information");
@@ -114,8 +115,8 @@ export default function ManageEncounterPage() {
                     );
                 setEncounters(activeEncounters);
             } else if (response.status === 401 || response.status === 403) {
-                localStorage.removeItem("token");
-                localStorage.removeItem("user");
+                Cookies.remove("token");
+                Cookies.remove("user");
                 router.push("/login");
             } else {
                 toast.error("Failed to load encounters");

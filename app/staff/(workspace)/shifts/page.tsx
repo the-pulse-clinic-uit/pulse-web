@@ -132,18 +132,28 @@ type AssignmentDisplay = {
 // ==================== HELPER FUNCTIONS ====================
 
 const getKindBadgeStyle = (kind: string) => {
-    return kind === "ER" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700";
+    return kind === "ER"
+        ? "bg-red-100 text-red-700"
+        : "bg-blue-100 text-blue-700";
 };
 
 const getStatusBadgeStyle = (status: string) => {
-    return status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700";
+    return status === "ACTIVE"
+        ? "bg-green-100 text-green-700"
+        : "bg-red-100 text-red-700";
 };
 
 const getRoleBadgeStyle = (role: string) => {
-    return role === "PRIMARY" ? "bg-purple-100 text-purple-700" : "bg-yellow-100 text-yellow-700";
+    return role === "PRIMARY"
+        ? "bg-purple-100 text-purple-700"
+        : "bg-yellow-100 text-yellow-700";
 };
 
-const calculateTotalSlots = (startTime: string, endTime: string, slotMinutes: number): number => {
+const calculateTotalSlots = (
+    startTime: string,
+    endTime: string,
+    slotMinutes: number
+): number => {
     const start = new Date(startTime);
     const end = new Date(endTime);
     const diffMs = end.getTime() - start.getTime();
@@ -183,39 +193,45 @@ const extractDateTime = (isoString: string): { date: string; time: string } => {
 
 // ==================== VALIDATION FUNCTIONS ====================
 
-const validateDateTime = (dateTimeStr: string, fieldName: string): string | null => {
+const validateDateTime = (
+    dateTimeStr: string,
+    fieldName: string
+): string | null => {
     const date = new Date(dateTimeStr);
-    
+
     // Check if date is invalid
     if (isNaN(date.getTime())) {
         return `${fieldName} is invalid. Please enter a valid date and time.`;
     }
-    
+
     const year = date.getFullYear();
-    
+
     // Check year range
     if (year < 1900 || year > 3000) {
         return `${fieldName} year must be between 1900 and 3000.`;
     }
-    
+
     return null;
 };
 
-const validateDateOnly = (dateStr: string, fieldName: string): string | null => {
+const validateDateOnly = (
+    dateStr: string,
+    fieldName: string
+): string | null => {
     const date = new Date(dateStr);
-    
+
     // Check if date is invalid
     if (isNaN(date.getTime())) {
         return `${fieldName} is invalid. Please enter a valid date.`;
     }
-    
+
     const year = date.getFullYear();
-    
+
     // Check year range
     if (year < 1900 || year > 3000) {
         return `${fieldName} year must be between 1900 and 3000.`;
     }
-    
+
     return null;
 };
 
@@ -225,11 +241,11 @@ const validateDateTimeRange = (
 ): string | null => {
     const start = new Date(startDateTime);
     const end = new Date(endDateTime);
-    
+
     if (end <= start) {
         return "End time must be after start time.";
     }
-    
+
     return null;
 };
 
@@ -243,7 +259,9 @@ export default function ShiftsPage() {
     const [staff, setStaff] = useState<StaffData | null>(null);
 
     // Tab state
-    const [activeTab, setActiveTab] = useState<"shifts" | "assignments">("shifts");
+    const [activeTab, setActiveTab] = useState<"shifts" | "assignments">(
+        "shifts"
+    );
 
     // Data state
     const [shifts, setShifts] = useState<ShiftDto[]>([]);
@@ -269,7 +287,10 @@ export default function ShiftsPage() {
     const [shiftFormData, setShiftFormData] = useState<ShiftFormData>({
         name: "",
         kind: "CLINIC",
-        startTime: toISODateTime(new Date().toISOString().split("T")[0], "08:00"),
+        startTime: toISODateTime(
+            new Date().toISOString().split("T")[0],
+            "08:00"
+        ),
         endTime: toISODateTime(new Date().toISOString().split("T")[0], "12:00"),
         slotMinutes: 30,
         capacityPerSlot: 2,
@@ -279,21 +300,25 @@ export default function ShiftsPage() {
 
     // Assignment Modal state
     const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
-    const [assignmentFormData, setAssignmentFormData] = useState<AssignmentFormData>({
-        shiftId: "",
-        doctorId: "",
-        roomId: "",
-        dutyDate: new Date().toISOString().split("T")[0],
-        roleInShift: "PRIMARY",
-        status: "ACTIVE",
-        notes: "",
-    });
-    const [filteredDoctorsForAssignment, setFilteredDoctorsForAssignment] = useState<DoctorDto[]>([]);
-    const [filteredRoomsForAssignment, setFilteredRoomsForAssignment] = useState<RoomDto[]>([]);
+    const [assignmentFormData, setAssignmentFormData] =
+        useState<AssignmentFormData>({
+            shiftId: "",
+            doctorId: "",
+            roomId: "",
+            dutyDate: new Date().toISOString().split("T")[0],
+            roleInShift: "PRIMARY",
+            status: "ACTIVE",
+            notes: "",
+        });
+    const [filteredDoctorsForAssignment, setFilteredDoctorsForAssignment] =
+        useState<DoctorDto[]>([]);
+    const [filteredRoomsForAssignment, setFilteredRoomsForAssignment] =
+        useState<RoomDto[]>([]);
 
     // View Slots Modal state
     const [isViewSlotsModalOpen, setIsViewSlotsModalOpen] = useState(false);
-    const [selectedShiftForSlots, setSelectedShiftForSlots] = useState<ShiftDto | null>(null);
+    const [selectedShiftForSlots, setSelectedShiftForSlots] =
+        useState<ShiftDto | null>(null);
 
     // ==================== FETCH DATA ====================
 
@@ -465,7 +490,13 @@ export default function ShiftsPage() {
             fetchDoctors(),
         ]);
         setLoading(false);
-    }, [fetchUserData, fetchShifts, fetchDepartments, fetchRooms, fetchDoctors]);
+    }, [
+        fetchUserData,
+        fetchShifts,
+        fetchDepartments,
+        fetchRooms,
+        fetchDoctors,
+    ]);
 
     useEffect(() => {
         void fetchAllData();
@@ -482,16 +513,18 @@ export default function ShiftsPage() {
     // Filter doctors and rooms when shift is selected for assignment
     useEffect(() => {
         if (assignmentFormData.shiftId) {
-            const selectedShift = shifts.find((s) => s.id === assignmentFormData.shiftId);
+            const selectedShift = shifts.find(
+                (s) => s.id === assignmentFormData.shiftId
+            );
             if (selectedShift?.departmentDto?.id) {
                 const deptId = selectedShift.departmentDto.id;
-                
+
                 // Filter doctors by shift's department
                 const filteredDocs = doctors.filter(
                     (doctor) => doctor.staffDto.departmentDto?.id === deptId
                 );
                 setFilteredDoctorsForAssignment(filteredDocs);
-                
+
                 // Filter rooms by shift's department
                 const filteredRms = rooms.filter(
                     (room) => room.departmentDto?.id === deptId
@@ -509,37 +542,43 @@ export default function ShiftsPage() {
 
     // ==================== SHIFT HANDLERS ====================
 
-    const handleOpenShiftModal = useCallback((shift?: ShiftDto) => {
-        if (shift) {
-            setIsEditingShift(true);
-            setEditingShiftId(shift.id);
-            setShiftFormData({
-                name: shift.name,
-                kind: shift.kind,
-                startTime: shift.startTime,
-                endTime: shift.endTime,
-                slotMinutes: shift.slotMinutes,
-                capacityPerSlot: shift.capacityPerSlot,
-                departmentId: shift.departmentDto?.id || staff?.departmentDto?.id || "",
-                defaultRoomId: shift.defaultRoomDto?.id || "",
-            });
-        } else {
-            setIsEditingShift(false);
-            setEditingShiftId(null);
-            const today = new Date().toISOString().split("T")[0];
-            setShiftFormData({
-                name: "",
-                kind: "CLINIC",
-                startTime: toISODateTime(today, "08:00"),
-                endTime: toISODateTime(today, "12:00"),
-                slotMinutes: 30,
-                capacityPerSlot: 2,
-                departmentId: staff?.departmentDto?.id || "",
-                defaultRoomId: "",
-            });
-        }
-        setIsShiftModalOpen(true);
-    }, [staff]);
+    const handleOpenShiftModal = useCallback(
+        (shift?: ShiftDto) => {
+            if (shift) {
+                setIsEditingShift(true);
+                setEditingShiftId(shift.id);
+                setShiftFormData({
+                    name: shift.name,
+                    kind: shift.kind,
+                    startTime: shift.startTime,
+                    endTime: shift.endTime,
+                    slotMinutes: shift.slotMinutes,
+                    capacityPerSlot: shift.capacityPerSlot,
+                    departmentId:
+                        shift.departmentDto?.id ||
+                        staff?.departmentDto?.id ||
+                        "",
+                    defaultRoomId: shift.defaultRoomDto?.id || "",
+                });
+            } else {
+                setIsEditingShift(false);
+                setEditingShiftId(null);
+                const today = new Date().toISOString().split("T")[0];
+                setShiftFormData({
+                    name: "",
+                    kind: "CLINIC",
+                    startTime: toISODateTime(today, "08:00"),
+                    endTime: toISODateTime(today, "12:00"),
+                    slotMinutes: 30,
+                    capacityPerSlot: 2,
+                    departmentId: staff?.departmentDto?.id || "",
+                    defaultRoomId: "",
+                });
+            }
+            setIsShiftModalOpen(true);
+        },
+        [staff]
+    );
 
     const handleCloseShiftModal = () => {
         setIsShiftModalOpen(false);
@@ -547,13 +586,22 @@ export default function ShiftsPage() {
         setEditingShiftId(null);
     };
 
-    const handleShiftFormChange = (field: keyof ShiftFormData, value: string | number) => {
+    const handleShiftFormChange = (
+        field: keyof ShiftFormData,
+        value: string | number
+    ) => {
         setShiftFormData((prev) => ({ ...prev, [field]: value }));
     };
 
-    const handleShiftDateTimeChange = (field: "start" | "end", type: "date" | "time", value: string) => {
-        const currentDateTime = field === "start" ? shiftFormData.startTime : shiftFormData.endTime;
-        const { date: currentDate, time: currentTime } = extractDateTime(currentDateTime);
+    const handleShiftDateTimeChange = (
+        field: "start" | "end",
+        type: "date" | "time",
+        value: string
+    ) => {
+        const currentDateTime =
+            field === "start" ? shiftFormData.startTime : shiftFormData.endTime;
+        const { date: currentDate, time: currentTime } =
+            extractDateTime(currentDateTime);
 
         const newDate = type === "date" ? value : currentDate;
         const newTime = type === "time" ? value : currentTime;
@@ -570,19 +618,28 @@ export default function ShiftsPage() {
         e.preventDefault();
 
         // Validate dates before submitting
-        const startTimeError = validateDateTime(shiftFormData.startTime, "Start date/time");
+        const startTimeError = validateDateTime(
+            shiftFormData.startTime,
+            "Start date/time"
+        );
         if (startTimeError) {
             alert(startTimeError);
             return;
         }
 
-        const endTimeError = validateDateTime(shiftFormData.endTime, "End date/time");
+        const endTimeError = validateDateTime(
+            shiftFormData.endTime,
+            "End date/time"
+        );
         if (endTimeError) {
             alert(endTimeError);
             return;
         }
 
-        const rangeError = validateDateTimeRange(shiftFormData.startTime, shiftFormData.endTime);
+        const rangeError = validateDateTimeRange(
+            shiftFormData.startTime,
+            shiftFormData.endTime
+        );
         if (rangeError) {
             alert(rangeError);
             return;
@@ -625,7 +682,11 @@ export default function ShiftsPage() {
                     try {
                         const text = await res.text();
                         const errorData = text ? JSON.parse(text) : {};
-                        alert(`Failed to update shift: ${errorData.message || "Unknown error"}`);
+                        alert(
+                            `Failed to update shift: ${
+                                errorData.message || "Unknown error"
+                            }`
+                        );
                     } catch {
                         alert(`Failed to update shift: ${res.statusText}`);
                     }
@@ -649,7 +710,11 @@ export default function ShiftsPage() {
                     try {
                         const text = await res.text();
                         const errorData = text ? JSON.parse(text) : {};
-                        alert(`Failed to create shift: ${errorData.message || "Unknown error"}`);
+                        alert(
+                            `Failed to create shift: ${
+                                errorData.message || "Unknown error"
+                            }`
+                        );
                     } catch {
                         alert(`Failed to create shift: ${res.statusText}`);
                     }
@@ -661,33 +726,38 @@ export default function ShiftsPage() {
         }
     };
 
-    const handleDeleteShift = useCallback(async (shiftId: string) => {
-        const confirmed = window.confirm("Are you sure you want to delete this shift?");
-        if (!confirmed) return;
+    const handleDeleteShift = useCallback(
+        async (shiftId: string) => {
+            const confirmed = window.confirm(
+                "Are you sure you want to delete this shift?"
+            );
+            if (!confirmed) return;
 
-        const token = Cookies.get("token");
-        if (!token) {
-            router.push("/staff/login");
-            return;
-        }
-
-        try {
-            const res = await fetch(`/api/shifts/${shiftId}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (res.ok || res.status === 204) {
-                alert("Shift deleted successfully!");
-                await fetchShifts();
-            } else {
-                alert("Failed to delete shift");
+            const token = Cookies.get("token");
+            if (!token) {
+                router.push("/staff/login");
+                return;
             }
-        } catch (error) {
-            console.error("Delete shift error:", error);
-            alert("An error occurred while deleting the shift");
-        }
-    }, [router, fetchShifts]);
+
+            try {
+                const res = await fetch(`/api/shifts/${shiftId}`, {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (res.ok || res.status === 204) {
+                    alert("Shift deleted successfully!");
+                    await fetchShifts();
+                } else {
+                    alert("Failed to delete shift");
+                }
+            } catch (error) {
+                console.error("Delete shift error:", error);
+                alert("An error occurred while deleting the shift");
+            }
+        },
+        [router, fetchShifts]
+    );
 
     const handleViewSlots = (shift: ShiftDto) => {
         setSelectedShiftForSlots(shift);
@@ -725,7 +795,10 @@ export default function ShiftsPage() {
         setFilteredRoomsForAssignment([]);
     };
 
-    const handleAssignmentFormChange = (field: keyof AssignmentFormData, value: string) => {
+    const handleAssignmentFormChange = (
+        field: keyof AssignmentFormData,
+        value: string
+    ) => {
         setAssignmentFormData((prev) => {
             // If changing shift, reset doctor and room selections
             if (field === "shiftId") {
@@ -739,7 +812,10 @@ export default function ShiftsPage() {
         e.preventDefault();
 
         // Validate duty date before submitting
-        const dateError = validateDateOnly(assignmentFormData.dutyDate, "Duty date");
+        const dateError = validateDateOnly(
+            assignmentFormData.dutyDate,
+            "Duty date"
+        );
         if (dateError) {
             alert(dateError);
             return;
@@ -779,7 +855,11 @@ export default function ShiftsPage() {
                 try {
                     const text = await res.text();
                     const errorData = text ? JSON.parse(text) : {};
-                    alert(`Failed to assign doctor: ${errorData.message || "Unknown error"}`);
+                    alert(
+                        `Failed to assign doctor: ${
+                            errorData.message || "Unknown error"
+                        }`
+                    );
                 } catch {
                     alert(`Failed to assign doctor: ${res.statusText}`);
                 }
@@ -790,33 +870,41 @@ export default function ShiftsPage() {
         }
     };
 
-    const handleCancelAssignment = useCallback(async (assignmentId: string) => {
-        const confirmed = window.confirm("Are you sure you want to cancel this assignment?");
-        if (!confirmed) return;
+    const handleCancelAssignment = useCallback(
+        async (assignmentId: string) => {
+            const confirmed = window.confirm(
+                "Are you sure you want to cancel this assignment?"
+            );
+            if (!confirmed) return;
 
-        const token = Cookies.get("token");
-        if (!token) {
-            router.push("/staff/login");
-            return;
-        }
-
-        try {
-            const res = await fetch(`/api/shifts/assignments/${assignmentId}/status?status=CANCELLED`, {
-                method: "PUT",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (res.ok) {
-                alert("Assignment cancelled successfully!");
-                await fetchAssignments();
-            } else {
-                alert("Failed to cancel assignment");
+            const token = Cookies.get("token");
+            if (!token) {
+                router.push("/staff/login");
+                return;
             }
-        } catch (error) {
-            console.error("Cancel assignment error:", error);
-            alert("An error occurred while cancelling the assignment");
-        }
-    }, [router, fetchAssignments]);
+
+            try {
+                const res = await fetch(
+                    `/api/shifts/assignments/${assignmentId}/status?status=CANCELLED`,
+                    {
+                        method: "PUT",
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+
+                if (res.ok) {
+                    alert("Assignment cancelled successfully!");
+                    await fetchAssignments();
+                } else {
+                    alert("Failed to cancel assignment");
+                }
+            } catch (error) {
+                console.error("Cancel assignment error:", error);
+                alert("An error occurred while cancelling the assignment");
+            }
+        },
+        [router, fetchAssignments]
+    );
 
     // ==================== FILTER AND SEARCH HANDLERS ====================
 
@@ -851,7 +939,11 @@ export default function ShiftsPage() {
             endTime: shift.endTime,
             slotMinutes: shift.slotMinutes,
             capacityPerSlot: shift.capacityPerSlot,
-            totalSlots: calculateTotalSlots(shift.startTime, shift.endTime, shift.slotMinutes),
+            totalSlots: calculateTotalSlots(
+                shift.startTime,
+                shift.endTime,
+                shift.slotMinutes
+            ),
             departmentName: shift.departmentDto?.name || "N/A",
             roomNumber: shift.defaultRoomDto?.roomNumber || "N/A",
         }));
@@ -909,7 +1001,9 @@ export default function ShiftsPage() {
         }
 
         if (filters.status !== "ALL") {
-            result = result.filter((assignment) => assignment.status === filters.status);
+            result = result.filter(
+                (assignment) => assignment.status === filters.status
+            );
         }
 
         return result;
@@ -919,11 +1013,21 @@ export default function ShiftsPage() {
 
     const shiftColumns = useMemo<ColumnDef<ShiftDisplay>[]>(
         () => [
-            { header: "Shift Name", accessorKey: "name", className: "font-medium" },
+            {
+                header: "Shift Name",
+                accessorKey: "name",
+                className: "font-medium",
+            },
             {
                 header: "Type",
                 cell: (row) => (
-                    <span className={`badge border-none ${getKindBadgeStyle(row.kind)}`}>{row.kind}</span>
+                    <span
+                        className={`badge border-none ${getKindBadgeStyle(
+                            row.kind
+                        )}`}
+                    >
+                        {row.kind}
+                    </span>
                 ),
             },
             {
@@ -956,7 +1060,9 @@ export default function ShiftsPage() {
                         <button
                             className="btn btn-xs bg-blue-100 text-blue-700 border-none hover:bg-blue-200"
                             onClick={() => {
-                                const shift = shifts.find((s) => s.id === row.id);
+                                const shift = shifts.find(
+                                    (s) => s.id === row.id
+                                );
                                 if (shift) handleViewSlots(shift);
                             }}
                         >
@@ -965,7 +1071,9 @@ export default function ShiftsPage() {
                         <button
                             className="btn btn-xs bg-yellow-100 text-yellow-700 border-none hover:bg-yellow-200"
                             onClick={() => {
-                                const shift = shifts.find((s) => s.id === row.id);
+                                const shift = shifts.find(
+                                    (s) => s.id === row.id
+                                );
                                 if (shift) handleOpenShiftModal(shift);
                             }}
                         >
@@ -992,12 +1100,20 @@ export default function ShiftsPage() {
                 className: "font-medium",
             },
             { header: "Shift", accessorKey: "shiftName" },
-            { header: "Doctor", accessorKey: "doctorName", className: "font-medium" },
+            {
+                header: "Doctor",
+                accessorKey: "doctorName",
+                className: "font-medium",
+            },
             { header: "Room", accessorKey: "roomNumber" },
             {
                 header: "Role",
                 cell: (row) => (
-                    <span className={`badge border-none ${getRoleBadgeStyle(row.roleInShift)}`}>
+                    <span
+                        className={`badge border-none ${getRoleBadgeStyle(
+                            row.roleInShift
+                        )}`}
+                    >
                         {row.roleInShift}
                     </span>
                 ),
@@ -1005,7 +1121,13 @@ export default function ShiftsPage() {
             {
                 header: "Status",
                 cell: (row) => (
-                    <span className={`badge border-none ${getStatusBadgeStyle(row.status)}`}>{row.status}</span>
+                    <span
+                        className={`badge border-none ${getStatusBadgeStyle(
+                            row.status
+                        )}`}
+                    >
+                        {row.status}
+                    </span>
                 ),
             },
             {
@@ -1031,12 +1153,20 @@ export default function ShiftsPage() {
 
     const generateSlots = (shift: ShiftDto) => {
         const slots = [];
-        const totalSlots = calculateTotalSlots(shift.startTime, shift.endTime, shift.slotMinutes);
+        const totalSlots = calculateTotalSlots(
+            shift.startTime,
+            shift.endTime,
+            shift.slotMinutes
+        );
         const startDate = new Date(shift.startTime);
 
         for (let i = 0; i < totalSlots; i++) {
-            const slotStart = new Date(startDate.getTime() + i * shift.slotMinutes * 60000);
-            const slotEnd = new Date(slotStart.getTime() + shift.slotMinutes * 60000);
+            const slotStart = new Date(
+                startDate.getTime() + i * shift.slotMinutes * 60000
+            );
+            const slotEnd = new Date(
+                slotStart.getTime() + shift.slotMinutes * 60000
+            );
 
             slots.push({
                 slotNumber: i + 1,
@@ -1061,18 +1191,26 @@ export default function ShiftsPage() {
 
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
-            <Header tabName="Shift Management" userName={user?.fullName} />
+            <Header
+                tabName="Shift Management"
+                userName={user?.fullName}
+                avatarUrl={user?.avatarUrl}
+            />
 
             {/* Tabs */}
             <div className="tabs tabs-boxed bg-base-200 w-fit">
                 <button
-                    className={`tab ${activeTab === "shifts" ? "tab-active" : ""}`}
+                    className={`tab ${
+                        activeTab === "shifts" ? "tab-active" : ""
+                    }`}
                     onClick={() => setActiveTab("shifts")}
                 >
                     Shifts
                 </button>
                 <button
-                    className={`tab ${activeTab === "assignments" ? "tab-active" : ""}`}
+                    className={`tab ${
+                        activeTab === "assignments" ? "tab-active" : ""
+                    }`}
                     onClick={() => setActiveTab("assignments")}
                 >
                     Doctor Assignments
@@ -1083,7 +1221,11 @@ export default function ShiftsPage() {
                 buttonName={activeTab === "shifts" ? "Shift" : "Assignment"}
                 onSearch={handleSearch}
                 onFilter={handleOpenFilterModal}
-                onAdd={activeTab === "shifts" ? () => handleOpenShiftModal() : handleOpenAssignmentModal}
+                onAdd={
+                    activeTab === "shifts"
+                        ? () => handleOpenShiftModal()
+                        : handleOpenAssignmentModal
+                }
             />
 
             {/* Active filters display */}
@@ -1092,11 +1234,16 @@ export default function ShiftsPage() {
                 filters.department !== "ALL" ||
                 searchQuery) && (
                 <div className="flex flex-wrap items-center gap-2 px-4">
-                    <span className="text-sm font-semibold text-gray-600">Active Filters:</span>
+                    <span className="text-sm font-semibold text-gray-600">
+                        Active Filters:
+                    </span>
                     {searchQuery && (
                         <div className="badge badge-lg gap-2">
                             Search: &apos;{searchQuery}&apos;
-                            <button onClick={() => setSearchQuery("")} className="text-xs hover:text-error">
+                            <button
+                                onClick={() => setSearchQuery("")}
+                                className="text-xs hover:text-error"
+                            >
                                 ✕
                             </button>
                         </div>
@@ -1105,7 +1252,9 @@ export default function ShiftsPage() {
                         <div className="badge badge-lg gap-2">
                             Status: {filters.status}
                             <button
-                                onClick={() => setFilters({ ...filters, status: "ALL" })}
+                                onClick={() =>
+                                    setFilters({ ...filters, status: "ALL" })
+                                }
                                 className="text-xs hover:text-error"
                             >
                                 ✕
@@ -1116,7 +1265,9 @@ export default function ShiftsPage() {
                         <div className="badge badge-lg gap-2">
                             Type: {filters.kind}
                             <button
-                                onClick={() => setFilters({ ...filters, kind: "ALL" })}
+                                onClick={() =>
+                                    setFilters({ ...filters, kind: "ALL" })
+                                }
                                 className="text-xs hover:text-error"
                             >
                                 ✕
@@ -1125,16 +1276,29 @@ export default function ShiftsPage() {
                     )}
                     {filters.department !== "ALL" && activeTab === "shifts" && (
                         <div className="badge badge-lg gap-2">
-                            Department: {departments.find((d) => d.id === filters.department)?.name}
+                            Department:{" "}
+                            {
+                                departments.find(
+                                    (d) => d.id === filters.department
+                                )?.name
+                            }
                             <button
-                                onClick={() => setFilters({ ...filters, department: "ALL" })}
+                                onClick={() =>
+                                    setFilters({
+                                        ...filters,
+                                        department: "ALL",
+                                    })
+                                }
                                 className="text-xs hover:text-error"
                             >
                                 ✕
                             </button>
                         </div>
                     )}
-                    <button onClick={handleResetFilters} className="btn btn-xs btn-ghost text-error">
+                    <button
+                        onClick={handleResetFilters}
+                        className="btn btn-xs btn-ghost text-error"
+                    >
                         Clear All
                     </button>
                 </div>
@@ -1142,8 +1306,14 @@ export default function ShiftsPage() {
 
             <div className="px-4">
                 <p className="text-sm text-gray-600">
-                    Showing {activeTab === "shifts" ? filteredShifts.length : filteredAssignments.length} of{" "}
-                    {activeTab === "shifts" ? shifts.length : assignments.length}{" "}
+                    Showing{" "}
+                    {activeTab === "shifts"
+                        ? filteredShifts.length
+                        : filteredAssignments.length}{" "}
+                    of{" "}
+                    {activeTab === "shifts"
+                        ? shifts.length
+                        : assignments.length}{" "}
                     {activeTab === "shifts" ? "shifts" : "assignments"}
                 </p>
             </div>
@@ -1152,10 +1322,17 @@ export default function ShiftsPage() {
             {activeTab === "shifts" ? (
                 <DataTable columns={shiftColumns} data={filteredShifts} />
             ) : (
-                <DataTable columns={assignmentColumns} data={filteredAssignments} />
+                <DataTable
+                    columns={assignmentColumns}
+                    data={filteredAssignments}
+                />
             )}
 
-            <Pagination currentPage={1} totalPages={1} onPageChange={() => {}} />
+            <Pagination
+                currentPage={1}
+                totalPages={1}
+                onPageChange={() => {}}
+            />
 
             {/* ==================== MODALS ==================== */}
 
@@ -1167,18 +1344,28 @@ export default function ShiftsPage() {
                             {isEditingShift ? "Edit Shift" : "Create New Shift"}
                         </h3>
 
-                        <form onSubmit={handleSubmitShift} className="space-y-5">
+                        <form
+                            onSubmit={handleSubmitShift}
+                            className="space-y-5"
+                        >
                             {/* Shift Name */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Shift Name *</span>
+                                    <span className="label-text font-semibold">
+                                        Shift Name *
+                                    </span>
                                 </label>
                                 <input
                                     type="text"
                                     className="input input-bordered w-full"
                                     placeholder="e.g., Morning Shift"
                                     value={shiftFormData.name}
-                                    onChange={(e) => handleShiftFormChange("name", e.target.value)}
+                                    onChange={(e) =>
+                                        handleShiftFormChange(
+                                            "name",
+                                            e.target.value
+                                        )
+                                    }
                                     required
                                 />
                             </div>
@@ -1186,7 +1373,9 @@ export default function ShiftsPage() {
                             {/* Shift Kind */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Shift Type *</span>
+                                    <span className="label-text font-semibold">
+                                        Shift Type *
+                                    </span>
                                 </label>
                                 <div className="flex gap-4">
                                     <label className="label cursor-pointer gap-2">
@@ -1195,10 +1384,19 @@ export default function ShiftsPage() {
                                             name="kind"
                                             className="radio radio-primary"
                                             value="CLINIC"
-                                            checked={shiftFormData.kind === "CLINIC"}
-                                            onChange={(e) => handleShiftFormChange("kind", e.target.value)}
+                                            checked={
+                                                shiftFormData.kind === "CLINIC"
+                                            }
+                                            onChange={(e) =>
+                                                handleShiftFormChange(
+                                                    "kind",
+                                                    e.target.value
+                                                )
+                                            }
                                         />
-                                        <span className="label-text">Clinic</span>
+                                        <span className="label-text">
+                                            Clinic
+                                        </span>
                                     </label>
                                     <label className="label cursor-pointer gap-2">
                                         <input
@@ -1206,10 +1404,19 @@ export default function ShiftsPage() {
                                             name="kind"
                                             className="radio radio-error"
                                             value="ER"
-                                            checked={shiftFormData.kind === "ER"}
-                                            onChange={(e) => handleShiftFormChange("kind", e.target.value)}
+                                            checked={
+                                                shiftFormData.kind === "ER"
+                                            }
+                                            onChange={(e) =>
+                                                handleShiftFormChange(
+                                                    "kind",
+                                                    e.target.value
+                                                )
+                                            }
                                         />
-                                        <span className="label-text">Emergency (ER)</span>
+                                        <span className="label-text">
+                                            Emergency (ER)
+                                        </span>
                                     </label>
                                 </div>
                             </div>
@@ -1220,26 +1427,50 @@ export default function ShiftsPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text font-semibold">Start Date *</span>
+                                        <span className="label-text font-semibold">
+                                            Start Date *
+                                        </span>
                                     </label>
                                     <input
                                         type="date"
                                         className="input input-bordered w-full"
-                                        value={extractDateTime(shiftFormData.startTime).date}
-                                        onChange={(e) => handleShiftDateTimeChange("start", "date", e.target.value)}
+                                        value={
+                                            extractDateTime(
+                                                shiftFormData.startTime
+                                            ).date
+                                        }
+                                        onChange={(e) =>
+                                            handleShiftDateTimeChange(
+                                                "start",
+                                                "date",
+                                                e.target.value
+                                            )
+                                        }
                                         onKeyDown={(e) => e.preventDefault()}
                                         required
                                     />
                                 </div>
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text font-semibold">Start Time *</span>
+                                        <span className="label-text font-semibold">
+                                            Start Time *
+                                        </span>
                                     </label>
                                     <input
                                         type="time"
                                         className="input input-bordered w-full"
-                                        value={extractDateTime(shiftFormData.startTime).time}
-                                        onChange={(e) => handleShiftDateTimeChange("start", "time", e.target.value)}
+                                        value={
+                                            extractDateTime(
+                                                shiftFormData.startTime
+                                            ).time
+                                        }
+                                        onChange={(e) =>
+                                            handleShiftDateTimeChange(
+                                                "start",
+                                                "time",
+                                                e.target.value
+                                            )
+                                        }
                                         onKeyDown={(e) => e.preventDefault()}
                                         required
                                     />
@@ -1249,26 +1480,50 @@ export default function ShiftsPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text font-semibold">End Date *</span>
+                                        <span className="label-text font-semibold">
+                                            End Date *
+                                        </span>
                                     </label>
                                     <input
                                         type="date"
                                         className="input input-bordered w-full"
-                                        value={extractDateTime(shiftFormData.endTime).date}
-                                        onChange={(e) => handleShiftDateTimeChange("end", "date", e.target.value)}
+                                        value={
+                                            extractDateTime(
+                                                shiftFormData.endTime
+                                            ).date
+                                        }
+                                        onChange={(e) =>
+                                            handleShiftDateTimeChange(
+                                                "end",
+                                                "date",
+                                                e.target.value
+                                            )
+                                        }
                                         onKeyDown={(e) => e.preventDefault()}
                                         required
                                     />
                                 </div>
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text font-semibold">End Time *</span>
+                                        <span className="label-text font-semibold">
+                                            End Time *
+                                        </span>
                                     </label>
                                     <input
                                         type="time"
                                         className="input input-bordered w-full"
-                                        value={extractDateTime(shiftFormData.endTime).time}
-                                        onChange={(e) => handleShiftDateTimeChange("end", "time", e.target.value)}
+                                        value={
+                                            extractDateTime(
+                                                shiftFormData.endTime
+                                            ).time
+                                        }
+                                        onChange={(e) =>
+                                            handleShiftDateTimeChange(
+                                                "end",
+                                                "time",
+                                                e.target.value
+                                            )
+                                        }
                                         onKeyDown={(e) => e.preventDefault()}
                                         required
                                     />
@@ -1281,13 +1536,18 @@ export default function ShiftsPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text font-semibold">Slot Duration (minutes) *</span>
+                                        <span className="label-text font-semibold">
+                                            Slot Duration (minutes) *
+                                        </span>
                                     </label>
                                     <select
                                         className="select select-bordered w-full"
                                         value={shiftFormData.slotMinutes}
                                         onChange={(e) =>
-                                            handleShiftFormChange("slotMinutes", parseInt(e.target.value))
+                                            handleShiftFormChange(
+                                                "slotMinutes",
+                                                parseInt(e.target.value)
+                                            )
                                         }
                                     >
                                         <option value={15}>15 minutes</option>
@@ -1298,7 +1558,9 @@ export default function ShiftsPage() {
                                 </div>
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text font-semibold">Capacity Per Slot *</span>
+                                        <span className="label-text font-semibold">
+                                            Capacity Per Slot *
+                                        </span>
                                     </label>
                                     <input
                                         type="number"
@@ -1307,7 +1569,10 @@ export default function ShiftsPage() {
                                         max={10}
                                         value={shiftFormData.capacityPerSlot}
                                         onChange={(e) =>
-                                            handleShiftFormChange("capacityPerSlot", parseInt(e.target.value))
+                                            handleShiftFormChange(
+                                                "capacityPerSlot",
+                                                parseInt(e.target.value)
+                                            )
                                         }
                                         required
                                     />
@@ -1316,7 +1581,9 @@ export default function ShiftsPage() {
 
                             {/* Calculated Slots Preview */}
                             <div className="bg-base-200 p-4 rounded-lg">
-                                <p className="text-sm font-semibold mb-2">📊 Calculated Slots:</p>
+                                <p className="text-sm font-semibold mb-2">
+                                    📊 Calculated Slots:
+                                </p>
                                 <p className="text-lg font-bold text-primary">
                                     {calculateTotalSlots(
                                         shiftFormData.startTime,
@@ -1342,14 +1609,18 @@ export default function ShiftsPage() {
                             {/* Department Display (Read-only) */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Department</span>
+                                    <span className="label-text font-semibold">
+                                        Department
+                                    </span>
                                 </label>
                                 <div className="bg-base-200 p-3 rounded-lg">
                                     <p className="text-sm font-medium">
-                                        {staff?.departmentDto?.name || "No Department Assigned"}
+                                        {staff?.departmentDto?.name ||
+                                            "No Department Assigned"}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                        Shift will be created for your department
+                                        Shift will be created for your
+                                        department
                                     </p>
                                 </div>
                             </div>
@@ -1357,36 +1628,63 @@ export default function ShiftsPage() {
                             {/* Room Selection (Filtered by department) */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Default Room</span>
+                                    <span className="label-text font-semibold">
+                                        Default Room
+                                    </span>
                                 </label>
                                 <select
                                     className="select select-bordered w-full"
                                     value={shiftFormData.defaultRoomId}
-                                    onChange={(e) => handleShiftFormChange("defaultRoomId", e.target.value)}
+                                    onChange={(e) =>
+                                        handleShiftFormChange(
+                                            "defaultRoomId",
+                                            e.target.value
+                                        )
+                                    }
                                 >
-                                    <option value="">Select a room (optional)</option>
+                                    <option value="">
+                                        Select a room (optional)
+                                    </option>
                                     {rooms
-                                        .filter((room) => room.departmentDto?.id === staff?.departmentDto?.id)
+                                        .filter(
+                                            (room) =>
+                                                room.departmentDto?.id ===
+                                                staff?.departmentDto?.id
+                                        )
                                         .map((room) => (
-                                            <option key={room.id} value={room.id}>
+                                            <option
+                                                key={room.id}
+                                                value={room.id}
+                                            >
                                                 {room.roomNumber}
                                             </option>
                                         ))}
                                 </select>
                                 <label className="label">
                                     <span className="label-text-alt text-gray-500">
-                                        Only showing rooms in {staff?.departmentDto?.name || "your department"}
+                                        Only showing rooms in{" "}
+                                        {staff?.departmentDto?.name ||
+                                            "your department"}
                                     </span>
                                 </label>
                             </div>
 
                             {/* Actions */}
                             <div className="modal-action mt-8 gap-3">
-                                <button type="button" className="btn btn-ghost" onClick={handleCloseShiftModal}>
+                                <button
+                                    type="button"
+                                    className="btn btn-ghost"
+                                    onClick={handleCloseShiftModal}
+                                >
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn btn-primary px-8">
-                                    {isEditingShift ? "Update Shift" : "Create Shift"}
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary px-8"
+                                >
+                                    {isEditingShift
+                                        ? "Update Shift"
+                                        : "Create Shift"}
                                 </button>
                             </div>
                         </form>
@@ -1398,19 +1696,31 @@ export default function ShiftsPage() {
             {isAssignmentModalOpen && (
                 <div className="modal modal-open">
                     <div className="modal-box max-w-lg">
-                        <h3 className="font-bold text-xl mb-6">Assign Doctor to Shift</h3>
+                        <h3 className="font-bold text-xl mb-6">
+                            Assign Doctor to Shift
+                        </h3>
 
-                        <form onSubmit={handleSubmitAssignment} className="space-y-5">
+                        <form
+                            onSubmit={handleSubmitAssignment}
+                            className="space-y-5"
+                        >
                             {/* Date */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Duty Date *</span>
+                                    <span className="label-text font-semibold">
+                                        Duty Date *
+                                    </span>
                                 </label>
                                 <input
                                     type="date"
                                     className="input input-bordered w-full"
                                     value={assignmentFormData.dutyDate}
-                                    onChange={(e) => handleAssignmentFormChange("dutyDate", e.target.value)}
+                                    onChange={(e) =>
+                                        handleAssignmentFormChange(
+                                            "dutyDate",
+                                            e.target.value
+                                        )
+                                    }
                                     onKeyDown={(e) => e.preventDefault()}
                                     required
                                 />
@@ -1419,19 +1729,28 @@ export default function ShiftsPage() {
                             {/* Shift */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Shift *</span>
+                                    <span className="label-text font-semibold">
+                                        Shift *
+                                    </span>
                                 </label>
                                 <select
                                     className="select select-bordered w-full"
                                     value={assignmentFormData.shiftId}
-                                    onChange={(e) => handleAssignmentFormChange("shiftId", e.target.value)}
+                                    onChange={(e) =>
+                                        handleAssignmentFormChange(
+                                            "shiftId",
+                                            e.target.value
+                                        )
+                                    }
                                     required
                                 >
                                     <option value="">Select a shift</option>
                                     {shifts.map((shift) => (
                                         <option key={shift.id} value={shift.id}>
-                                            {shift.name} ({formatTime(shift.startTime)} -{" "}
-                                            {formatTime(shift.endTime)}) - {shift.kind}
+                                            {shift.name} (
+                                            {formatTime(shift.startTime)} -{" "}
+                                            {formatTime(shift.endTime)}) -{" "}
+                                            {shift.kind}
                                         </option>
                                     ))}
                                 </select>
@@ -1440,22 +1759,39 @@ export default function ShiftsPage() {
                             {/* Doctor */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Doctor *</span>
+                                    <span className="label-text font-semibold">
+                                        Doctor *
+                                    </span>
                                 </label>
                                 <select
                                     className="select select-bordered w-full"
                                     value={assignmentFormData.doctorId}
-                                    onChange={(e) => handleAssignmentFormChange("doctorId", e.target.value)}
+                                    onChange={(e) =>
+                                        handleAssignmentFormChange(
+                                            "doctorId",
+                                            e.target.value
+                                        )
+                                    }
                                     disabled={!assignmentFormData.shiftId}
                                     required
                                 >
                                     <option value="">Select a doctor</option>
-                                    {filteredDoctorsForAssignment.map((doctor) => (
-                                        <option key={doctor.id} value={doctor.id}>
-                                            {doctor.staffDto.userDto.fullName} -{" "}
-                                            {doctor.staffDto.departmentDto?.name || "No Dept"}
-                                        </option>
-                                    ))}
+                                    {filteredDoctorsForAssignment.map(
+                                        (doctor) => (
+                                            <option
+                                                key={doctor.id}
+                                                value={doctor.id}
+                                            >
+                                                {
+                                                    doctor.staffDto.userDto
+                                                        .fullName
+                                                }{" "}
+                                                -{" "}
+                                                {doctor.staffDto.departmentDto
+                                                    ?.name || "No Dept"}
+                                            </option>
+                                        )
+                                    )}
                                 </select>
                                 {!assignmentFormData.shiftId && (
                                     <label className="label">
@@ -1469,18 +1805,29 @@ export default function ShiftsPage() {
                             {/* Room */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Room</span>
+                                    <span className="label-text font-semibold">
+                                        Room
+                                    </span>
                                 </label>
                                 <select
                                     className="select select-bordered w-full"
                                     value={assignmentFormData.roomId}
-                                    onChange={(e) => handleAssignmentFormChange("roomId", e.target.value)}
+                                    onChange={(e) =>
+                                        handleAssignmentFormChange(
+                                            "roomId",
+                                            e.target.value
+                                        )
+                                    }
                                     disabled={!assignmentFormData.shiftId}
                                 >
-                                    <option value="">Select a room (optional)</option>
+                                    <option value="">
+                                        Select a room (optional)
+                                    </option>
                                     {filteredRoomsForAssignment.map((room) => (
                                         <option key={room.id} value={room.id}>
-                                            {room.roomNumber} - {room.departmentDto?.name || "No Dept"}
+                                            {room.roomNumber} -{" "}
+                                            {room.departmentDto?.name ||
+                                                "No Dept"}
                                         </option>
                                     ))}
                                 </select>
@@ -1498,7 +1845,9 @@ export default function ShiftsPage() {
                             {/* Role */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Role in Shift *</span>
+                                    <span className="label-text font-semibold">
+                                        Role in Shift *
+                                    </span>
                                 </label>
                                 <div className="flex gap-4">
                                     <label className="label cursor-pointer gap-2">
@@ -1507,10 +1856,20 @@ export default function ShiftsPage() {
                                             name="roleInShift"
                                             className="radio radio-primary"
                                             value="PRIMARY"
-                                            checked={assignmentFormData.roleInShift === "PRIMARY"}
-                                            onChange={(e) => handleAssignmentFormChange("roleInShift", e.target.value)}
+                                            checked={
+                                                assignmentFormData.roleInShift ===
+                                                "PRIMARY"
+                                            }
+                                            onChange={(e) =>
+                                                handleAssignmentFormChange(
+                                                    "roleInShift",
+                                                    e.target.value
+                                                )
+                                            }
                                         />
-                                        <span className="label-text">Primary</span>
+                                        <span className="label-text">
+                                            Primary
+                                        </span>
                                     </label>
                                     <label className="label cursor-pointer gap-2">
                                         <input
@@ -1518,10 +1877,20 @@ export default function ShiftsPage() {
                                             name="roleInShift"
                                             className="radio radio-warning"
                                             value="ON_CALL"
-                                            checked={assignmentFormData.roleInShift === "ON_CALL"}
-                                            onChange={(e) => handleAssignmentFormChange("roleInShift", e.target.value)}
+                                            checked={
+                                                assignmentFormData.roleInShift ===
+                                                "ON_CALL"
+                                            }
+                                            onChange={(e) =>
+                                                handleAssignmentFormChange(
+                                                    "roleInShift",
+                                                    e.target.value
+                                                )
+                                            }
                                         />
-                                        <span className="label-text">On Call</span>
+                                        <span className="label-text">
+                                            On Call
+                                        </span>
                                     </label>
                                 </div>
                             </div>
@@ -1529,22 +1898,36 @@ export default function ShiftsPage() {
                             {/* Notes */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-semibold">Notes</span>
+                                    <span className="label-text font-semibold">
+                                        Notes
+                                    </span>
                                 </label>
                                 <textarea
                                     className="textarea textarea-bordered h-20"
                                     placeholder="Additional notes..."
                                     value={assignmentFormData.notes}
-                                    onChange={(e) => handleAssignmentFormChange("notes", e.target.value)}
+                                    onChange={(e) =>
+                                        handleAssignmentFormChange(
+                                            "notes",
+                                            e.target.value
+                                        )
+                                    }
                                 />
                             </div>
 
                             {/* Actions */}
                             <div className="modal-action mt-8 gap-3">
-                                <button type="button" className="btn btn-ghost" onClick={handleCloseAssignmentModal}>
+                                <button
+                                    type="button"
+                                    className="btn btn-ghost"
+                                    onClick={handleCloseAssignmentModal}
+                                >
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn btn-primary px-8">
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary px-8"
+                                >
                                     Assign Doctor
                                 </button>
                             </div>
@@ -1559,14 +1942,17 @@ export default function ShiftsPage() {
                     <div className="modal-box max-w-3xl max-h-[90vh] overflow-y-auto">
                         <h3 className="font-bold text-xl mb-2">Slot Details</h3>
                         <p className="text-gray-600 mb-6">
-                            {selectedShiftForSlots.name} ({formatTime(selectedShiftForSlots.startTime)} -{" "}
+                            {selectedShiftForSlots.name} (
+                            {formatTime(selectedShiftForSlots.startTime)} -{" "}
                             {formatTime(selectedShiftForSlots.endTime)})
                         </p>
 
                         <div className="bg-base-200 p-4 rounded-lg mb-6">
                             <div className="grid grid-cols-3 gap-4 text-center">
                                 <div>
-                                    <p className="text-sm text-gray-500">Total Slots</p>
+                                    <p className="text-sm text-gray-500">
+                                        Total Slots
+                                    </p>
                                     <p className="text-2xl font-bold text-primary">
                                         {calculateTotalSlots(
                                             selectedShiftForSlots.startTime,
@@ -1576,12 +1962,20 @@ export default function ShiftsPage() {
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-500">Slot Duration</p>
-                                    <p className="text-2xl font-bold">{selectedShiftForSlots.slotMinutes} min</p>
+                                    <p className="text-sm text-gray-500">
+                                        Slot Duration
+                                    </p>
+                                    <p className="text-2xl font-bold">
+                                        {selectedShiftForSlots.slotMinutes} min
+                                    </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-500">Capacity/Slot</p>
-                                    <p className="text-2xl font-bold">{selectedShiftForSlots.capacityPerSlot}</p>
+                                    <p className="text-sm text-gray-500">
+                                        Capacity/Slot
+                                    </p>
+                                    <p className="text-2xl font-bold">
+                                        {selectedShiftForSlots.capacityPerSlot}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -1589,20 +1983,27 @@ export default function ShiftsPage() {
                         <div className="divider">Slot Schedule</div>
 
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {generateSlots(selectedShiftForSlots).map((slot) => (
-                                <div
-                                    key={slot.slotNumber}
-                                    className="bg-base-100 border border-base-300 rounded-lg p-3 hover:shadow-md transition-shadow"
-                                >
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="badge badge-primary badge-sm">Slot #{slot.slotNumber}</span>
-                                        <span className="text-xs text-gray-500">Cap: {slot.capacity}</span>
+                            {generateSlots(selectedShiftForSlots).map(
+                                (slot) => (
+                                    <div
+                                        key={slot.slotNumber}
+                                        className="bg-base-100 border border-base-300 rounded-lg p-3 hover:shadow-md transition-shadow"
+                                    >
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="badge badge-primary badge-sm">
+                                                Slot #{slot.slotNumber}
+                                            </span>
+                                            <span className="text-xs text-gray-500">
+                                                Cap: {slot.capacity}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm font-semibold">
+                                            {formatTime(slot.startTime)} -{" "}
+                                            {formatTime(slot.endTime)}
+                                        </p>
                                     </div>
-                                    <p className="text-sm font-semibold">
-                                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                                    </p>
-                                </div>
-                            ))}
+                                )
+                            )}
                         </div>
 
                         <div className="modal-action mt-8">
@@ -1623,7 +2024,8 @@ export default function ShiftsPage() {
                 <div className="modal modal-open">
                     <div className="modal-box max-w-lg">
                         <h3 className="font-bold text-xl mb-6">
-                            Filter {activeTab === "shifts" ? "Shifts" : "Assignments"}
+                            Filter{" "}
+                            {activeTab === "shifts" ? "Shifts" : "Assignments"}
                         </h3>
 
                         <div className="space-y-5">
@@ -1631,16 +2033,25 @@ export default function ShiftsPage() {
                             {activeTab === "assignments" && (
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text font-semibold">Status</span>
+                                        <span className="label-text font-semibold">
+                                            Status
+                                        </span>
                                     </label>
                                     <select
                                         className="select select-bordered w-full"
                                         value={filters.status}
-                                        onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                status: e.target.value,
+                                            })
+                                        }
                                     >
                                         <option value="ALL">All Status</option>
                                         <option value="ACTIVE">Active</option>
-                                        <option value="CANCELLED">Cancelled</option>
+                                        <option value="CANCELLED">
+                                            Cancelled
+                                        </option>
                                     </select>
                                 </div>
                             )}
@@ -1649,16 +2060,25 @@ export default function ShiftsPage() {
                             {activeTab === "shifts" && (
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text font-semibold">Type</span>
+                                        <span className="label-text font-semibold">
+                                            Type
+                                        </span>
                                     </label>
                                     <select
                                         className="select select-bordered w-full"
                                         value={filters.kind}
-                                        onChange={(e) => setFilters({ ...filters, kind: e.target.value })}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                kind: e.target.value,
+                                            })
+                                        }
                                     >
                                         <option value="ALL">All Types</option>
                                         <option value="CLINIC">Clinic</option>
-                                        <option value="ER">Emergency (ER)</option>
+                                        <option value="ER">
+                                            Emergency (ER)
+                                        </option>
                                     </select>
                                 </div>
                             )}
@@ -1667,16 +2087,28 @@ export default function ShiftsPage() {
                             {activeTab === "shifts" && (
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text font-semibold">Department</span>
+                                        <span className="label-text font-semibold">
+                                            Department
+                                        </span>
                                     </label>
                                     <select
                                         className="select select-bordered w-full"
                                         value={filters.department}
-                                        onChange={(e) => setFilters({ ...filters, department: e.target.value })}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                department: e.target.value,
+                                            })
+                                        }
                                     >
-                                        <option value="ALL">All Departments</option>
+                                        <option value="ALL">
+                                            All Departments
+                                        </option>
                                         {departments.map((dept) => (
-                                            <option key={dept.id} value={dept.id}>
+                                            <option
+                                                key={dept.id}
+                                                value={dept.id}
+                                            >
                                                 {dept.name}
                                             </option>
                                         ))}
@@ -1686,13 +2118,25 @@ export default function ShiftsPage() {
                         </div>
 
                         <div className="modal-action mt-6">
-                            <button type="button" className="btn btn-ghost" onClick={handleResetFilters}>
+                            <button
+                                type="button"
+                                className="btn btn-ghost"
+                                onClick={handleResetFilters}
+                            >
                                 Reset
                             </button>
-                            <button type="button" className="btn btn-ghost" onClick={handleCloseFilterModal}>
+                            <button
+                                type="button"
+                                className="btn btn-ghost"
+                                onClick={handleCloseFilterModal}
+                            >
                                 Cancel
                             </button>
-                            <button type="button" className="btn btn-primary" onClick={handleApplyFilters}>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={handleApplyFilters}
+                            >
                                 Apply Filters
                             </button>
                         </div>

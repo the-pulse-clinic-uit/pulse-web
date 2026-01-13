@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { Camera } from "lucide-react";
 import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
 
 interface AvatarUploadSectionProps {
     currentAvatar: string;
@@ -39,7 +40,7 @@ const AvatarUploadSection = ({
         setUploading(true);
 
         try {
-            const token = localStorage.getItem("token");
+            const token = Cookies.get("token");
             if (!token) throw new Error("No authentication token found");
 
             const formData = new FormData();
@@ -57,12 +58,12 @@ const AvatarUploadSection = ({
             const updatedUser = await response.json();
 
             // Update the doctor data in localStorage with new avatar
-            const userStr = localStorage.getItem("user");
+            const userStr = Cookies.get("user");
             if (userStr) {
                 const doctorData = JSON.parse(userStr);
                 if (doctorData.staffDto?.userDto) {
                     doctorData.staffDto.userDto.avatarUrl = updatedUser.avatarUrl;
-                    localStorage.setItem("user", JSON.stringify(doctorData));
+                    Cookies.set("user", JSON.stringify(doctorData));
                 }
             }
 
@@ -73,7 +74,7 @@ const AvatarUploadSection = ({
         } catch (error) {
             toast.error("Failed to upload avatar. Please try again.");
             // Revert to previous avatar
-            const userStr = localStorage.getItem("user");
+            const userStr = Cookies.get("user");
             if (userStr) {
                 const doctorData = JSON.parse(userStr);
                 setAvatar(

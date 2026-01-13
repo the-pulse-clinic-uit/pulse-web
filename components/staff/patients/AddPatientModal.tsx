@@ -159,7 +159,6 @@ export default function AddPatientModal({
                 allergies: formData.allergies,
             });
 
-            // Show success screen with PDF options
             setShowSuccess(true);
         } catch (error) {
             console.error("Error creating patient:", error);
@@ -190,7 +189,6 @@ export default function AddPatientModal({
         });
         onClose();
 
-        // Refresh patient list if we just created a patient
         if (wasSuccessful) {
             onSuccess();
         }
@@ -225,7 +223,6 @@ export default function AddPatientModal({
         <div className={`modal ${isOpen ? "modal-open" : ""}`}>
             <div className="modal-box max-w-2xl">
                 {showSuccess && createdPatient ? (
-                    // Success Screen with PDF Options
                     <div className="text-center">
                         <div className="flex justify-center mb-4">
                             <div className="rounded-full bg-green-100 p-3">
@@ -316,7 +313,6 @@ export default function AddPatientModal({
                         </button>
                     </div>
                 ) : (
-                    // Form to Add Patient
                     <>
                         <h3 className="font-bold text-2xl mb-6">
                             Add New Patient
@@ -328,7 +324,9 @@ export default function AddPatientModal({
                                     <label className="label">
                                         <span className="label-text">
                                             Patient Name{" "}
-                                            <span className="text-error">*</span>
+                                            <span className="text-error">
+                                                *
+                                            </span>
                                         </span>
                                     </label>
                                     <input
@@ -345,7 +343,9 @@ export default function AddPatientModal({
                                     <label className="label">
                                         <span className="label-text">
                                             Birth Date{" "}
-                                            <span className="text-error">*</span>
+                                            <span className="text-error">
+                                                *
+                                            </span>
                                         </span>
                                     </label>
                                     <input
@@ -362,7 +362,10 @@ export default function AddPatientModal({
                                 <div className="form-control">
                                     <label className="label">
                                         <span className="label-text">
-                                            Gender <span className="text-error">*</span>
+                                            Gender{" "}
+                                            <span className="text-error">
+                                                *
+                                            </span>
                                         </span>
                                     </label>
                                     <select
@@ -382,7 +385,9 @@ export default function AddPatientModal({
                                     <label className="label">
                                         <span className="label-text">
                                             Phone Number{" "}
-                                            <span className="text-error">*</span>
+                                            <span className="text-error">
+                                                *
+                                            </span>
                                         </span>
                                     </label>
                                     <input
@@ -390,7 +395,7 @@ export default function AddPatientModal({
                                         name="phoneNumber"
                                         value={formData.phoneNumber}
                                         onChange={handleChange}
-                                        placeholder="0979010101"
+                                        placeholder="0912345678"
                                         className="input input-bordered w-full"
                                     />
                                 </div>
@@ -401,7 +406,9 @@ export default function AddPatientModal({
                                     <label className="label">
                                         <span className="label-text">
                                             Citizen ID{" "}
-                                            <span className="text-error">*</span>
+                                            <span className="text-error">
+                                                *
+                                            </span>
                                         </span>
                                     </label>
                                     <input
@@ -417,7 +424,10 @@ export default function AddPatientModal({
                                 <div className="form-control">
                                     <label className="label">
                                         <span className="label-text">
-                                            Email <span className="text-error">*</span>
+                                            Email{" "}
+                                            <span className="text-error">
+                                                *
+                                            </span>
                                         </span>
                                     </label>
                                     <input
@@ -434,7 +444,9 @@ export default function AddPatientModal({
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text">Blood Type</span>
+                                        <span className="label-text">
+                                            Blood Type
+                                        </span>
                                     </label>
                                     <select
                                         name="bloodType"
@@ -456,7 +468,9 @@ export default function AddPatientModal({
 
                                 <div className="form-control">
                                     <label className="label">
-                                        <span className="label-text">Allergies</span>
+                                        <span className="label-text">
+                                            Allergies
+                                        </span>
                                     </label>
                                     <input
                                         type="text"

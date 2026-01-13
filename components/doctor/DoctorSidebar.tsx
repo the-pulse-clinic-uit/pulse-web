@@ -1,5 +1,6 @@
 "use client";
 import { LogOut } from "lucide-react";
+import Cookies from "js-cookie";
 import SidebarItem from "../staff/SidebarItem";
 import { MENU_ITEMS } from "@/constants/doctor-menu-items";
 import logo from "../../public/images/logo.png";
@@ -7,8 +8,8 @@ import Image from "next/image";
 
 const DoctorSidebar = () => {
     const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        Cookies.remove("token");
+        Cookies.remove("user");
         window.location.href = "http://doctor.localhost:3000/login";
     };
 
