@@ -86,24 +86,7 @@ const ProfileForm = () => {
                     throw new Error("No authentication token found");
                 }
 
-                // Try to get user data from cookies first (set during login)
-                const userStr = Cookies.get("user");
-                if (userStr) {
-                    try {
-                        const userData = JSON.parse(userStr);
-                        // If we have user data in cookies, use it directly
-                        if (userData && userData.id) {
-                            loadUserDataFromObject(userData);
-                            setLoading(false);
-                            return;
-                        }
-                    } catch (e) {
-                        console.error("Error parsing user cookie:", e);
-                    }
-                }
-
-                // Fallback: try to fetch from API
-                const response = await fetch("/api/patients/me", {
+                const response = await fetch("/api/users/me", {
                     method: "GET",
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -115,7 +98,23 @@ const ProfileForm = () => {
                     throw new Error("Failed to fetch user data");
                 }
 
-                const patientData = await response.json();
+                const userData = await response.json();
+
+                const patientData = {
+                    id: userData.patientDto?.id || userData.id,
+                    bloodType: userData.patientDto?.bloodType,
+                    healthInsuranceId: userData.patientDto?.healthInsuranceId,
+                    allergies: userData.patientDto?.allergies,
+                    userDto: {
+                        fullName: userData.fullName,
+                        email: userData.email,
+                        phone: userData.phone,
+                        citizenId: userData.citizenId,
+                        birthDate: userData.birthDate,
+                        gender: userData.gender,
+                        address: userData.address,
+                    },
+                };
 
                 Cookies.set("user", JSON.stringify(patientData), {
                     expires: 7,
@@ -124,7 +123,7 @@ const ProfileForm = () => {
                 loadUserDataFromObject(patientData);
             } catch (error) {
                 console.error("Error fetching user data:", error);
-                // If fetch fails, try to load from cookies
+                // If fetch fails, try to load from cookies as fallback
                 const userStr = Cookies.get("user");
                 if (userStr) {
                     try {
@@ -158,7 +157,9 @@ const ProfileForm = () => {
 
             // Validate patient ID is present
             if (!patientId) {
-                toast.error("Patient information not loaded. Please refresh the page.");
+                toast.error(
+                    "Patient information not loaded. Please refresh the page."
+                );
                 return;
             }
 
