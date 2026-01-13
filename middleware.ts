@@ -39,8 +39,9 @@ export async function middleware(req: NextRequest) {
     const session = await getToken({ req, secret: SECRET });
     const userRole = session?.role as string;
 
-    const protocol = req.headers.get("x-forwarded-proto") ||
-                    (process.env.NODE_ENV === "production" ? "https" : "http");
+    const protocol =
+        req.headers.get("x-forwarded-proto") ||
+        (process.env.NODE_ENV === "production" ? "https" : "http");
     const isLocalhost = ROOT_DOMAIN.includes("localhost");
 
     const buildUrl = (subdomain: string, path: string = "") => {
@@ -56,8 +57,6 @@ export async function middleware(req: NextRequest) {
             : `${subdomain}.${rootDomainWithoutPort}`;
         return `${protocol}://${domain}${path}`;
     };
-
-    const hmsUrl = buildUrl("hms");
 
     if (currentHost === "hms") {
         if (userRole === "doctor") {
@@ -94,10 +93,11 @@ export async function middleware(req: NextRequest) {
         );
     }
 
-    // If no subdomain is detected and not on root, redirect to HMS
-    // But only for the main page to avoid redirect loops
-    if (!currentHost && url.pathname === "/") {
-        return NextResponse.rewrite(new URL("/hms", req.url));
+    // If no subdomain is detected, this is the root domain - serve patient portal
+    // The patient portal is in the (site) folder, which Next.js serves at the root
+    // So we just let it pass through naturally
+    if (!currentHost) {
+        return NextResponse.next();
     }
 
     return NextResponse.next();

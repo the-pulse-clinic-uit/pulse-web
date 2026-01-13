@@ -1,9 +1,34 @@
-import Link from "next/link";
+"use client";
+
 import Image from "next/image";
 import logo from "../../public/images/logo.png";
 import { Users, Stethoscope, ArrowRight } from "lucide-react";
+import { useMemo } from "react";
+
+function getSubdomainUrl(subdomain: string): string {
+    if (typeof window === "undefined") return "/login";
+
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    const port = window.location.port;
+
+    const parts = hostname.split(".");
+    let baseDomain = hostname;
+
+    if (hostname.includes("vercel.app")) {
+        baseDomain = parts.slice(-3).join(".");
+    } else if (hostname.includes("localhost")) {
+        baseDomain = `localhost${port ? `:${port}` : ""}`;
+    } else if (parts.length > 2) {
+        baseDomain = parts.slice(-2).join(".");
+    }
+
+    return `${protocol}//${subdomain}.${baseDomain}/login`;
+}
 
 export default function HMSHomePage() {
+    const staffUrl = useMemo(() => getSubdomainUrl("staff"), []);
+    const doctorUrl = useMemo(() => getSubdomainUrl("doctor"), []);
     return (
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
             <div className="max-w-5xl w-full mx-auto px-6">
@@ -27,7 +52,7 @@ export default function HMSHomePage() {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                    <Link href="http://staff.localhost:3000/login">
+                    <a href={staffUrl}>
                         <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer transform hover:-translate-y-1">
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
@@ -64,9 +89,9 @@ export default function HMSHomePage() {
                                 </div>
                             </div>
                         </div>
-                    </Link>
+                    </a>
 
-                    <Link href="http://doctor.localhost:3000/login">
+                    <a href={doctorUrl}>
                         <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer transform hover:-translate-y-1">
                             <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-green-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
@@ -103,7 +128,7 @@ export default function HMSHomePage() {
                                 </div>
                             </div>
                         </div>
-                    </Link>
+                    </a>
                 </div>
             </div>
         </div>
