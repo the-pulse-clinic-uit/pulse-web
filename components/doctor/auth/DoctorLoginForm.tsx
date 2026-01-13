@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Stethoscope } from "lucide-react";
+import Cookies from "js-cookie";
 
 const DoctorLoginForm = () => {
     const router = useRouter();
@@ -57,10 +58,10 @@ const DoctorLoginForm = () => {
             }
 
             if (data.token) {
-                localStorage.setItem("token", data.token);
+                Cookies.set("token", data.token, { expires: 7 });
 
                 if (data.user) {
-                    localStorage.setItem("user", JSON.stringify(data.user));
+                    Cookies.set("user", JSON.stringify(data.user), { expires: 7 });
                 }
 
                 // Use router.push for proper navigation

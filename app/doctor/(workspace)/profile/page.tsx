@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
 import DoctorProfileHeader from "@/components/doctor/profile/DoctorProfileHeader";
 import DoctorPersonalInformationCard from "@/components/doctor/profile/DoctorPersonalInformationCard";
 import DoctorProfessionalInformationCard from "@/components/doctor/profile/DoctorProfessionalInformationCard";
@@ -68,7 +69,7 @@ export default function DoctorProfilePage() {
 
     useEffect(() => {
         const fetchDoctorData = async () => {
-            const token = localStorage.getItem("token");
+            const token = Cookies.get("token");
             if (!token) {
                 router.push("/login");
                 return;
@@ -115,8 +116,8 @@ export default function DoctorProfilePage() {
                         },
                     });
                 } else {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
+                    Cookies.remove("token");
+                    Cookies.remove("user");
                     router.push("/login");
                 }
             } catch (error) {
@@ -138,7 +139,7 @@ export default function DoctorProfilePage() {
         gender: string;
         citizenId: string;
     }) => {
-        const token = localStorage.getItem("token");
+        const token = Cookies.get("token");
         if (!token) {
             router.push("/login");
             return;
