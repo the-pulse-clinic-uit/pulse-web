@@ -10,6 +10,7 @@ import {
     navigateToSubdomain,
     getCookieDomain,
 } from "@/utils/subdomainUtils";
+import { apiRequest } from "@/lib/api";
 
 const StaffLoginForm = () => {
     const router = useRouter();
@@ -43,7 +44,7 @@ const StaffLoginForm = () => {
                 return;
             }
 
-            const response = await fetch("/api/auth/login", {
+            const response = await apiRequest("auth/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

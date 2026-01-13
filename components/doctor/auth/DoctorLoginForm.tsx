@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Stethoscope } from "lucide-react";
 import Cookies from "js-cookie";
 import { navigateToSubdomain, getCookieDomain } from "@/utils/subdomainUtils";
+import { apiRequest } from "@/lib/api";
 
 const DoctorLoginForm = () => {
     const router = useRouter();
@@ -39,7 +40,7 @@ const DoctorLoginForm = () => {
                 return;
             }
 
-            const response = await fetch("/api/auth/login", {
+            const response = await apiRequest("auth/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
