@@ -13,14 +13,16 @@ function getSubdomainUrl(subdomain: string): string {
     const port = window.location.port;
 
     const parts = hostname.split(".");
-    let baseDomain = hostname;
+    let baseDomain = "";
 
     if (hostname.includes("vercel.app")) {
         baseDomain = parts.slice(-3).join(".");
     } else if (hostname.includes("localhost")) {
         baseDomain = `localhost${port ? `:${port}` : ""}`;
-    } else if (parts.length > 2) {
-        baseDomain = parts.slice(-2).join(".");
+    } else if (parts.length >= 3) {
+        baseDomain = parts.slice(1).join(".");
+    } else {
+        baseDomain = hostname;
     }
 
     return `${protocol}//${subdomain}.${baseDomain}/login`;
