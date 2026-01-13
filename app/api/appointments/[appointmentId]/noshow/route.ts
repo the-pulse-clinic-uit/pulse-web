@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { appointmentId: string } }
+    context: { params: Promise<{ appointmentId: string }> }
 ) {
     try {
         const token = request.headers.get("authorization");
@@ -14,7 +14,7 @@ export async function PUT(
             );
         }
 
-        const { appointmentId } = params;
+        const { appointmentId } = await context.params;
         const backendUrl = process.env.BACKEND_API_URL || "localhost:8080";
 
         const response = await fetch(

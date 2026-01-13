@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         const authHeader = request.headers.get("Authorization");
@@ -14,7 +14,7 @@ export async function PUT(
             );
         }
 
-        const { id } = params;
+        const { id } = await context.params;
         const { searchParams } = new URL(request.url);
         const newRoomId = searchParams.get("newRoomId");
 

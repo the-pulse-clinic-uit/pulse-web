@@ -4,7 +4,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { patientId: string } }
+  context: { params: Promise<{ patientId: string }> }
 ) {
   try {
     const token = req.headers.get("authorization");
@@ -12,6 +12,7 @@ export async function GET(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    const params = await context.params;
     const response = await fetch(
       `${API_BASE_URL}/encounters/patient/${params.patientId}`,
       {

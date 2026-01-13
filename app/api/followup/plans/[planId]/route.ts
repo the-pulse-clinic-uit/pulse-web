@@ -4,7 +4,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { planId: string } }
+  context: { params: Promise<{ planId: string }> }
 ) {
   try {
     const token = req.headers.get("authorization");
@@ -12,6 +12,7 @@ export async function GET(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    const params = await context.params;
     const response = await fetch(
       `${API_BASE_URL}/followup/plans/${params.planId}`,
       {
@@ -44,7 +45,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { planId: string } }
+  context: { params: Promise<{ planId: string }> }
 ) {
   try {
     const token = req.headers.get("authorization");
@@ -53,6 +54,7 @@ export async function PUT(
     }
 
     const body = await req.json();
+    const params = await context.params;
 
     const response = await fetch(
       `${API_BASE_URL}/followup/plans/${params.planId}`,
@@ -86,7 +88,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { planId: string } }
+  context: { params: Promise<{ planId: string }> }
 ) {
   try {
     const token = req.headers.get("authorization");
@@ -94,6 +96,7 @@ export async function DELETE(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    const params = await context.params;
     const response = await fetch(
       `${API_BASE_URL}/followup/plans/${params.planId}`,
       {
