@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import EncounterCard from "./EncounterCard";
+import Cookies from "js-cookie";
 
 interface EncounterDto {
     id: string;
@@ -63,8 +64,8 @@ export default function EncounterList() {
 
     useEffect(() => {
         const fetchEncounters = async () => {
-            const token = localStorage.getItem("token");
-            const userStr = localStorage.getItem("user");
+            const token = Cookies.get("token");
+            const userStr = Cookies.get("user");
 
             if (!token) {
                 router.push("/login");
@@ -95,7 +96,7 @@ export default function EncounterList() {
                     if (meResponse.ok) {
                         const meData = await meResponse.json();
                         doctorId = meData.id;
-                        localStorage.setItem("user", JSON.stringify(meData));
+                        Cookies.set("user", JSON.stringify(meData));
                     }
                 }
 
@@ -122,8 +123,8 @@ export default function EncounterList() {
                     );
                     setEncounters(sortedData);
                 } else if (response.status === 401 || response.status === 403) {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
+                    Cookies.remove("token");
+                    Cookies.remove("user");
                     router.push("/login");
                 } else {
                     toast.error("Failed to load encounters");

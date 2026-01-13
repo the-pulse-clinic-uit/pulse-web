@@ -13,6 +13,7 @@ import {
     Users,
     FileBarChart,
     ChartBar,
+    Building2,
 } from "lucide-react";
 
 export const MENU_ITEMS = [
@@ -33,5 +34,6 @@ export const MENU_ITEMS = [
     },
     { label: "General Reports", href: "/general-reports", icon: ChartBar },
     { label: "Manage Encounter", href: "/encounters", icon: Stethoscope },
+    { label: "Manage Rooms", href: "/rooms", icon: Building2 },
     { label: "Staff Profile", href: "/staff", icon: Users },
 ];

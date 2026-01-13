@@ -100,6 +100,7 @@ export default function AdmissionPage() {
         useState<AdmissionPatient | null>(null);
     const [admissions, setAdmissions] = useState<AdmissionPatient[]>([]);
     const [loading, setLoading] = useState(false);
+    const [user, setUser] = useState<UserData | null>(null);
 
     const calculateAge = (birthDate: string): number => {
         const birth = new Date(birthDate);
@@ -165,6 +166,11 @@ export default function AdmissionPage() {
 
         setLoading(true);
         try {
+            const userRes = await fetch("/api/users/me", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (userRes.ok) setUser(await userRes.json());
+
             const response = await fetch("/api/admissions", {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -225,9 +231,9 @@ export default function AdmissionPage() {
                 return (
                     <span
                         className={`
-              inline-flex items-center justify-center px-3 py-1.5 rounded-full 
-              text-xs font-medium whitespace-nowrap 
-              ${statusStyles[row.status] || "bg-gray-100"}
+            inline-flex items-center justify-center px-3 py-1.5 rounded-full 
+            text-xs font-medium whitespace-nowrap 
+            ${statusStyles[row.status] || "bg-gray-100"}
             `}
                     >
                         {row.status}
@@ -259,7 +265,11 @@ export default function AdmissionPage() {
 
     return (
         <div className="flex flex-col gap-6 min-h-screen px-6 py-8 bg-white">
-            <Header tabName="Manage Admission" userName="Nguyen Huu Duy" />
+            <Header
+                tabName="Manage Admission"
+                userName={user?.fullName}
+                avatarUrl={user?.avatarUrl}
+            />
             <Toolbar
                 buttonName="Admission"
                 onSearch={() => {}}

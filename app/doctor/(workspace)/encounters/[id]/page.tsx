@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, User, Calendar, Clock, Stethoscope, CalendarClock } from "lucide-react";
 import { toast } from "react-hot-toast";
 import CreatePlanModal from "@/components/doctor/follow-up-plan/CreatePlanModal";
+import Cookies from "js-cookie";
 
 interface EncounterDto {
     id: string;
@@ -70,7 +71,7 @@ export default function EncounterDetailPage() {
 
     useEffect(() => {
         const fetchEncounter = async () => {
-            const token = localStorage.getItem("token");
+            const token = Cookies.get("token");
             if (!token) {
                 router.push("/login");
                 return;
@@ -90,8 +91,8 @@ export default function EncounterDetailPage() {
                     setDiagnosis(data.diagnosis || "");
                     setNotes(data.notes || "");
                 } else if (response.status === 401 || response.status === 403) {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
+                    Cookies.remove("token");
+                    Cookies.remove("user");
                     router.push("/login");
                 } else {
                     toast.error("Failed to load encounter details");
@@ -115,7 +116,7 @@ export default function EncounterDetailPage() {
             return;
         }
 
-        const token = localStorage.getItem("token");
+        const token = Cookies.get("token");
         if (!token) return;
 
         setSaving(true);
@@ -148,7 +149,7 @@ export default function EncounterDetailPage() {
     };
 
     const handleSaveNotes = async () => {
-        const token = localStorage.getItem("token");
+        const token = Cookies.get("token");
         if (!token) return;
 
         setSaving(true);
@@ -186,7 +187,7 @@ export default function EncounterDetailPage() {
             return;
         }
 
-        const token = localStorage.getItem("token");
+        const token = Cookies.get("token");
         if (!token) return;
 
         setSaving(true);

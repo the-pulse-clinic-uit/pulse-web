@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Plus, Trash2, Pill, Download, Printer } from "lucide-react";
 import { toast } from "react-hot-toast";
 import jsPDF from "jspdf";
+import Cookies from "js-cookie";
 
 interface Drug {
     id: string;
@@ -141,7 +142,7 @@ export default function EncounterModal({
         if (!drugId || !encounter.patientDto.id) return;
 
         try {
-            const token = localStorage.getItem("token");
+            const token = Cookies.get("token");
             if (!token) return;
 
             const response = await fetch(`/api/prescriptions/check-allergies`, {
@@ -181,7 +182,7 @@ export default function EncounterModal({
 
     useEffect(() => {
         const fetchDrugs = async () => {
-            const token = localStorage.getItem("token");
+            const token = Cookies.get("token");
             if (!token) {
                 console.log("No token found");
                 return;
@@ -271,7 +272,7 @@ export default function EncounterModal({
             return;
         }
 
-        const token = localStorage.getItem("token");
+        const token = Cookies.get("token");
         if (!token) {
             toast.error("Authentication required");
             return;
@@ -328,7 +329,7 @@ export default function EncounterModal({
     };
 
     const handleSavePrescriptions = async () => {
-        const token = localStorage.getItem("token");
+        const token = Cookies.get("token");
         if (!token) {
             toast.error("Authentication required");
             return;
@@ -673,7 +674,7 @@ export default function EncounterModal({
     };
 
     const handleCompleteEncounter = async () => {
-        const token = localStorage.getItem("token");
+        const token = Cookies.get("token");
         if (!token) {
             toast.error("Authentication required");
             return;
