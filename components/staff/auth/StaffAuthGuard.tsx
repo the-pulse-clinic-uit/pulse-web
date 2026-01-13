@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Cookies from "js-cookie";
+import { navigateToSubdomain } from "@/utils/subdomainUtils";
 
 interface StaffAuthGuardProps {
     children: React.ReactNode;
