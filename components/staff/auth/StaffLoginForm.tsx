@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Users } from "lucide-react";
 import Cookies from "js-cookie";
-import { buildSubdomainUrl, navigateToSubdomain } from "@/utils/subdomainUtils";
+import {
+    buildSubdomainUrl,
+    navigateToSubdomain,
+    getCookieDomain,
+} from "@/utils/subdomainUtils";
 
 const StaffLoginForm = () => {
     const router = useRouter();
@@ -58,10 +62,18 @@ const StaffLoginForm = () => {
             }
 
             if (data.token) {
-                Cookies.set("token", data.token, {
+                const cookieDomain = getCookieDomain();
+                const cookieOptions: Cookies.CookieAttributes = {
                     expires: 7,
                     secure: window.location.protocol === "https:",
-                });
+                    sameSite: "lax",
+                };
+
+                if (cookieDomain) {
+                    cookieOptions.domain = cookieDomain;
+                }
+
+                Cookies.set("token", data.token, cookieOptions);
 
                 if (data.user) {
                     localStorage.setItem("user", JSON.stringify(data.user));

@@ -36,7 +36,10 @@ export function getBaseDomain(): string {
  * @param path - Optional path to append (e.g., "/dashboard", "/login")
  * @returns Full URL (e.g., "https://staff.pulse-clinic.xyz/dashboard")
  */
-export function buildSubdomainUrl(subdomain: string, path: string = ""): string {
+export function buildSubdomainUrl(
+    subdomain: string,
+    path: string = ""
+): string {
     if (typeof window === "undefined") return path;
 
     const protocol = window.location.protocol;
@@ -50,7 +53,10 @@ export function buildSubdomainUrl(subdomain: string, path: string = ""): string 
  * @param subdomain - The subdomain to navigate to (e.g., "staff", "doctor", "hms")
  * @param path - Optional path to append (e.g., "/dashboard", "/login")
  */
-export function navigateToSubdomain(subdomain: string, path: string = ""): void {
+export function navigateToSubdomain(
+    subdomain: string,
+    path: string = ""
+): void {
     const url = buildSubdomainUrl(subdomain, path);
     window.location.href = url;
 }
@@ -84,4 +90,23 @@ export function getCurrentSubdomain(): string {
     }
 
     return "";
+}
+
+export function getCookieDomain(): string {
+    if (typeof window === "undefined") return "";
+
+    const hostname = window.location.hostname;
+
+    if (hostname.includes("localhost")) {
+        return "";
+    } else if (hostname.includes("vercel.app")) {
+        const parts = hostname.split(".");
+        return `.${parts.slice(-3).join(".")}`;
+    } else {
+        const parts = hostname.split(".");
+        if (parts.length >= 2) {
+            return `.${parts.slice(-2).join(".")}`;
+        }
+        return hostname;
+    }
 }

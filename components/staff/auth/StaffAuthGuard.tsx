@@ -20,6 +20,11 @@ const StaffAuthGuard = ({ children }: StaffAuthGuardProps) => {
             const token = Cookies.get("token");
             const userStr = localStorage.getItem("user");
 
+            if (pathname === "/login") {
+                setIsLoading(false);
+                return;
+            }
+
             if (!token) {
                 navigateToSubdomain("staff", "/login");
                 return;

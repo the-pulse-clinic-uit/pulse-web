@@ -20,12 +20,16 @@ const DoctorAuthGuard = ({ children }: DoctorAuthGuardProps) => {
             const token = Cookies.get("token");
             const userStr = Cookies.get("user");
 
+            if (pathname === "/login") {
+                setIsLoading(false);
+                return;
+            }
+
             if (!token) {
                 router.push("/login");
                 return;
             }
 
-            // Verify role if user data exists
             if (userStr) {
                 try {
                     const user = JSON.parse(userStr);

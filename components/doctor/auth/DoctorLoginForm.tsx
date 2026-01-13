@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Stethoscope } from "lucide-react";
 import Cookies from "js-cookie";
-import { navigateToSubdomain } from "@/utils/subdomainUtils";
+import { navigateToSubdomain, getCookieDomain } from "@/utils/subdomainUtils";
 
 const DoctorLoginForm = () => {
     const router = useRouter();
@@ -59,13 +59,27 @@ const DoctorLoginForm = () => {
             }
 
             if (data.token) {
-                Cookies.set("token", data.token, { expires: 7 });
+                const cookieDomain = getCookieDomain();
+                const cookieOptions: Cookies.CookieAttributes = {
+                    expires: 7,
+                    secure: window.location.protocol === "https:",
+                    sameSite: "lax",
+                };
 
-                if (data.user) {
-                    Cookies.set("user", JSON.stringify(data.user), { expires: 7 });
+                if (cookieDomain) {
+                    cookieOptions.domain = cookieDomain;
                 }
 
-                // Use router.push for proper navigation
+                Cookies.set("token", data.token, cookieOptions);
+
+                if (data.user) {
+                    Cookies.set(
+                        "user",
+                        JSON.stringify(data.user),
+                        cookieOptions
+                    );
+                }
+
                 router.push("/dashboard");
             } else {
                 setError("No token received");
