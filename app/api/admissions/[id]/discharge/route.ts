@@ -13,7 +13,6 @@ export async function PUT(
                 { status: 401 }
             );
         }
-
         const { id } = await params;
 
         if (!id) {
@@ -43,7 +42,9 @@ export async function PUT(
             );
         }
 
-        const data = await response.json();
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : {};
+
         return NextResponse.json(data, { status: 200 });
     } catch (error) {
         console.error("Discharge patient error:", error);
