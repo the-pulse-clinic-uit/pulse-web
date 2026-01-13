@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
 import DashboardHeader from "@/components/staff/dashboard/DashboardHeader";
-import NotificationPanel from "@/components/staff/dashboard/NotificationPanel";
 import PatientStatisticChart from "@/components/staff/dashboard/PatientStatisticChart";
 import StatsGrid from "@/components/staff/dashboard/StatGrid";
 
@@ -70,11 +69,8 @@ export default function DashboardPage() {
 
             <StatsGrid />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[450px]">
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-3">
                     <PatientStatisticChart />
-                </div>
-                <div className="lg:col-span-1">
-                    <NotificationPanel />
                 </div>
             </div>
         </div>
