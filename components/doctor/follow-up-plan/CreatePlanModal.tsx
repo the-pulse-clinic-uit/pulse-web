@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X } from "lucide-react";
 import Cookies from "js-cookie";
-import { FollowUpPlanRequestDto, RRuleOption, buildRRule } from "@/types";
+import { FollowUpPlanRequestDto, FollowUpPlanDto, RRuleOption, buildRRule } from "@/types";
 
 interface Props {
   isOpen: boolean;
@@ -67,10 +67,9 @@ export default function CreatePlanModal({
           patientId: preSelectedPatientId,
           baseEncounterId: preSelectedEncounterId || ""
         }));
-      } else if (formData.patientId) {
-        fetchEncounters(formData.patientId);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, preSelectedPatientId, preSelectedEncounterId]);
 
   const fetchDoctorInfo = async () => {
@@ -109,23 +108,47 @@ export default function CreatePlanModal({
     }
   };
 
-  const fetchEncounters = async (pid: string) => {
+  const fetchEncounters = useCallback(async (pid: string) => {
     const token = Cookies.get("token");
     if (!token) return;
 
     try {
-      const res = await fetch(`/api/encounters/patient/${pid}`, {
+      // Fetch all encounters for the patient
+      const encountersRes = await fetch(`/api/encounters/patient/${pid}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setEncounters(data.filter((e: Encounter) => e.diagnosis));
+      if (!encountersRes.ok) return;
+      
+      const encountersData = await encountersRes.json();
+      const allEncounters = encountersData.filter((e: Encounter) => e.diagnosis);
+
+      // Fetch follow up plans to check which encounters already have plans
+      const plansRes = await fetch(`/api/followup/plans/doctor/${doctorId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (plansRes.ok) {
+        const plansData: FollowUpPlanDto[] = await plansRes.json();
+        // Get encounter IDs that already have follow up plans
+        const encounterIdsWithPlans = new Set(
+          plansData.map((plan) => plan.baseEncounterDto?.id).filter(Boolean)
+        );
+        
+        // Filter out encounters that already have follow up plans
+        const availableEncounters = allEncounters.filter(
+          (e: Encounter) => !encounterIdsWithPlans.has(e.id)
+        );
+        
+        setEncounters(availableEncounters);
+      } else {
+        // If can't fetch plans, show all encounters
+        setEncounters(allEncounters);
       }
     } catch (error) {
       console.error("Error fetching encounters:", error);
     }
-  };
+  }, [doctorId]);
 
   const handlePatientChange = (pid: string) => {
     setFormData({ ...formData, patientId: pid, baseEncounterId: "" });
