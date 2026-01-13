@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         const authHeader = request.headers.get("Authorization");
@@ -13,7 +13,7 @@ export async function PUT(
                 { status: 401 }
             );
         }
-        const { id } = params;
+        const { id } = await context.params;
 
         if (!id) {
             return NextResponse.json(
