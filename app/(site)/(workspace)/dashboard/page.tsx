@@ -53,6 +53,27 @@ interface Appointment {
     };
 }
 
+type PrescriptionStatus = "DRAFT" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+
+interface Prescription {
+    id: string;
+    totalPrice: number;
+    notes: string;
+    createdAt: string;
+    status: PrescriptionStatus;
+    encounterDto: {
+        id: string;
+        diagnosis: string;
+        doctorDto: {
+            staffDto: {
+                userDto: {
+                    fullName: string;
+                };
+            };
+        };
+    };
+}
+
 export default function DashboardPage() {
     const user = {
         name: "Patient",
@@ -64,6 +85,10 @@ export default function DashboardPage() {
         null
     );
     const [loadingAppointments, setLoadingAppointments] = useState(true);
+    const [activePrescriptions, setActivePrescriptions] = useState<
+        Prescription[]
+    >([]);
+    const [loadingPrescriptions, setLoadingPrescriptions] = useState(true);
 
     useEffect(() => {
         const fetchInvoices = async () => {
@@ -140,6 +165,36 @@ export default function DashboardPage() {
         fetchAppointments();
     }, []);
 
+    useEffect(() => {
+        const fetchPrescriptions = async () => {
+            const token = Cookies.get("token");
+            if (!token) {
+                setLoadingPrescriptions(false);
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/prescriptions/me", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (response.ok) {
+                    const data: Prescription[] = await response.json();
+                    const active = data.filter(
+                        (prescription) => prescription.status === "DRAFT"
+                    );
+                    setActivePrescriptions(active);
+                }
+            } catch (error) {
+                console.error("Error fetching prescriptions:", error);
+            } finally {
+                setLoadingPrescriptions(false);
+            }
+        };
+
+        fetchPrescriptions();
+    }, []);
+
     return (
         <div className="min-h-screen mt-24">
             <div className="max-w-7xl mx-auto px-4 py-4">
@@ -194,15 +249,60 @@ export default function DashboardPage() {
                         </div>
                     )}
 
-                    <SummaryCard
-                        icon={<Pill className="w-4 h-4 text-white" />}
-                        badge="Active"
-                        badgeColor="green"
-                        title="Active Prescriptions"
-                        main="3 medications"
-                        sub="Last updated: Dec 15, 2025"
-                        href="/prescriptions"
-                    />
+                    {loadingPrescriptions ? (
+                        <div className="bg-white rounded-2xl shadow-lg p-4 flex items-center justify-center">
+                            <span className="loading loading-spinner loading-md text-purple-600"></span>
+                        </div>
+                    ) : activePrescriptions.length > 0 ? (
+                        <div className="bg-white rounded-2xl shadow-lg p-4">
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl flex items-center justify-center">
+                                    <Pill className="w-4 h-4 text-white" />
+                                </div>
+                                <span className="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-600">
+                                    Active
+                                </span>
+                            </div>
+                            <h3 className="text-purple-900 mb-1 font-medium text-sm">
+                                Active Prescriptions
+                            </h3>
+                            <p className="text-gray-700 mb-0.5 text-sm">
+                                {activePrescriptions.length} prescription
+                                {activePrescriptions.length > 1 ? "s" : ""} to
+                                use
+                            </p>
+                            <p className="text-gray-600 text-xs mb-3">
+                                Last updated:{" "}
+                                {new Date(
+                                    activePrescriptions[0].createdAt
+                                ).toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                })}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-2xl shadow-lg p-4">
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl flex items-center justify-center">
+                                    <Pill className="w-4 h-4 text-white" />
+                                </div>
+                                <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">
+                                    None
+                                </span>
+                            </div>
+                            <h3 className="text-purple-900 mb-1 font-medium text-sm">
+                                Active Prescriptions
+                            </h3>
+                            <p className="text-gray-700 mb-0.5 text-sm">
+                                No active prescriptions
+                            </p>
+                            <p className="text-gray-600 text-xs mb-3">
+                                Visit a doctor to get prescriptions
+                            </p>
+                        </div>
+                    )}
 
                     {loadingInvoices ? (
                         <div className="bg-white rounded-2xl shadow-lg p-4 flex items-center justify-center">
