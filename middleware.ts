@@ -7,44 +7,72 @@ const SECRET = process.env.NEXTAUTH_SECRET;
 
 export async function middleware(req: NextRequest) {
     const url = req.nextUrl;
-    const hostname = req.headers.get("host");
+    const hostname = req.headers.get("host") || "";
 
-    const currentHost = hostname
-        ?.replace(`.${ROOT_DOMAIN}`, "")
-        .replace(ROOT_DOMAIN, "");
+    let currentHost = "";
+
+    const hostWithoutPort = hostname.split(":")[0];
+    const rootDomainWithoutPort = ROOT_DOMAIN.split(":")[0];
+
+    if (hostWithoutPort.includes(".")) {
+        const subdomain = hostWithoutPort.split(".")[0];
+
+        if (
+            !hostWithoutPort.endsWith(rootDomainWithoutPort) ||
+            hostWithoutPort !== rootDomainWithoutPort
+        ) {
+            currentHost = subdomain;
+        }
+    }
 
     const session = await getToken({ req, secret: SECRET });
     const userRole = session?.role as string;
 
-    const hmsUrl = `http://hms.${ROOT_DOMAIN}`;
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+    const isLocalhost = ROOT_DOMAIN.includes("localhost");
+
+    const buildUrl = (subdomain: string, path: string = "") => {
+        const domain = isLocalhost
+            ? `${subdomain}.${ROOT_DOMAIN}`
+            : `${subdomain}.${rootDomainWithoutPort}`;
+        return `${protocol}://${domain}${path}`;
+    };
+
+    const hmsUrl = buildUrl("hms");
 
     if (currentHost === "hms") {
         if (userRole === "doctor") {
             return NextResponse.redirect(
-                new URL(`http://doctor.${ROOT_DOMAIN}/dashboard`, req.url)
+                new URL(buildUrl("doctor", "/dashboard"), req.url)
             );
         }
         if (userRole === "staff") {
             return NextResponse.redirect(
-                new URL(`http://staff.${ROOT_DOMAIN}/dashboard`, req.url)
+                new URL(buildUrl("staff", "/dashboard"), req.url)
             );
         }
 
-        return NextResponse.rewrite(new URL(`/hms${url.pathname}`, req.url));
+        return NextResponse.rewrite(
+            new URL(`/hms${url.pathname}${url.search}`, req.url)
+        );
     }
 
     if (currentHost === "doctor") {
         // if (!session || userRole !== "DOCTOR") {
         //     return NextResponse.redirect(new URL(hmsUrl, req.url));
         // }
-        return NextResponse.rewrite(new URL(`/doctor${url.pathname}`, req.url));
+        return NextResponse.rewrite(
+            new URL(`/doctor${url.pathname}${url.search}`, req.url)
+        );
     }
 
     if (currentHost === "staff") {
         // if (!session || userRole !== "STAFF") {
         //     return NextResponse.redirect(new URL(hmsUrl, req.url));
         // }
-        return NextResponse.rewrite(new URL(`/staff${url.pathname}`, req.url));
+        return NextResponse.rewrite(
+            new URL(`/staff${url.pathname}${url.search}`, req.url)
+        );
     }
 
     return NextResponse.next();
