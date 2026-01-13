@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Cookies from "js-cookie";
 
 interface DoctorAuthGuardProps {
     children: React.ReactNode;
@@ -15,8 +16,8 @@ const DoctorAuthGuard = ({ children }: DoctorAuthGuardProps) => {
 
     useEffect(() => {
         const checkAuth = () => {
-            const token = localStorage.getItem("token");
-            const userStr = localStorage.getItem("user");
+            const token = Cookies.get("token");
+            const userStr = Cookies.get("user");
 
             if (!token) {
                 router.push("/login");
