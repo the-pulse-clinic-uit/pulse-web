@@ -29,6 +29,55 @@ const ProfileForm = () => {
         allergies: "",
     });
 
+    // Helper function to load user data from an object
+    const loadUserDataFromObject = (patientData: {
+        id: string;
+        bloodType?: string;
+        healthInsuranceId?: string;
+        allergies?: string;
+        userDto?: {
+            fullName?: string;
+            email?: string;
+            phone?: string;
+            citizenId?: string;
+            birthDate?: string;
+            gender?: boolean;
+            address?: string;
+        };
+    }) => {
+        setPatientId(patientData.id);
+
+        const bloodTypeMap: { [key: string]: string } = {
+            A: "A+",
+            A_neg: "A-",
+            B: "B+",
+            B_neg: "B-",
+            AB: "AB+",
+            AB_neg: "AB-",
+            O: "O+",
+            O_neg: "O-",
+        };
+
+        setFormData({
+            fullName: patientData.userDto?.fullName || "",
+            email: patientData.userDto?.email || "",
+            phone: patientData.userDto?.phone || "",
+            citizenId: patientData.userDto?.citizenId || "",
+            dateOfBirth: patientData.userDto?.birthDate || "",
+            gender: patientData.userDto?.gender ? "Male" : "Female",
+            address: patientData.userDto?.address || "",
+            city: "",
+            bloodType:
+                (patientData.bloodType &&
+                    bloodTypeMap[patientData.bloodType]) ||
+                "",
+            height: "",
+            weight: "",
+            healthInsuranceId: patientData.healthInsuranceId || "",
+            allergies: patientData.allergies || "",
+        });
+    };
+
     useEffect(() => {
         const fetchUserData = async () => {
             try {
@@ -37,6 +86,23 @@ const ProfileForm = () => {
                     throw new Error("No authentication token found");
                 }
 
+                // Try to get user data from cookies first (set during login)
+                const userStr = Cookies.get("user");
+                if (userStr) {
+                    try {
+                        const userData = JSON.parse(userStr);
+                        // If we have user data in cookies, use it directly
+                        if (userData && userData.id) {
+                            loadUserDataFromObject(userData);
+                            setLoading(false);
+                            return;
+                        }
+                    } catch (e) {
+                        console.error("Error parsing user cookie:", e);
+                    }
+                }
+
+                // Fallback: try to fetch from API
                 const response = await fetch("/api/patients/me", {
                     method: "GET",
                     headers: {
@@ -55,75 +121,15 @@ const ProfileForm = () => {
                     expires: 7,
                 });
 
-                // Store patient ID for updates
-                setPatientId(patientData.id);
-
-                const bloodTypeMap: { [key: string]: string } = {
-                    A: "A+",
-                    A_neg: "A-",
-                    B: "B+",
-                    B_neg: "B-",
-                    AB: "AB+",
-                    AB_neg: "AB-",
-                    O: "O+",
-                    O_neg: "O-",
-                };
-
-                setFormData({
-                    fullName: patientData.userDto.fullName || "",
-                    email: patientData.userDto.email || "",
-                    phone: patientData.userDto.phone || "",
-                    citizenId: patientData.userDto.citizenId || "",
-                    dateOfBirth: patientData.userDto.birthDate || "",
-                    gender: patientData.userDto.gender ? "Male" : "Female",
-                    address: patientData.userDto.address || "",
-                    city: "",
-                    bloodType: bloodTypeMap[patientData.bloodType] || "",
-                    height: "",
-                    weight: "",
-                    healthInsuranceId: patientData.healthInsuranceId || "",
-                    allergies: patientData.allergies || "",
-                });
+                loadUserDataFromObject(patientData);
             } catch (error) {
                 console.error("Error fetching user data:", error);
+                // If fetch fails, try to load from cookies
                 const userStr = Cookies.get("user");
                 if (userStr) {
                     try {
                         const patientData = JSON.parse(userStr);
-
-                        // Store patient ID for updates
-                        setPatientId(patientData.id);
-
-                        const bloodTypeMap: { [key: string]: string } = {
-                            A: "A+",
-                            A_neg: "A-",
-                            B: "B+",
-                            B_neg: "B-",
-                            AB: "AB+",
-                            AB_neg: "AB-",
-                            O: "O+",
-                            O_neg: "O-",
-                        };
-
-                        setFormData({
-                            fullName: patientData.userDto?.fullName || "",
-                            email: patientData.userDto?.email || "",
-                            phone: patientData.userDto?.phone || "",
-                            citizenId: patientData.userDto?.citizenId || "",
-                            dateOfBirth: patientData.userDto?.birthDate || "",
-                            gender: patientData.userDto?.gender
-                                ? "Male"
-                                : "Female",
-                            address: patientData.userDto?.address || "",
-                            city: "",
-                            bloodType:
-                                bloodTypeMap[patientData.bloodType] || "",
-                            height: "",
-                            weight: "",
-                            healthInsuranceId:
-                                patientData.healthInsuranceId || "",
-                            allergies: patientData.allergies || "",
-                        });
+                        loadUserDataFromObject(patientData);
                     } catch (parseError) {
                         console.error("Error parsing user data:", parseError);
                     }
@@ -215,7 +221,7 @@ const ProfileForm = () => {
             const updatedPatient = await patientResponse.json();
             Cookies.set("user", JSON.stringify(updatedPatient), { expires: 7 });
             toast.success("Profile updated successfully!");
-        } catch (error) {
+        } catch {
             toast.error("Failed to update profile. Please try again.");
         }
     };
