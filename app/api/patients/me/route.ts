@@ -11,9 +11,13 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const backendUrl = process.env.BACKEND_API_URL || "localhost:8080";
+        const backendUrl =
+            process.env.BACKEND_API_URL || "http://localhost:8080";
+        const apiUrl = backendUrl.startsWith("http")
+            ? backendUrl
+            : `http://${backendUrl}`;
 
-        const response = await fetch(`http://${backendUrl}/patients/me`, {
+        const response = await fetch(`${apiUrl}/patients/me`, {
             headers: {
                 Authorization: token,
             },
@@ -49,9 +53,13 @@ export async function PATCH(request: NextRequest) {
         }
 
         const body = await request.json();
-        const backendUrl = process.env.BACKEND_API_URL || "localhost:8080";
+        const backendUrl =
+            process.env.BACKEND_API_URL || "http://localhost:8080";
+        const apiUrl = backendUrl.startsWith("http")
+            ? backendUrl
+            : `http://${backendUrl}`;
 
-        const response = await fetch(`http://${backendUrl}/patients/me`, {
+        const response = await fetch(`${apiUrl}/patients/me`, {
             method: "PATCH",
             headers: {
                 Authorization: token,

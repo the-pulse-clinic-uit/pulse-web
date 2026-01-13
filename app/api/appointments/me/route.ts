@@ -11,8 +11,13 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const backendUrl = process.env.BACKEND_API_URL || "localhost:8080";
-        const response = await fetch(`http://${backendUrl}/appointments/me`, {
+        const backendUrl =
+            process.env.BACKEND_API_URL || "http://localhost:8080";
+        const apiUrl = backendUrl.startsWith("http")
+            ? backendUrl
+            : `http://${backendUrl}`;
+
+        const response = await fetch(`${apiUrl}/appointments/me`, {
             method: "GET",
             headers: {
                 Authorization: authHeader,
