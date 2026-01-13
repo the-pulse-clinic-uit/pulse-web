@@ -80,10 +80,15 @@ export default function AppointmentList() {
         const fetchAppointments = async () => {
             try {
                 const token = Cookies.get("token");
+                console.log("[AppointmentList] Token exists:", !!token);
+
                 if (!token) {
                     throw new Error("No authentication token found");
                 }
 
+                console.log(
+                    "[AppointmentList] Fetching appointments from /api/appointments/me"
+                );
                 const appointmentsRes = await fetch("/api/appointments/me", {
                     method: "GET",
                     headers: {
@@ -92,13 +97,36 @@ export default function AppointmentList() {
                     },
                 });
 
+                console.log(
+                    "[AppointmentList] Response status:",
+                    appointmentsRes.status
+                );
+
                 if (!appointmentsRes.ok) {
-                    throw new Error("Failed to fetch appointments");
+                    const errorData = await appointmentsRes.json();
+                    console.error(
+                        "[AppointmentList] Error response:",
+                        errorData
+                    );
+                    throw new Error(
+                        errorData.error || "Failed to fetch appointments"
+                    );
                 }
 
                 const data: Appointment[] = await appointmentsRes.json();
+                console.log(
+                    "[AppointmentList] Received appointments:",
+                    data.length
+                );
+
+                // Handle empty array
+                if (Array.isArray(data) && data.length === 0) {
+                    console.log("[AppointmentList] No appointments found");
+                }
+
                 setAppointments(data);
             } catch (err) {
+                console.error("[AppointmentList] Fetch error:", err);
                 setError(
                     err instanceof Error
                         ? err.message
