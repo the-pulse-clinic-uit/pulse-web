@@ -12,9 +12,9 @@ import {
 } from "lucide-react";
 
 export const MENU_ITEMS = [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    // { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { label: "Schedule", href: "/schedule", icon: Bell },
-    { label: "Manage Appointment", href: "/appointments", icon: Calendar },
+    // { label: "Manage Appointment", href: "/appointments", icon: Calendar },
     {
         label: "Manage Prescriptions",
         href: "/prescriptions",

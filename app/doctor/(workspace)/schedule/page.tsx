@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ScheduleHeader from "@/components/doctor/schedule/ScheduleHeader";
 import WeeklyCalendar from "@/components/doctor/schedule/WeeklyCalendar";
+import MonthlyCalendar from "@/components/doctor/schedule/MonthlyCalendar";
 
 export default function SchedulePage() {
   const [currentView, setCurrentView] = useState<"week" | "month">("week");
@@ -14,7 +15,7 @@ export default function SchedulePage() {
         onViewChange={setCurrentView} 
       />
       
-      <WeeklyCalendar />
+      {currentView === "week" ? <WeeklyCalendar /> : <MonthlyCalendar />}
     </div>
   );
 }
