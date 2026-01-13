@@ -376,25 +376,37 @@ export default function ShiftsPage() {
         if (!token) return;
 
         try {
-            // Fetch assignments for current date range
+            // Fetch assignments for a date range (today + next 7 days)
             // Note: API requires per-shift or per-doctor queries
-            // For demo, we'll fetch for today across all shifts
             const allAssignments: ShiftAssignmentDto[] = [];
-
+            const uniqueAssignmentIds = new Set<string>();
+            
+            // Generate date range (today + next 7 days)
+            const dates: string[] = [];
+            for (let i = 0; i < 8; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() + i);
+                dates.push(date.toISOString().split("T")[0]);
+            }
+            
             for (const shift of shifts) {
-                const today = new Date().toISOString().split("T")[0];
-                const res = await fetch(
-                    `/api/shifts/${shift.id}/assignments?date=${today}`,
-                    {
+                for (const date of dates) {
+                    const res = await fetch(`/api/shifts/${shift.id}/assignments?date=${date}`, {
                         headers: { Authorization: `Bearer ${token}` },
-                    }
-                );
+                    });
 
-                if (res.ok) {
-                    const text = await res.text();
-                    if (text) {
-                        const data: ShiftAssignmentDto[] = JSON.parse(text);
-                        allAssignments.push(...data);
+                    if (res.ok) {
+                        const text = await res.text();
+                        if (text) {
+                            const data: ShiftAssignmentDto[] = JSON.parse(text);
+                            // Filter out duplicates by ID
+                            data.forEach(assignment => {
+                                if (!uniqueAssignmentIds.has(assignment.id)) {
+                                    uniqueAssignmentIds.add(assignment.id);
+                                    allAssignments.push(assignment);
+                                }
+                            });
+                        }
                     }
                 }
             }
@@ -769,6 +781,18 @@ export default function ShiftsPage() {
 
     const handleCloseAssignmentModal = () => {
         setIsAssignmentModalOpen(false);
+        // Reset form to initial state
+        setAssignmentFormData({
+            shiftId: "",
+            doctorId: "",
+            roomId: "",
+            dutyDate: new Date().toISOString().split("T")[0],
+            roleInShift: "PRIMARY",
+            status: "ACTIVE",
+            notes: "",
+        });
+        setFilteredDoctorsForAssignment([]);
+        setFilteredRoomsForAssignment([]);
     };
 
     const handleAssignmentFormChange = (

@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { User, Calendar, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Search, Plus } from "lucide-react";
+
+interface Props {
+  onSearch?: (query: string) => void;
+  onDateChange?: (date: Date) => void;
+  onCreateClick?: () => void;
+}
 
 const months = [
   "January", "February", "March", "April", "May", "June",
@@ -10,11 +16,12 @@ const months = [
 
 const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export default function FollowUpHeader() {
+export default function FollowUpHeader({ onSearch, onDateChange, onCreateClick }: Props) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [searchQuery, setSearchQuery] = useState("");
   const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,6 +63,12 @@ export default function FollowUpHeader() {
     const newDate = new Date(currentYear, currentMonth, day);
     setSelectedDate(newDate);
     setIsCalendarOpen(false);
+    onDateChange?.(newDate);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    onSearch?.(value);
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -104,6 +117,14 @@ export default function FollowUpHeader() {
       </div>
 
       <div className="flex items-center gap-4">
+        <button
+          onClick={onCreateClick}
+          className="btn btn-primary gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Create Plan
+        </button>
+
         <div className="relative" ref={calendarRef}>
           <button
             onClick={() => setIsCalendarOpen(!isCalendarOpen)}
@@ -166,16 +187,6 @@ export default function FollowUpHeader() {
               </div>
             </div>
           )}
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-sm font-medium text-gray-900">Dr. John Doe</p>
-            <p className="text-xs text-gray-500">Cardiologist</p>
-          </div>
-          <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-blue-600" />
-          </div>
         </div>
       </div>
     </div>
