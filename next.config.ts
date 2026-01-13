@@ -13,10 +13,17 @@ const nextConfig: NextConfig = {
     },
 
     async rewrites() {
+        const backendUrl =
+            process.env.BACKEND_API_URL || "http://localhost:8080";
+
+        const destination = backendUrl.startsWith("http")
+            ? backendUrl
+            : `https://${backendUrl}`;
+
         return [
             {
                 source: "/api/:path*",
-                destination: "http://localhost:8080/:path*",
+                destination: `${destination}/:path*`,
             },
         ];
     },
