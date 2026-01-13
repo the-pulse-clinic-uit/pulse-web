@@ -44,6 +44,7 @@ const StaffLoginForm = () => {
                 return;
             }
 
+            console.log("Making login request...");
             const response = await apiRequest("auth/login", {
                 method: "POST",
                 headers: {
@@ -54,10 +55,29 @@ const StaffLoginForm = () => {
                 }),
             });
 
-            const data = await response.json();
+            console.log("Response received:", response.status);
+
+            // Check if response has content before parsing
+            const contentType = response.headers.get("content-type");
+            let data;
+
+            if (contentType && contentType.includes("application/json")) {
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    console.error("Failed to parse JSON:", e);
+                    data = {};
+                }
+            } else {
+                const text = await response.text();
+                console.log("Non-JSON response:", text);
+                data = { error: text || "Invalid response from server" };
+            }
+
+            console.log("Data:", data);
 
             if (!response.ok) {
-                setError(data.error || "Login failed");
+                setError(data.error || data.message || "Login failed");
                 setLoading(false);
                 return;
             }
@@ -86,6 +106,7 @@ const StaffLoginForm = () => {
                 setLoading(false);
             }
         } catch (err) {
+            console.error("Login error:", err);
             setError("An error occurred. Please try again.");
             setLoading(false);
         }

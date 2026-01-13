@@ -51,10 +51,24 @@ const DoctorLoginForm = () => {
                 }),
             });
 
-            const data = await response.json();
+            const contentType = response.headers.get("content-type");
+            let data;
+
+            if (contentType && contentType.includes("application/json")) {
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    console.error("Failed to parse JSON:", e);
+                    data = {};
+                }
+            } else {
+                const text = await response.text();
+                console.log("Non-JSON response:", text);
+                data = { error: text || "Invalid response from server" };
+            }
 
             if (!response.ok) {
-                setError(data.error || "Login failed");
+                setError(data.error || data.message || "Login failed");
                 setLoading(false);
                 return;
             }
