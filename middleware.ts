@@ -17,21 +17,34 @@ export async function middleware(req: NextRequest) {
     // Extract subdomain
     const hostParts = hostWithoutPort.split(".");
 
-    // For Vercel deployments like "pulse-web-galt.vercel.app"
-    // we want to treat the main domain as "root" and any prefix before it as subdomain
-    if (hostParts.length >= 2) {
-        // Check if it's a Vercel domain
-        if (hostname.includes("vercel.app")) {
-            // For vercel.app: hms.pulse-web-galt.vercel.app
-            // Extract first part only if there are 4+ parts
-            if (hostParts.length >= 4) {
-                currentHost = hostParts[0];
-            }
-        } else if (hostname.includes(rootDomainWithoutPort)) {
-            // For custom domains: subdomain.yourdomain.com
-            const rootParts = rootDomainWithoutPort.split(".");
-            if (hostParts.length > rootParts.length) {
-                currentHost = hostParts[0];
+    // Check if it's a Vercel domain
+    if (hostname.includes("vercel.app")) {
+        // For vercel.app: hms.pulse-web-galt.vercel.app (4 parts = subdomain)
+        // pulse-web-galt.vercel.app (3 parts = root)
+        if (hostParts.length >= 4) {
+            currentHost = hostParts[0];
+        }
+    } else if (hostname.includes("localhost")) {
+        // For localhost: hms.localhost (2 parts = subdomain), localhost (1 part = root)
+        if (hostParts.length >= 2) {
+            currentHost = hostParts[0];
+        }
+    } else {
+        // For custom domains like pulse-clinic.xyz
+        // hms.pulse-clinic.xyz (4 parts = subdomain)
+        // www.pulse-clinic.xyz or pulse-clinic.xyz (3 or 2 parts = root)
+        const rootParts = rootDomainWithoutPort.split(".");
+
+        // Only extract subdomain if we have MORE parts than the configured root domain
+        // AND the hostname ends with the root domain
+        if (
+            hostParts.length > rootParts.length &&
+            hostWithoutPort.endsWith(rootDomainWithoutPort)
+        ) {
+            // Check if it's actually a subdomain or just www
+            const potentialSubdomain = hostParts[0];
+            if (potentialSubdomain !== "www") {
+                currentHost = potentialSubdomain;
             }
         }
     }
@@ -45,13 +58,11 @@ export async function middleware(req: NextRequest) {
     const isLocalhost = ROOT_DOMAIN.includes("localhost");
 
     const buildUrl = (subdomain: string, path: string = "") => {
-        // For Vercel deployments
         if (hostname.includes("vercel.app")) {
             const baseVercelDomain = hostname.split(".").slice(-3).join(".");
             return `${protocol}://${subdomain}.${baseVercelDomain}${path}`;
         }
 
-        // For custom domains and localhost
         const domain = isLocalhost
             ? `${subdomain}.${ROOT_DOMAIN}`
             : `${subdomain}.${rootDomainWithoutPort}`;
@@ -93,9 +104,6 @@ export async function middleware(req: NextRequest) {
         );
     }
 
-    // If no subdomain is detected, this is the root domain - serve patient portal
-    // The patient portal is in the (site) folder, which Next.js serves at the root
-    // So we just let it pass through naturally
     if (!currentHost) {
         return NextResponse.next();
     }
