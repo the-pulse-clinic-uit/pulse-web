@@ -16,6 +16,7 @@ interface UserData {
 type Appointment = {
     id: string;
     name: string;
+    date: string;
     time: string;
     phoneNumber: string;
     doctor: string;
@@ -47,10 +48,21 @@ export default function AppointmentsPage() {
         return formattedDateTime;
     };
 
+    const formatDate = (dateString: string): string => {
+        const date = new Date(dateString);
+        const formattedDate = date.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        });
+        return formattedDate;
+    };
+
     const transformAppointment = (dto: AppointmentDto): Appointment => {
         return {
             id: dto.id.substring(0, 8),
             name: dto.patientDto.userDto.fullName,
+            date: formatDate(dto.startsAt),
             time: formatTime(dto.startsAt),
             phoneNumber: dto.patientDto.userDto.phone,
             doctor: dto.doctorDto.staffDto.userDto.fullName,
@@ -393,6 +405,7 @@ export default function AppointmentsPage() {
     const appointmentColumns: ColumnDef<Appointment>[] = [
         { header: "ID", accessorKey: "id", className: "font-bold" },
         { header: "Name", accessorKey: "name", className: "font-medium" },
+        { header: "Date", accessorKey: "date" },
         { header: "Time", accessorKey: "time" },
         { header: "Phone Number", accessorKey: "phoneNumber" },
         { header: "Doctor", accessorKey: "doctor" },
