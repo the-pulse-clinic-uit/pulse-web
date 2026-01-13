@@ -6,6 +6,7 @@ import { Building2, Bed, CheckCircle, XCircle } from "lucide-react";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
 import DataTable, { ColumnDef } from "@/components/staff/DataTable";
+import AddRoomModal from "@/components/staff/rooms/AddRoomModal";
 
 interface Department {
     id: string;
@@ -35,6 +36,7 @@ export default function ManageRoomsPage() {
     const [user, setUser] = useState<UserData | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [filters, setFilters] = useState({
         department: "",
         status: "",
@@ -237,8 +239,8 @@ export default function ManageRoomsPage() {
             </div>
 
             <Toolbar
-                buttonName="Room"
-                onAdd={() => {}}
+                buttonName="Rooms"
+                onAdd={() => setIsAddModalOpen(true)}
                 onSearch={handleSearch}
                 onFilter={() => setIsFilterOpen(true)}
             />
@@ -361,6 +363,12 @@ export default function ManageRoomsPage() {
                     </div>
                 </div>
             </div>
+
+            <AddRoomModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSuccess={fetchRooms}
+            />
         </div>
     );
 }

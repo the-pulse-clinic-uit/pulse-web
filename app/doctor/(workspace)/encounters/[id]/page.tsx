@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, User, Calendar, Clock, Stethoscope, CalendarClock } from "lucide-react";
+import {
+    ArrowLeft,
+    User,
+    Calendar,
+    Clock,
+    Stethoscope,
+    CalendarClock,
+} from "lucide-react";
 import { toast } from "react-hot-toast";
 import CreatePlanModal from "@/components/doctor/follow-up-plan/CreatePlanModal";
 import Cookies from "js-cookie";
@@ -183,7 +190,9 @@ export default function EncounterDetailPage() {
 
     const handleCloseEncounter = async () => {
         if (!diagnosis.trim()) {
-            toast.error("Please provide a diagnosis before closing the encounter");
+            toast.error(
+                "Please provide a diagnosis before closing the encounter"
+            );
             return;
         }
 
@@ -303,7 +312,10 @@ export default function EncounterDetailPage() {
                                             Patient Name
                                         </p>
                                         <p className="font-semibold text-lg">
-                                            {encounter.patientDto.userDto.fullName}
+                                            {
+                                                encounter.patientDto.userDto
+                                                    .fullName
+                                            }
                                         </p>
                                     </div>
                                 </div>
@@ -329,7 +341,8 @@ export default function EncounterDetailPage() {
                                         Blood Type
                                     </p>
                                     <p className="font-medium">
-                                        {encounter.patientDto.bloodType || "N/A"}
+                                        {encounter.patientDto.bloodType ||
+                                            "N/A"}
                                     </p>
                                 </div>
                             </div>
@@ -484,9 +497,7 @@ export default function EncounterDetailPage() {
                 {!isActive && encounter.endedAt && (
                     <div className="alert alert-info">
                         <div>
-                            <p className="font-semibold">
-                                Encounter Closed
-                            </p>
+                            <p className="font-semibold">Encounter Closed</p>
                             <p className="text-sm">
                                 This encounter was completed on{" "}
                                 {formatDate(encounter.endedAt)} at{" "}
@@ -510,7 +521,7 @@ export default function EncounterDetailPage() {
                     router.push("/doctor/follow-up-plan");
                 }}
                 preSelectedEncounterId={encounterId}
-                preSelectedPatientId={encounter?.patient?.patientId}
+                preSelectedPatientId={encounter?.patientDto?.id}
             />
         </div>
     );
