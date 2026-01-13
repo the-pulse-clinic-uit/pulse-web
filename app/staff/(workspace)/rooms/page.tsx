@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Cookies from "js-cookie";
-import { Building2, Bed, CheckCircle, XCircle } from "lucide-react";
+import { Building2, Bed, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { toast } from "react-hot-toast";
 import Header from "@/components/staff/Header";
 import Toolbar from "@/components/staff/ToolBar";
 import DataTable, { ColumnDef } from "@/components/staff/DataTable";
@@ -125,6 +126,41 @@ export default function ManageRoomsPage() {
         setSearchQuery("");
     };
 
+    const handleDeleteRoom = async (roomId: string) => {
+        const confirmed = window.confirm(
+            "Are you sure you want to delete this room? This action cannot be undone."
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const token = Cookies.get("token");
+            if (!token) {
+                throw new Error("No authentication token");
+            }
+
+            const response = await fetch(`/api/rooms/${roomId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || "Failed to delete room");
+            }
+
+            toast.success("Room deleted successfully!");
+            fetchRooms();
+        } catch (error) {
+            console.error("Error deleting room:", error);
+            toast.error(
+                error instanceof Error ? error.message : "Failed to delete room"
+            );
+        }
+    };
+
     const departments = Array.from(
         new Set(rooms.map((room) => JSON.stringify(room.departmentDto)))
     ).map((str) => JSON.parse(str) as Department);
@@ -177,6 +213,18 @@ export default function ManageRoomsPage() {
             header: "Created",
             accessorKey: "createdAt",
             cell: (row) => new Date(row.createdAt).toLocaleDateString(),
+        },
+        {
+            header: "Actions",
+            cell: (row) => (
+                <button
+                    onClick={() => handleDeleteRoom(row.id)}
+                    className="btn btn-ghost btn-sm text-error hover:bg-error/10"
+                    title="Delete room"
+                >
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            ),
         },
     ];
 
