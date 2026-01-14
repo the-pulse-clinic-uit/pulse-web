@@ -13,6 +13,9 @@ interface EncounterDto {
     diagnosis: string;
     notes: string;
     createdAt: string;
+    rating?: number | null;
+    ratingComment?: string | null;
+    ratedAt?: string | null;
     appointmentDto: {
         id: string;
         startsAt: string;
@@ -39,6 +42,8 @@ interface EncounterDto {
     doctorDto: {
         id: string;
         licenseId: string;
+        averageRating?: number;
+        ratingCount?: number;
         staffDto: {
             userDto: {
                 id: string;
@@ -131,6 +136,14 @@ export default function EncountersPage() {
         fetchPatientAndEncounters();
     }, []);
 
+    const handleEncounterUpdate = (updatedEncounter: EncounterDto) => {
+        setEncounters((prev) =>
+            prev.map((enc) =>
+                enc.id === updatedEncounter.id ? updatedEncounter : enc
+            )
+        );
+    };
+
     return (
         <div className="min-h-screen mt-8">
             <div className="max-w-7xl mx-auto px-4 py-4 pt-20">
@@ -162,6 +175,7 @@ export default function EncountersPage() {
                             <EncounterCard
                                 key={encounter.id}
                                 encounter={encounter}
+                                onEncounterUpdate={handleEncounterUpdate}
                             />
                         ))}
                     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
     Clock,
     User,
@@ -7,7 +8,10 @@ import {
     Calendar,
     AlertCircle,
     Building2,
+    Star,
+    MessageSquare,
 } from "lucide-react";
+import RatingModal from "./RatingModal";
 
 interface EncounterDto {
     id: string;
@@ -17,6 +21,9 @@ interface EncounterDto {
     diagnosis: string;
     notes: string;
     createdAt: string;
+    rating?: number | null;
+    ratingComment?: string | null;
+    ratedAt?: string | null;
     appointmentDto: {
         id: string;
         startsAt: string;
@@ -43,6 +50,8 @@ interface EncounterDto {
     doctorDto: {
         id: string;
         licenseId: string;
+        averageRating?: number;
+        ratingCount?: number;
         staffDto: {
             userDto: {
                 id: string;
@@ -61,9 +70,13 @@ interface EncounterDto {
 
 interface Props {
     encounter: EncounterDto;
+    onEncounterUpdate?: (updatedEncounter: EncounterDto) => void;
 }
 
-export default function EncounterCard({ encounter }: Props) {
+export default function EncounterCard({ encounter, onEncounterUpdate }: Props) {
+    const [showRatingModal, setShowRatingModal] = useState(false);
+    const [currentEncounter, setCurrentEncounter] = useState(encounter);
+
     const formatDate = (dateString: string): string => {
         const date = new Date(dateString);
         return date.toLocaleDateString("en-US", {
@@ -82,7 +95,32 @@ export default function EncounterCard({ encounter }: Props) {
         });
     };
 
-    const isActive = !encounter.endedAt;
+    const isActive = !currentEncounter.endedAt;
+    const isCompleted = !!currentEncounter.endedAt;
+    const hasRating = currentEncounter.rating !== null && currentEncounter.rating !== undefined;
+
+    const handleRatingSuccess = (updatedEncounter: unknown) => {
+        const updated = updatedEncounter as EncounterDto;
+        setCurrentEncounter(updated);
+        onEncounterUpdate?.(updated);
+    };
+
+    const renderStars = (rating: number) => {
+        return (
+            <div className="flex gap-0.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                        key={star}
+                        className={`w-4 h-4 ${
+                            star <= rating
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                        }`}
+                    />
+                ))}
+            </div>
+        );
+    };
 
     return (
         <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
@@ -204,15 +242,65 @@ export default function EncounterCard({ encounter }: Props) {
                     )}
                 </div>
 
-                {encounter.endedAt && (
+                {isCompleted && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                        <p className="text-xs text-gray-500">
-                            Completed on {formatDate(encounter.endedAt)} at{" "}
-                            {formatTime(encounter.endedAt)}
-                        </p>
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-500">
+                                Completed on {formatDate(currentEncounter.endedAt!)} at{" "}
+                                {formatTime(currentEncounter.endedAt!)}
+                            </p>
+
+                            {!hasRating && (
+                                <button
+                                    onClick={() => setShowRatingModal(true)}
+                                    className="btn btn-sm btn-primary gap-2"
+                                >
+                                    <Star className="w-4 h-4" />
+                                    Rate Visit
+                                </button>
+                            )}
+                        </div>
+
+                        {hasRating && (
+                            <div className="mt-3 bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-semibold text-gray-700">
+                                            Your Rating:
+                                        </span>
+                                        {renderStars(currentEncounter.rating!)}
+                                    </div>
+                                    <span className="text-sm font-bold text-purple-600">
+                                        {currentEncounter.rating}/5
+                                    </span>
+                                </div>
+                                {currentEncounter.ratingComment && (
+                                    <div className="flex items-start gap-2 mt-2">
+                                        <MessageSquare className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                                        <p className="text-sm text-gray-600 italic">
+                                            &quot;{currentEncounter.ratingComment}&quot;
+                                        </p>
+                                    </div>
+                                )}
+                                {currentEncounter.ratedAt && (
+                                    <p className="text-xs text-gray-400 mt-2">
+                                        Rated on {formatDate(currentEncounter.ratedAt)} at{" "}
+                                        {formatTime(currentEncounter.ratedAt)}
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
+
+            <RatingModal
+                isOpen={showRatingModal}
+                onClose={() => setShowRatingModal(false)}
+                onSuccess={handleRatingSuccess}
+                encounterId={currentEncounter.id}
+                doctorName={currentEncounter.doctorDto.staffDto.userDto.fullName}
+            />
         </div>
     );
 }

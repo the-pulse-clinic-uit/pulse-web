@@ -6,6 +6,7 @@ import Cookies from "js-cookie";
 import DoctorProfileHeader from "@/components/doctor/profile/DoctorProfileHeader";
 import DoctorPersonalInformationCard from "@/components/doctor/profile/DoctorPersonalInformationCard";
 import DoctorProfessionalInformationCard from "@/components/doctor/profile/DoctorProfessionalInformationCard";
+import DoctorRatingsCard from "@/components/doctor/profile/DoctorRatingsCard";
 import EditDoctorPersonalInfoModal from "@/components/doctor/profile/EditDoctorPersonalInfoModal";
 
 interface DoctorDTO {
@@ -246,6 +247,8 @@ export default function DoctorProfilePage() {
                     data={doctorData.professionalInfo}
                     onEdit={() => setIsEditProfessionalInfoOpen(true)}
                 />
+
+                <DoctorRatingsCard />
             </div>
 
             <EditDoctorPersonalInfoModal
