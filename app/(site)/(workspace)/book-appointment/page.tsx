@@ -2,15 +2,22 @@
 
 import { useState } from "react";
 import StepIndicator from "@/components/patient/book-appointment/StepIndicator";
+import DepartmentStep from "@/components/patient/book-appointment/DepartmentStep";
+import DateStep from "@/components/patient/book-appointment/DateStep";
 import DoctorStep from "@/components/patient/book-appointment/DoctorStep";
-import DateTimeStep from "@/components/patient/book-appointment/DateTimeStep";
+import SlotStep from "@/components/patient/book-appointment/SlotStep";
 import ConfirmStep from "@/components/patient/book-appointment/ConfirmStep";
 
 export default function BookAppointmentPage() {
   const [step, setStep] = useState(1);
-  const [doctorId, setDoctorId] = useState<string | null>(null);
+  const [departmentId, setDepartmentId] = useState<string | null>(null);
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [doctorId, setDoctorId] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<{
+    startsAt: string;
+    endsAt: string;
+    assignmentId: string;
+  } | null>(null);
   const [description, setDescription] = useState("");
 
   return (
@@ -27,33 +34,51 @@ export default function BookAppointmentPage() {
       <StepIndicator step={step} />
 
       {step === 1 && (
-        <DoctorStep
-          selectedDoctor={doctorId}
-          onSelect={setDoctorId}
+        <DepartmentStep
+          selectedDepartment={departmentId}
+          onSelect={setDepartmentId}
           onNext={() => setStep(2)}
         />
       )}
 
       {step === 2 && (
-        <DateTimeStep
+        <DateStep
           date={date}
-          time={time}
-          description={description}
           onChangeDate={setDate}
-          onChangeTime={setTime}
-          onChangeDescription={setDescription}
           onBack={() => setStep(1)}
           onNext={() => setStep(3)}
         />
       )}
 
       {step === 3 && (
+        <DoctorStep
+          selectedDoctor={doctorId}
+          departmentId={departmentId}
+          onSelect={setDoctorId}
+          onBack={() => setStep(2)}
+          onNext={() => setStep(4)}
+        />
+      )}
+
+      {step === 4 && (
+        <SlotStep
+          doctorId={doctorId}
+          date={date}
+          selectedSlot={selectedSlot}
+          onSelectSlot={setSelectedSlot}
+          onBack={() => setStep(3)}
+          onNext={() => setStep(5)}
+        />
+      )}
+
+      {step === 5 && (
         <ConfirmStep
           doctorId={doctorId}
           date={date}
-          time={time}
+          selectedSlot={selectedSlot}
           description={description}
-          onBack={() => setStep(2)}
+          onChangeDescription={setDescription}
+          onBack={() => setStep(4)}
         />
       )}
     </div>

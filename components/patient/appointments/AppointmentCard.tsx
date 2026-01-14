@@ -64,6 +64,11 @@ export default function AppointmentCard({
     }
   };
 
+  const handleReschedule = () => {
+    // Navigate to reschedule page with appointmentId
+    window.location.href = `/reschedule/${appointment.id}`;
+  };
+
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -161,7 +166,7 @@ export default function AppointmentCard({
 
         {appointment.status.toUpperCase() === "PENDING" && (
           <div className="flex gap-2 sm:gap-3 mt-2 lg:mt-0">
-            <button className="flex-1 lg:flex-none px-4 sm:px-6 py-2 border-2 border-purple-300 text-purple-600 rounded-full hover:bg-purple-50 text-sm sm:text-base transition-colors">
+            <button className="flex-1 lg:flex-none px-4 sm:px-6 py-2 border-2 border-purple-300 text-purple-600 rounded-full hover:bg-purple-50 text-sm sm:text-base transition-colors" onClick={handleReschedule}>
               Reschedule
             </button>
 

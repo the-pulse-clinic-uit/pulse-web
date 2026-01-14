@@ -37,11 +37,15 @@ interface Doctor {
 
 export default function DoctorStep({
   selectedDoctor,
+  departmentId,
   onSelect,
+  onBack,
   onNext,
 }: {
   selectedDoctor: string | null;
+  departmentId: string | null;
   onSelect: (id: string) => void;
+  onBack: () => void;
   onNext: () => void;
 }) {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -64,7 +68,10 @@ export default function DoctorStep({
         }
 
         const data: Doctor[] = await res.json();
-        setDoctors(data);
+        const filteredDoctors = departmentId
+          ? data.filter((d) => d.departmentDto.id === departmentId)
+          : data;
+        setDoctors(filteredDoctors);
       } catch (error) {
         console.error("Error fetching doctors:", error);
       } finally {
@@ -72,8 +79,10 @@ export default function DoctorStep({
       }
     };
 
-    fetchDoctors();
-  }, []);
+    if (departmentId) {
+      fetchDoctors();
+    }
+  }, [departmentId]);
   const calculateExperience = (createdAt: string): string => {
     const created = new Date(createdAt);
     const now = new Date();
@@ -102,18 +111,21 @@ export default function DoctorStep({
             ))}
           </div>
 
-          <div className="text-center">
+          <div className="flex justify-center gap-4">
+            <button onClick={onBack} className="px-6 py-2 border rounded-full">
+              Back
+            </button>
             <button
-              disabled={!selectedDoctor}
               onClick={onNext}
-              className={`px-8 py-3 rounded-full
+              disabled={!selectedDoctor}
+              className={`px-6 py-2 rounded-full
               ${
                 selectedDoctor
-                  ? "bg-purple-500 text-white hover:bg-purple-600"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  ? "bg-purple-500 text-white"
+                  : "bg-gray-300 text-gray-500"
               }`}
             >
-              Continue
+              Next
             </button>
           </div>
         </>

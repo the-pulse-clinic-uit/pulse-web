@@ -7,16 +7,18 @@ import { toast } from "react-hot-toast";
 interface ConfirmStepProps {
     doctorId: string | null;
     date: string;
-    time: string;
+    selectedSlot: { startsAt: string; endsAt: string; assignmentId: string } | null;
     description: string;
+    onChangeDescription: (description: string) => void;
     onBack: () => void;
 }
 
 export default function ConfirmStep({
     doctorId,
     date,
-    time,
+    selectedSlot,
     description,
+    onChangeDescription,
     onBack,
 }: ConfirmStepProps) {
     const router = useRouter();
@@ -48,8 +50,8 @@ export default function ConfirmStep({
     };
 
     const confirm = async () => {
-        if (!doctorId) {
-            setError("Please select a doctor");
+        if (!doctorId || !selectedSlot) {
+            setError("Please select a doctor and slot");
             return;
         }
 
@@ -77,18 +79,15 @@ export default function ConfirmStep({
             const patientData = await patientRes.json();
             const patientId = patientData.id;
 
-            const startsAt = parseTimeToDateTime(date, time);
-            const endsAt = addMinutes(startsAt, 30);
-
             const appointmentData = {
-                startsAt,
-                endsAt,
+                startsAt: selectedSlot.startsAt,
+                endsAt: selectedSlot.endsAt,
                 status: "PENDING",
                 type: "NORMAL",
                 description: description || null,
                 patientId,
                 doctorId,
-                shiftAssignmentId: null,
+                shiftAssignmentId: selectedSlot.assignmentId,
             };
 
             const appointmentRes = await fetch("/api/appointments", {
@@ -146,8 +145,15 @@ export default function ConfirmStep({
                     <span className="font-medium">{date}</span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-gray-600">Time</span>
-                    <span className="font-medium">{time}</span>
+                    <span className="text-gray-600">Time Slot</span>
+                    <span className="font-medium">
+                        {selectedSlot
+                            ? new Date(selectedSlot.startsAt).toLocaleTimeString("en-US", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : ""}
+                    </span>
                 </div>
                 <div className="flex justify-between">
                     <span className="text-gray-600">Duration</span>
@@ -161,6 +167,20 @@ export default function ConfirmStep({
                         </p>
                     </div>
                 )}
+            </div>
+
+            <div className="mt-6">
+                <h4 className="text-purple-900 mb-3">Description (Optional)</h4>
+                <textarea
+                    value={description}
+                    onChange={(e) => onChangeDescription(e.target.value)}
+                    placeholder="Add any notes or special requests for your appointment..."
+                    className="w-full border rounded-xl px-4 py-3 min-h-[100px] resize-none"
+                    maxLength={500}
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                    {description.length}/500 characters
+                </p>
             </div>
 
             <div className="flex justify-center gap-4 mt-6">
