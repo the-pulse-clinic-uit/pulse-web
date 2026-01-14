@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 
 export default function StepIndicator({ step }: { step: number }) {
-  const steps = ["Select Doctor", "Choose Date", "Confirm"];
+  const steps = ["Choose Date", "Select Doctor", "Confirm"];
 
   return (
     <div className="flex justify-center items-center gap-6 mb-10">
