@@ -84,16 +84,24 @@ const FloatingChatButton: React.FC = () => {
             }
             const token = Cookies.get("token");
 
+            console.log("[FloatingChatButton] Sending message to /api/ai/chat");
             const response = await fetch("/api/ai/chat", {
                 method: "POST",
                 headers: {
+                    "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(requestBody),
             });
 
+            console.log(
+                "[FloatingChatButton] Response status:",
+                response.status
+            );
+
             if (response.ok) {
                 const data = await response.json();
+                console.log("[FloatingChatButton] Received response");
                 const assistantMessage: Message = {
                     role: "assistant",
                     content: data.reply,
@@ -104,6 +112,11 @@ const FloatingChatButton: React.FC = () => {
                     setMessages(data.history);
                 }
             } else {
+                const errorData = await response.json();
+                console.error(
+                    "[FloatingChatButton] Error response:",
+                    errorData
+                );
                 const errorMessage: Message = {
                     role: "assistant",
                     content:
@@ -112,7 +125,10 @@ const FloatingChatButton: React.FC = () => {
                 setMessages((prev) => [...prev, errorMessage]);
             }
         } catch (error) {
-            console.error("Failed to send message:", error);
+            console.error(
+                "[FloatingChatButton] Failed to send message:",
+                error
+            );
             const errorMessage: Message = {
                 role: "assistant",
                 content:
