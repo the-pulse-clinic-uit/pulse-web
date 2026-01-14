@@ -1,4 +1,7 @@
-import { Calendar, Clock } from "lucide-react";
+"use client";
+import { useState, useEffect } from "react";
+import { Calendar, Clock, Building2 } from "lucide-react";
+import Cookies from "js-cookie";
 
 const timeSlots = [
     "09:00 AM",
@@ -15,9 +18,11 @@ interface DateTimeStepProps {
     date: string;
     time: string;
     description: string;
+    departmentId: string | null;
     onChangeDate: (date: string) => void;
     onChangeTime: (time: string) => void;
     onChangeDescription: (description: string) => void;
+    onChangeDepartment: (id: string) => void;
     onNext: () => void;
 }
 
@@ -25,13 +30,76 @@ export default function DateTimeStep({
     date,
     time,
     description,
+    departmentId,
     onChangeDate,
     onChangeTime,
     onChangeDescription,
+    onChangeDepartment,
     onNext,
 }: DateTimeStepProps) {
+    const [departments, setDepartments] = useState<
+        { id: string; name: string }[]
+    >([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDepartments = async () => {
+            try {
+                const token = Cookies.get("token");
+                if (!token) throw new Error("No token found");
+
+                const res = await fetch("/api/departments", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!res.ok) {
+                    throw new Error("Failed to fetch departments");
+                }
+
+                const data = await res.json();
+                setDepartments(data);
+            } catch (error) {
+                console.error("Error fetching departments:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDepartments();
+    }, []);
+
     return (
         <>
+            <div className="bg-white p-6 rounded-2xl shadow mb-6">
+                <h3 className="flex items-center gap-2 text-purple-900 mb-3">
+                    <Building2 size={18} /> Select Department
+                </h3>
+                {loading ? (
+                    <div className="flex justify-center py-4">
+                        <span className="loading loading-spinner loading-md text-purple-500"></span>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {departments.map((dept) => (
+                            <button
+                                key={dept.id}
+                                onClick={() => onChangeDepartment(dept.id)}
+                                className={`py-3 px-4 rounded-xl text-sm font-medium transition-colors
+                                    ${
+                                        departmentId === dept.id
+                                            ? "bg-purple-500 text-white"
+                                            : "bg-purple-50 text-purple-600 hover:bg-purple-100"
+                                    }`}
+                            >
+                                {dept.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
             <div className="grid md:grid-cols-2 gap-6 mb-8">
                 <div className="bg-white p-6 rounded-2xl shadow">
                     <h3 className="flex items-center gap-2 text-purple-900 mb-3">
@@ -85,10 +153,10 @@ export default function DateTimeStep({
             <div className="flex justify-center gap-4">
                 <button
                     onClick={onNext}
-                    disabled={!date || !time}
+                    disabled={!date || !time || !departmentId}
                     className={`px-6 py-2 rounded-full
           ${
-              date && time
+              date && time && departmentId
                   ? "bg-purple-500 text-white"
                   : "bg-gray-300 text-gray-500"
           }`}

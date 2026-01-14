@@ -37,11 +37,13 @@ interface Doctor {
 
 export default function DoctorStep({
     selectedDoctor,
+    departmentId,
     onSelect,
     onBack,
     onNext,
 }: {
     selectedDoctor: string | null;
+    departmentId: string | null;
     onSelect: (id: string) => void;
     onBack: () => void;
     onNext: () => void;
@@ -66,7 +68,11 @@ export default function DoctorStep({
                 }
 
                 const data: Doctor[] = await res.json();
-                setDoctors(data);
+                // Filter by department if departmentId is provided
+                const filteredDoctors = departmentId
+                    ? data.filter((d) => d.departmentDto.id === departmentId)
+                    : data;
+                setDoctors(filteredDoctors);
             } catch (error) {
                 console.error("Error fetching doctors:", error);
             } finally {
@@ -75,7 +81,7 @@ export default function DoctorStep({
         };
 
         fetchDoctors();
-    }, []);
+    }, [departmentId]);
     const calculateExperience = (createdAt: string): string => {
         const created = new Date(createdAt);
         const now = new Date();
