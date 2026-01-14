@@ -3,6 +3,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { toast } from "react-hot-toast";
+import { Download, Printer, CheckCircle, Calendar, Clock } from "lucide-react";
+import {
+    downloadAppointmentPDF,
+    printAppointmentPDF,
+} from "./AppointmentConfirmationPDF";
 
 interface ConfirmStepProps {
     doctorId: string | null;
@@ -11,6 +16,20 @@ interface ConfirmStepProps {
     description: string;
     onChangeDescription: (description: string) => void;
     onBack: () => void;
+}
+
+interface CreatedAppointmentData {
+    appointmentId: string;
+    patientName: string;
+    patientPhone: string;
+    patientEmail: string;
+    doctorName: string;
+    departmentName: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    description?: string;
+    status: string;
 }
 
 export default function ConfirmStep({
@@ -24,30 +43,8 @@ export default function ConfirmStep({
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-
-    const parseTimeToDateTime = (date: string, time: string): string => {
-        const [timePart, period] = time.split(" ");
-        const [hoursStr, minutesStr] = timePart.split(":");
-        let hours = Number(hoursStr);
-        const minutes = Number(minutesStr);
-
-        if (period === "PM" && hours !== 12) {
-            hours += 12;
-        } else if (period === "AM" && hours === 12) {
-            hours = 0;
-        }
-
-        const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
-            .toString()
-            .padStart(2, "0")}:00`;
-        return `${date}T${formattedTime}`;
-    };
-
-    const addMinutes = (dateTime: string, minutes: number): string => {
-        const dt = new Date(dateTime);
-        dt.setMinutes(dt.getMinutes() + minutes);
-        return dt.toISOString().slice(0, 19);
-    };
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [createdAppointment, setCreatedAppointment] = useState<CreatedAppointmentData | null>(null);
 
     const confirm = async () => {
         if (!doctorId || !selectedSlot) {
@@ -107,8 +104,56 @@ export default function ConfirmStep({
                 );
             }
 
+            const createdAppointmentRes = await appointmentRes.json();
+
+            // Fetch doctor details for PDF
+            const doctorRes = await fetch(`/api/doctors/${doctorId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            let doctorName = "Doctor";
+            let departmentName = "Department";
+
+            if (doctorRes.ok) {
+                const doctorData = await doctorRes.json();
+                doctorName = doctorData.staffDto?.userDto?.fullName || "Doctor";
+                departmentName = doctorData.staffDto?.departmentDto?.name || "Department";
+            }
+
+            const startTime = new Date(selectedSlot.startsAt).toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+            const endTime = new Date(selectedSlot.endsAt).toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+
+            const formattedDate = new Date(date).toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+            });
+
+            setCreatedAppointment({
+                appointmentId: createdAppointmentRes.id,
+                patientName: patientData.userDto?.fullName || "Patient",
+                patientPhone: patientData.userDto?.phone || "",
+                patientEmail: patientData.userDto?.email || "",
+                doctorName,
+                departmentName,
+                date: formattedDate,
+                startTime,
+                endTime,
+                description: description || undefined,
+                status: "PENDING",
+            });
+
             toast.success("Appointment booked successfully!");
-            router.push("/appointments");
+            setShowSuccess(true);
         } catch (err) {
             const errorMessage =
                 err instanceof Error
@@ -120,6 +165,129 @@ export default function ConfirmStep({
             setLoading(false);
         }
     };
+
+    const handleDownloadPDF = () => {
+        if (createdAppointment) {
+            downloadAppointmentPDF(createdAppointment);
+            toast.success("PDF downloaded successfully!");
+        }
+    };
+
+    const handlePrintPDF = () => {
+        if (createdAppointment) {
+            printAppointmentPDF(createdAppointment);
+        }
+    };
+
+    const handleGoToAppointments = () => {
+        router.push("/appointments");
+    };
+
+    if (showSuccess && createdAppointment) {
+        return (
+            <div className="max-w-xl mx-auto bg-white p-6 rounded-2xl shadow">
+                <div className="text-center">
+                    <div className="flex justify-center mb-4">
+                        <div className="rounded-full bg-green-100 p-3">
+                            <CheckCircle className="w-16 h-16 text-green-600" />
+                        </div>
+                    </div>
+
+                    <h3 className="font-bold text-2xl mb-2 text-green-600">
+                        Appointment Booked Successfully!
+                    </h3>
+                    <p className="text-gray-600 mb-6">
+                        Your appointment has been scheduled. You can download or print the confirmation.
+                    </p>
+
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+                        <div className="space-y-4 text-left">
+                            <div className="flex items-center gap-3 pb-3 border-b border-purple-200">
+                                <div className="bg-purple-100 p-2 rounded-lg">
+                                    <Calendar className="w-5 h-5 text-purple-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-500">Appointment ID</p>
+                                    <p className="font-mono font-semibold text-purple-700">
+                                        #{createdAppointment.appointmentId.substring(0, 8).toUpperCase()}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-sm text-gray-500">Doctor</p>
+                                    <p className="font-semibold">{createdAppointment.doctorName}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-500">Department</p>
+                                    <p className="font-semibold">{createdAppointment.departmentName}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-gray-400" />
+                                    <div>
+                                        <p className="text-sm text-gray-500">Date</p>
+                                        <p className="font-semibold">{createdAppointment.date}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-gray-400" />
+                                    <div>
+                                        <p className="text-sm text-gray-500">Time</p>
+                                        <p className="font-semibold">
+                                            {createdAppointment.startTime} - {createdAppointment.endTime}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {createdAppointment.description && (
+                                <div>
+                                    <p className="text-sm text-gray-500">Notes</p>
+                                    <p className="text-sm bg-white p-2 rounded mt-1">
+                                        {createdAppointment.description}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                        <p className="text-sm text-yellow-800">
+                            <strong>Reminder:</strong> Please arrive 15 minutes before your scheduled time and bring a valid ID.
+                        </p>
+                    </div>
+
+                    <div className="flex gap-3 justify-center mb-4">
+                        <button
+                            onClick={handleDownloadPDF}
+                            className="btn btn-primary flex items-center gap-2"
+                        >
+                            <Download className="w-5 h-5" />
+                            Download PDF
+                        </button>
+                        <button
+                            onClick={handlePrintPDF}
+                            className="btn btn-outline flex items-center gap-2"
+                        >
+                            <Printer className="w-5 h-5" />
+                            Print
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={handleGoToAppointments}
+                        className="btn btn-ghost mt-2"
+                    >
+                        View My Appointments
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-xl mx-auto bg-white p-6 rounded-2xl shadow">
